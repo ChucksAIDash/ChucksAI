@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Chuck's AI — Earnings Calendar</title>
+  <script src="theme.js"></script>
+  <link rel="stylesheet" href="styles.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    /* ── EARNINGS PAGE SPECIFIC ── */
+
+    /* Filter pill buttons */
+    .filter-bar {
+      display: flex; gap: 7px; flex-wrap: wrap;
+      margin-bottom: 1rem; align-items: center;
+    }
+    .filter-lbl {
+      font-family: 'Space Mono', monospace;
+      font-size: 10px; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: .1em;
+      white-space: nowrap;
+    }
+    .fbtn {
+      font-family: 'Space Mono', monospace;
+      font-size: 10px; font-weight: 700;
+      padding: 5px 13px; border-radius: 99px;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      cursor: pointer; transition: all .15s;
+      background: none; letter-spacing: .06em;
+    }
+    .fbtn:hover { border-color: var(--border-bright); color: var(--text-secondary); }
+    .fbtn.active {
+      background: rgba(91,200,245,.1);
+      border-color: rgba(91,200,245,.3);
+      color: var(--accent2);
+    }
+
+    /* ── MINI CALENDAR ── */
+    .cal-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px; margin-bottom: 2rem;
+    }
+    .cal-day-hdr {
+      font-family: 'Space Mono', monospace;
+      font-size: 9px; font-weight: 700;
+      color: var(--text-muted); text-align: center;
+      padding: 4px; text-transform: uppercase; letter-spacing: .06em;
+    }
+    .cal-cell {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--r-sm); padding: 6px;
+      min-height: 70px; transition: border-color .15s;
+    }
+    .cal-cell.has-earnings {
+      border-color: rgba(91,200,245,.28);
+      background: rgba(91,200,245,.04);
+    }
+    .cal-cell.today-cell {
+      border-color: rgba(91,200,245,.5);
+      background: rgba(91,200,245,.07);
+    }
+    html.light .cal-cell { background: rgba(255,255,255,.8); }
+    html.light .cal-cell.has-earnings { background: rgba(91,200,245,.06); }
+    html.light .cal-cell.today-cell   { background: rgba(91,200,245,.1); }
+
+    .cal-date {
+      font-family: 'Space Mono', monospace;
+      font-size: 10px; font-weight: 700;
+      color: var(--text-muted); margin-bottom: 4px;
+    }
+    .cal-cell.today-cell .cal-date { color: var(--accent2); }
+    .cal-ticker {
+      font-family: 'Space Mono', monospace;
+      font-size: 9px; font-weight: 700;
+      color: var(--accent2);
+      background: rgba(91,200,245,.1);
+      border-radius: 4px; padding: 1px 5px;
+      margin-bottom: 2px; display: block;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+
+    /* ── EARNINGS TABLE ── */
+    .etable {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg); overflow: hidden;
+    }
+    .et-hdr {
+      display: grid;
+      grid-template-columns: 80px 1fr 110px 110px 100px 70px;
+      padding: 10px 18px;
+      background: rgba(255,255,255,.025);
+      border-bottom: 1px solid var(--border);
+    }
+    html.light .et-hdr { background: rgba(0,0,0,.03); }
+    .eth {
+      font-family: 'Space Mono', monospace;
+      font-size: 9px; font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: .08em;
+    }
+    .et-row {
+      display: grid;
+      grid-template-columns: 80px 1fr 110px 110px 100px 70px;
+      padding: 12px 18px;
+      border-bottom: 1px solid var(--border);
+      align-items: center; transition: background .15s;
+    }
+    .et-row:last-child { border-bottom: none; }
+    .et-row:hover { background: var(--bg-card-hover); }
+
+    .et-date  { font-family: 'Space Mono', monospace; font-size: 11px; color: var(--text-secondary); }
+    .et-today { color: var(--accent2); }
+    .et-sym   { font-family: 'Space Mono', monospace; font-size: 13px; font-weight: 700; color: var(--text-primary); }
+    .et-co    { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+    .et-val   { font-family: 'Space Mono', monospace; font-size: 12px; color: var(--text-secondary); }
+    .beat     { color: var(--up);   text-shadow: 0 0 8px rgba(61,220,132,.4); }
+    .miss     { color: var(--down); text-shadow: 0 0 8px rgba(240,82,82,.4); }
+
+    /* Time badges */
+    .bmo-badge {
+      font-family: 'Space Mono', monospace; font-size: 9px; font-weight: 700;
+      padding: 2px 7px; border-radius: 4px;
+      background: rgba(240,184,106,.12); color: var(--accent3);
+      border: 1px solid rgba(240,184,106,.25);
+    }
+    .amc-badge {
+      font-family: 'Space Mono', monospace; font-size: 9px; font-weight: 700;
+      padding: 2px 7px; border-radius: 4px;
+      background: rgba(91,200,245,.12); color: var(--accent2);
+      border: 1px solid rgba(91,200,245,.25);
+    }
+
+    /* Responsive table — hide last 2 cols on mobile */
+    @media(max-width:700px) {
+      .et-hdr, .et-row { grid-template-columns: 65px 1fr 90px 70px; }
+      .eth:nth-child(n+5), .et-row > div:nth-child(n+5) { display: none; }
+    }
+
+    /* Loading / utility */
+    .loading-text {
+      font-size: 12px; color: var(--text-secondary);
+      padding: .6rem 0; display: flex; align-items: center; gap: 8px;
+    }
+    .spinner {
+      display: inline-block; width: 12px; height: 12px; flex-shrink: 0;
+      border: 1.5px solid rgba(255,255,255,.1);
+      border-top-color: var(--accent); border-radius: 50%;
+      animation: spin .7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .fade-in { animation: fadeUp .35s ease both; }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+    .footer-note {
+      text-align: center;
+      font-family: 'Space Mono', monospace;
+      font-size: 9px; color: var(--text-muted);
+      letter-spacing: .1em; text-transform: uppercase;
+      margin-top: 2rem; padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+    }
+  </style>
+</head>
+<body>
+
+<div class="bg-canvas">
+  <div class="orb orb1"></div>
+  <div class="orb orb2"></div>
+  <div class="orb orb3"></div>
+  <div class="orb orb4"></div>
+</div>
+
+<div id="nav-placeholder"></div>
+
+<div class="container">
+
+  <!-- Page header -->
+  <div class="page-header">
+    <div>
+      <div class="page-title">📈 Earnings <span style="color:var(--accent3)">Calendar</span></div>
+      <div class="page-sub">Upcoming &amp; recent — Mag 7, popular stocks, ETFs and more · via Finnhub</div>
+    </div>
+    <div class="header-right">
+      <div id="date-display" style="font-family:'Space Mono',monospace;font-size:11px;color:var(--text-muted)"></div>
+      <button class="refresh-btn" onclick="loadEarnings()">⟳ REFRESH</button>
+    </div>
+  </div>
+
+  <!-- Range filter -->
+  <div class="filter-bar">
+    <span class="filter-lbl">Range:</span>
+    <button class="fbtn rng-btn" onclick="setRange(7,this)">7 Days</button>
+    <button class="fbtn rng-btn active" onclick="setRange(30,this)">30 Days</button>
+    <button class="fbtn rng-btn" onclick="setRange(90,this)">90 Days</button>
+  </div>
+
+  <!-- Group filter -->
+  <div class="filter-bar" style="margin-bottom:1.5rem">
+    <span class="filter-lbl">Filter:</span>
+    <button class="fbtn grp-btn active" onclick="setGroup('all',this)">All</button>
+    <button class="fbtn grp-btn" onclick="setGroup('mag7',this)">Mag 7</button>
+    <button class="fbtn grp-btn" onclick="setGroup('popular',this)">Popular</button>
+    <button class="fbtn grp-btn" onclick="setGroup('tickers',this)">Tickers</button>
+    <button class="fbtn grp-btn" onclick="setGroup('meme',this)">Memes</button>
+    <button class="fbtn grp-btn" onclick="setGroup('etf',this)">ETFs</button>
+  </div>
+
+  <!-- Mini calendar -->
+  <div class="section-label lbl-amber" style="margin-bottom:.75rem">Earnings Calendar</div>
+  <div class="cal-grid" id="earnings-cal"></div>
+
+  <!-- Table -->
+  <div class="section-label lbl-amber" style="margin-bottom:.75rem">Upcoming Earnings</div>
+  <div class="etable">
+    <div class="et-hdr">
+      <div class="eth">Date</div>
+      <div class="eth">Company</div>
+      <div class="eth">EPS Est.</div>
+      <div class="eth">EPS Actual</div>
+      <div class="eth">Rev Est.</div>
+      <div class="eth">Time</div>
+    </div>
+    <div id="etable-body">
+      <div class="loading-text" style="padding:1rem">
+        <span class="spinner"></span> Loading earnings…
+      </div>
+    </div>
+  </div>
+
+  <p class="footer-note">Earnings · Finnhub · BMO = Before Market Open · AMC = After Market Close</p>
+
+</div><!-- /.container -->
+
+<script>
+/* ═══════════════════════════════════════
+   EARNINGS — Chuck's AI v7
+═══════════════════════════════════════ */
+
+const FH_KEY = 'd7kohmpr01qiqbcv6f8gd7kohmpr01qiqbcv6f90';
+
+/* ── Stock groups ── */
+const GROUPS = {
+  mag7:    ['AAPL','MSFT','NVDA','AMZN','GOOGL','META','TSLA'],
+  popular: ['AMD','INTC','NFLX','PYPL','SHOP','UBER','LYFT','SPOT','RBLX','COIN','SQ','HOOD','PLTR','SOFI','RIVN'],
+  tickers: ['FUBO','SNAP','DDD','ASTS','ARKX','UFO','BULL'],
+  meme:    ['GME','UPST','AMC','BYND'],
+  etf:     ['SPY','QQQ','DIA','IWM','GLD','SLV','TLT','VXX','TQQQ'],
+};
+const NAMES = {
+  AAPL:'Apple',MSFT:'Microsoft',NVDA:'Nvidia',AMZN:'Amazon',GOOGL:'Alphabet',META:'Meta',TSLA:'Tesla',
+  AMD:'AMD',INTC:'Intel',NFLX:'Netflix',PYPL:'PayPal',SHOP:'Shopify',UBER:'Uber',LYFT:'Lyft',
+  SPOT:'Spotify',RBLX:'Roblox',COIN:'Coinbase',SQ:'Block',HOOD:'Robinhood',PLTR:'Palantir',
+  SOFI:'SoFi',RIVN:'Rivian',FUBO:'FuboTV',SNAP:'Snap',DDD:'3D Systems',ASTS:'AST SpaceMobile',
+  ARKX:'ARK Space ETF',UFO:'Space ETF',BULL:'Direxion Bull 3x',GME:'GameStop',UPST:'Upstart',
+  AMC:'AMC Entertainment',BYND:'Beyond Meat',SPY:'S&P 500 ETF',QQQ:'Nasdaq ETF',DIA:'Dow ETF',
+  IWM:'Russell 2000',GLD:'Gold ETF',SLV:'Silver ETF',TLT:'Treasury ETF',VXX:'VIX ETN',TQQQ:'3x Nasdaq'
+};
+const ALL_SYMS = [...new Set([...GROUPS.mag7, ...GROUPS.popular, ...GROUPS.tickers, ...GROUPS.meme, ...GROUPS.etf])];
+
+let allEarnings = [];
+let curGroup    = 'all';
+let curRange    = 30;
+
+/* ── Date display ── */
+document.getElementById('date-display').textContent =
+  new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+/* ── Filter controls ── */
+function setGroup(g, btn) {
+  curGroup = g;
+  document.querySelectorAll('.grp-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  render();
+}
+function setRange(r, btn) {
+  curRange = r;
+  document.querySelectorAll('.rng-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  render();
+}
+
+/* ── Helpers ── */
+function diff(ds) {
+  const d = new Date(ds); d.setHours(12);
+  const t = new Date(); t.setHours(0, 0, 0, 0);
+  return Math.round((d - t) / 86400000);
+}
+function fmtEPS(v) {
+  if (v == null || isNaN(v)) return '—';
+  return (v >= 0 ? '+$' : '-$') + Math.abs(v).toFixed(2);
+}
+function fmtRev(v) {
+  if (!v || isNaN(v)) return '—';
+  if (v >= 1e9) return '$' + (v / 1e9).toFixed(1) + 'B';
+  if (v >= 1e6) return '$' + (v / 1e6).toFixed(0) + 'M';
+  return '$' + v.toFixed(0);
+}
+
+/* ── Mini calendar builder ── */
+function buildCalendar(evts) {
+  const today    = new Date(); today.setHours(0, 0, 0, 0);
+  const startDay = new Date(today);
+  startDay.setDate(today.getDate() - today.getDay());
+
+  const byDate = {};
+  evts
+    .filter(e => diff(e.date) >= 0 && diff(e.date) <= 27)
+    .forEach(e => {
+      if (!byDate[e.date]) byDate[e.date] = [];
+      if (byDate[e.date].length < 3) byDate[e.date].push(e.symbol);
+    });
+
+  let html = '';
+  ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].forEach(d =>
+    html += `<div class="cal-day-hdr">${d}</div>`
+  );
+
+  for (let w = 0; w < 4; w++) {
+    for (let d = 0; d < 7; d++) {
+      const cell = new Date(startDay);
+      cell.setDate(startDay.getDate() + w * 7 + d);
+      const ds      = cell.toISOString().split('T')[0];
+      const isToday = cell.getTime() === today.getTime();
+      const tickers = byDate[ds] || [];
+      const cls     = isToday ? 'today-cell' : tickers.length ? 'has-earnings' : '';
+      html += `<div class="cal-cell ${cls}">
+        <div class="cal-date">${cell.getDate()}</div>
+        ${tickers.map(t => `<span class="cal-ticker">${t}</span>`).join('')}
+      </div>`;
+    }
+  }
+  document.getElementById('earnings-cal').innerHTML = html;
+}
+
+/* ── Main render ── */
+function render() {
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const end   = new Date(today); end.setDate(end.getDate() + curRange);
+  const start = new Date(today); start.setDate(start.getDate() - 3);
+
+  let rows = allEarnings.filter(e => {
+    const d = new Date(e.date); d.setHours(12);
+    if (d < start || d > end) return false;
+    if (curGroup === 'all') return true;
+    return GROUPS[curGroup]?.includes(e.symbol);
+  });
+  rows.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+  buildCalendar(rows);
+
+  if (!rows.length) {
+    document.getElementById('etable-body').innerHTML =
+      '<div style="padding:2rem;text-align:center;color:var(--text-muted);font-size:13px">No earnings found for this filter.</div>';
+    return;
+  }
+
+  document.getElementById('etable-body').innerHTML = rows.map((e, i) => {
+    const d       = diff(e.date);
+    const isToday = d === 0;
+    const dObj    = new Date(e.date); dObj.setHours(12);
+    const dateLabel = d === 0   ? 'Today'
+                    : d === 1   ? 'Tomorrow'
+                    : d === -1  ? 'Yesterday'
+                    : dObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const beat = e.epsActual != null && e.epsEstimate != null
+      ? e.epsActual >= e.epsEstimate
+      : null;
+
+    return `<div class="et-row fade-in" style="animation-delay:${i * .03}s">
+      <div class="et-date ${isToday ? 'et-today' : ''}">${dateLabel}</div>
+      <div>
+        <div class="et-sym">${e.symbol}</div>
+        <div class="et-co">${NAMES[e.symbol] || ''}</div>
+      </div>
+      <div class="et-val">${fmtEPS(e.epsEstimate)}</div>
+      <div class="et-val ${beat === true ? 'beat' : beat === false ? 'miss' : ''}">
+        ${e.epsActual != null ? fmtEPS(e.epsActual) : '<span style="color:var(--text-muted)">Pending</span>'}
+      </div>
+      <div class="et-val">${fmtRev(e.revenueEstimate)}</div>
+      <div>
+        ${e.hour === 'bmo' ? '<span class="bmo-badge">BMO</span>'
+        : e.hour === 'amc' ? '<span class="amc-badge">AMC</span>' : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ── Fetch from Finnhub ── */
+async function loadEarnings() {
+  document.getElementById('etable-body').innerHTML =
+    '<div class="loading-text" style="padding:1rem"><span class="spinner"></span> Loading earnings…</div>';
+
+  try {
+    const from = new Date(); from.setDate(from.getDate() - 3);
+    const to   = new Date(); to.setDate(to.getDate() + 90);
+    const fmt  = d => d.toISOString().split('T')[0];
+
+    const r = await fetch(
+      `https://finnhub.io/api/v1/calendar/earnings?from=${fmt(from)}&to=${fmt(to)}&token=${FH_KEY}`
+    );
+    const d = await r.json();
+    const all = d.earningsCalendar || [];
+    allEarnings = all.filter(e => ALL_SYMS.includes(e.symbol));
+
+    /* Fallback placeholder if API returns nothing */
+    if (!allEarnings.length) {
+      const today = new Date();
+      allEarnings = ALL_SYMS.slice(0, 15).map((sym, i) => {
+        const dt = new Date(today);
+        dt.setDate(dt.getDate() + Math.floor(i / 2) + 1);
+        return { symbol: sym, date: dt.toISOString().split('T')[0], epsEstimate: null, epsActual: null, revenueEstimate: null, hour: i % 2 === 0 ? 'bmo' : 'amc' };
+      });
+    }
+    render();
+
+  } catch {
+    document.getElementById('etable-body').innerHTML =
+      '<div style="padding:2rem;text-align:center;color:var(--text-secondary);font-size:13px">Could not load earnings data. Check your Finnhub API key.</div>';
+  }
+}
+
+loadEarnings();
+
+/* ═══════════════════════════════════════
+   NAV INJECT
+═══════════════════════════════════════ */
+function injectNav(html) {
+  const placeholder = document.getElementById('nav-placeholder');
+  if (!placeholder) return;
+  const tmp = document.createElement('div');
+  tmp.innerHTML = html;
+  Array.from(tmp.childNodes).forEach(node => {
+    if (node.nodeName !== 'SCRIPT')
+      placeholder.parentNode.insertBefore(node.cloneNode(true), placeholder);
+  });
+  tmp.querySelectorAll('script').forEach(oldScript => {
+    const s = document.createElement('script');
+    if (oldScript.src) s.src = oldScript.src;
+    else s.textContent = oldScript.textContent;
+    document.head.appendChild(s);
+  });
+  placeholder.remove();
+}
+
+fetch('nav.html')
+  .then(r => r.text())
+  .then(injectNav)
+  .catch(() => console.warn('nav.html not found'));
+</script>
+</body>
+</html>

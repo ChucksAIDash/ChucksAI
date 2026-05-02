@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Chuck's AI — AI Market Chat</title>
+  <script src="theme.js"></script>
+  <link rel="stylesheet" href="styles.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    /* ── CHAT PAGE SPECIFIC ── */
+
+    /* Full-height flex layout */
+    body { display: flex; flex-direction: column; }
+
+    .chat-page {
+      position: relative; z-index: 1;
+      display: flex; flex-direction: column; flex: 1;
+      max-width: 900px; margin: 0 auto; width: 100%;
+      padding: 1.5rem 2rem 0;
+    }
+    @media(max-width:600px) { .chat-page { padding: 1rem 1rem 0; } }
+
+    /* ── Page header ── */
+    .chat-header {
+      margin-bottom: 1.25rem; padding-bottom: 1.25rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* ── API key setup bar ── */
+    .api-setup {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      padding: 1rem 1.25rem;
+      margin-bottom: 1.25rem;
+      display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
+    }
+    html.light .api-setup { background: rgba(255,255,255,.9); }
+
+    .api-label {
+      font-family: 'Space Mono', monospace;
+      font-size: 10px; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: .1em;
+      white-space: nowrap;
+    }
+    .api-input {
+      flex: 1; min-width: 200px;
+      font-family: 'Space Mono', monospace; font-size: 11px;
+      background: rgba(255,255,255,.04);
+      border: 1px solid var(--border-bright);
+      color: var(--text-primary);
+      border-radius: var(--r-sm); padding: 7px 12px;
+      outline: none; transition: border-color .15s;
+    }
+    html.light .api-input { background: #f8fafc; }
+    .api-input:focus { border-color: var(--accent2); box-shadow: 0 0 0 3px rgba(91,200,245,.08); }
+
+    .api-save {
+      font-family: 'Space Mono', monospace; font-size: 11px; font-weight: 700;
+      padding: 7px 16px;
+      background: rgba(91,200,245,.12); border: 1px solid rgba(91,200,245,.3);
+      color: var(--accent2); border-radius: var(--r-sm);
+      cursor: pointer; transition: all .15s;
+    }
+    .api-save:hover { background: rgba(91,200,245,.22); }
+
+    .key-saved {
+      font-family: 'Space Mono', monospace; font-size: 10px;
+      color: var(--up); display: none;
+    }
+
+    /* ── Quick prompt chips ── */
+    .quick-prompts {
+      display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 1rem;
+    }
+    .qp-btn {
+      font-size: 12px; color: var(--text-secondary);
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--r-sm); padding: 6px 12px;
+      cursor: pointer; transition: all .15s; white-space: nowrap;
+    }
+    .qp-btn:hover {
+      border-color: var(--accent2); color: var(--accent2);
+      background: rgba(91,200,245,.06);
+    }
+
+    /* ── Message thread ── */
+    .messages {
+      flex: 1; overflow-y: auto;
+      padding-bottom: 1rem;
+      min-height: 300px;
+      max-height: calc(100vh - 400px);
+    }
+    .messages::-webkit-scrollbar { width: 4px; }
+    .messages::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 2px; }
+
+    .msg {
+      display: flex; gap: 12px;
+      margin-bottom: 1.25rem;
+      animation: fadeUp .3s ease both;
+    }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+    .msg-avatar {
+      width: 32px; height: 32px; border-radius: var(--r-sm);
+      flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+      font-family: 'Space Mono', monospace; font-size: 9px; font-weight: 700;
+    }
+    .msg.user .msg-avatar {
+      background: rgba(91,200,245,.15); border: 1px solid rgba(91,200,245,.3);
+      color: var(--accent2);
+    }
+    .msg.ai .msg-avatar {
+      background: rgba(127,217,184,.12); border: 1px solid rgba(127,217,184,.25);
+      color: var(--accent);
+    }
+
+    .msg-bubble { flex: 1; min-width: 0; }
+    .msg-name {
+      font-family: 'Space Mono', monospace; font-size: 10px; font-weight: 700;
+      color: var(--text-muted); margin-bottom: 5px;
+      letter-spacing: .06em; text-transform: uppercase;
+    }
+    .msg.user .msg-name { color: var(--accent2); }
+    .msg.ai   .msg-name { color: var(--accent); }
+
+    .msg-text {
+      background: var(--bg-ticker); border: 1px solid var(--border);
+      border-radius: var(--r-lg); padding: 12px 16px;
+      font-size: 14px; line-height: 1.65; color: var(--text-primary);
+    }
+    .msg.user .msg-text {
+      background: rgba(91,200,245,.07); border-color: rgba(91,200,245,.2);
+    }
+    html.light .msg-text       { background: rgba(255,255,255,.9); }
+    html.light .msg.user .msg-text { background: rgba(91,200,245,.08); }
+
+    .msg-text p         { margin-bottom: .6rem; }
+    .msg-text p:last-child { margin-bottom: 0; }
+    .msg-text strong    { color: var(--accent2); }
+    .msg-text code {
+      font-family: 'Space Mono', monospace; font-size: 12px;
+      background: rgba(255,255,255,.08); padding: 1px 6px; border-radius: 4px;
+    }
+    html.light .msg-text code { background: rgba(0,0,0,.06); }
+
+    /* ── Typing dots ── */
+    .typing-dots { display: flex; gap: 5px; padding: 4px 0; }
+    .typing-dots span {
+      width: 7px; height: 7px; background: var(--text-muted);
+      border-radius: 50%; animation: dot 1.4s ease-in-out infinite;
+    }
+    .typing-dots span:nth-child(2) { animation-delay: .2s; }
+    .typing-dots span:nth-child(3) { animation-delay: .4s; }
+    @keyframes dot { 0%,80%,100%{transform:scale(.8);opacity:.4} 40%{transform:scale(1);opacity:1} }
+
+    /* ── Input bar (sticky bottom) ── */
+    .chat-input-wrap {
+      display: flex; gap: 10px;
+      padding: 1.5rem 0 1.5rem;
+      border-top: 1px solid var(--border);
+      position: sticky; bottom: 0;
+      background: linear-gradient(transparent, var(--bg-deep) 22%);
+      padding-top: 2rem;
+    }
+    .chat-input {
+      flex: 1;
+      font-family: 'DM Sans', sans-serif; font-size: 14px;
+      background: var(--bg-ticker); border: 1px solid var(--border-bright);
+      color: var(--text-primary); border-radius: var(--r-md);
+      padding: 12px 16px; outline: none; resize: none;
+      transition: border-color .15s;
+      min-height: 48px; max-height: 140px;
+      backdrop-filter: blur(10px);
+    }
+    html.light .chat-input { background: rgba(255,255,255,.9); }
+    .chat-input:focus { border-color: var(--accent2); box-shadow: 0 0 0 3px rgba(91,200,245,.08); }
+    .chat-input::placeholder { color: var(--text-muted); }
+
+    .send-btn {
+      font-family: 'Space Mono', monospace; font-size: 11px; font-weight: 700;
+      background: var(--accent2); color: var(--bg-deep);
+      border: none; border-radius: var(--r-md);
+      padding: 0 22px; cursor: pointer; transition: all .15s;
+      white-space: nowrap;
+      box-shadow: 0 0 18px rgba(91,200,245,.35);
+    }
+    .send-btn:hover { background: #80d9ff; box-shadow: 0 0 28px rgba(91,200,245,.55); }
+    .send-btn:disabled { opacity: .4; cursor: not-allowed; }
+
+    /* ── Footer disclaimer ── */
+    .chat-footer {
+      font-family: 'Space Mono', monospace; font-size: 9px;
+      color: var(--text-muted); text-align: center;
+      padding: 1rem 2rem 1.5rem;
+      letter-spacing: .05em; text-transform: uppercase;
+    }
+
+    /* ── Clear button ── */
+    .clear-btn {
+      font-family: 'Space Mono', monospace; font-size: 10px;
+      color: var(--text-muted); background: none;
+      border: 1px solid var(--border); border-radius: var(--r-sm);
+      padding: 4px 10px; cursor: pointer; transition: all .15s;
+    }
+    .clear-btn:hover { color: var(--down); border-color: rgba(240,82,82,.4); }
+  </style>
+</head>
+<body>
+
+<div class="bg-canvas">
+  <div class="orb orb1"></div>
+  <div class="orb orb2"></div>
+  <div class="orb orb3"></div>
+  <div class="orb orb4"></div>
+</div>
+
+<div id="nav-placeholder"></div>
+
+<div class="chat-page">
+
+  <!-- Header -->
+  <div class="chat-header">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+      <div>
+        <div class="page-title">🤖 AI Market <span style="color:var(--accent)">Chat</span></div>
+        <div class="page-sub">Ask anything about markets, crypto, stocks, or economics — powered by Claude</div>
+      </div>
+      <button class="clear-btn" onclick="clearChat()">✕ CLEAR</button>
+    </div>
+  </div>
+
+  <!-- API Key setup -->
+  <div class="api-setup">
+    <div class="api-label">Anthropic Key:</div>
+    <input class="api-input" type="password" id="api-key-input" placeholder="sk-ant-…" autocomplete="off"/>
+    <button class="api-save" onclick="saveKey()">SAVE</button>
+    <span class="key-saved" id="key-status">✓ Saved</span>
+    <span style="font-size:11px;color:var(--text-muted)">
+      Free at <a href="https://console.anthropic.com" target="_blank" style="color:var(--accent2)">console.anthropic.com</a>
+    </span>
+  </div>
+
+  <!-- Quick prompts -->
+  <div class="quick-prompts">
+    <button class="qp-btn" onclick="sendQuick(this)">What is the VIX?</button>
+    <button class="qp-btn" onclick="sendQuick(this)">Explain Mag 7 stocks</button>
+    <button class="qp-btn" onclick="sendQuick(this)">What moves Bitcoin?</button>
+    <button class="qp-btn" onclick="sendQuick(this)">What is yield curve inversion?</button>
+    <button class="qp-btn" onclick="sendQuick(this)">Fed rate impact on stocks</button>
+    <button class="qp-btn" onclick="sendQuick(this)">Explain Fear & Greed Index</button>
+    <button class="qp-btn" onclick="sendQuick(this)">Best sectors in a recession?</button>
+    <button class="qp-btn" onclick="sendQuick(this)">How do options work?</button>
+  </div>
+
+  <!-- Message thread -->
+  <div class="messages" id="messages">
+
+    <!-- Welcome message -->
+    <div class="msg ai">
+      <div class="msg-avatar">AI</div>
+      <div class="msg-bubble">
+        <div class="msg-name">Chuck's AI</div>
+        <div class="msg-text">
+          Hey Chuck! I'm your AI market assistant. Ask me anything about stocks, crypto, the economy, or trading strategies.<br><br>
+          Paste your Anthropic API key above to get started — free at <strong>console.anthropic.com</strong>.
+        </div>
+      </div>
+    </div>
+
+    <!-- Typing indicator -->
+    <div class="msg ai" id="typing-indicator" style="display:none">
+      <div class="msg-avatar">AI</div>
+      <div class="msg-bubble">
+        <div class="msg-name">Chuck's AI</div>
+        <div class="msg-text">
+          <div class="typing-dots"><span></span><span></span><span></span></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /.messages -->
+
+  <!-- Input bar -->
+  <div class="chat-input-wrap">
+    <textarea
+      class="chat-input" id="chat-input"
+      placeholder="Ask about markets, crypto, economics…"
+      rows="1"
+      onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage();}"
+      oninput="autoResize(this)"
+    ></textarea>
+    <button class="send-btn" id="send-btn" onclick="sendMessage()">SEND →</button>
+  </div>
+
+</div><!-- /.chat-page -->
+
+<div class="chat-footer">Your API key is stored in your browser only · Never sent to our servers · chucksai.com</div>
+
+<script>
+/* ═══════════════════════════════════════
+   CHAT PAGE — Chuck's AI v7
+═══════════════════════════════════════ */
+
+let conversationHistory = [];
+let apiKey = localStorage.getItem('cai_anthropic_key') || '';
+
+/* Pre-fill key input if saved */
+(function () {
+  if (apiKey) {
+    const inp = document.getElementById('api-key-input');
+    if (inp) inp.value = apiKey;
+  }
+})();
+
+/* ── Save API key ── */
+function saveKey() {
+  const k = document.getElementById('api-key-input').value.trim();
+  if (!k) return;
+  apiKey = k;
+  localStorage.setItem('cai_anthropic_key', k);
+  const st = document.getElementById('key-status');
+  if (st) { st.style.display = 'inline'; setTimeout(() => st.style.display = 'none', 2500); }
+}
+
+/* ── Auto-resize textarea ── */
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 140) + 'px';
+}
+
+/* ── Quick prompt chips ── */
+function sendQuick(btn) {
+  document.getElementById('chat-input').value = btn.textContent;
+  sendMessage();
+}
+
+/* ── Clear chat ── */
+function clearChat() {
+  conversationHistory = [];
+  const messages = document.getElementById('messages');
+  const typing   = document.getElementById('typing-indicator');
+  // Remove all msgs except the typing indicator
+  Array.from(messages.children).forEach(el => {
+    if (el.id !== 'typing-indicator') el.remove();
+  });
+  typing.style.display = 'none';
+  messages.appendChild(typing); // keep it at the end
+}
+
+/* ── Append a message bubble ── */
+function appendMsg(role, text) {
+  const messages = document.getElementById('messages');
+  const typing   = document.getElementById('typing-indicator');
+  const isAI     = role === 'ai';
+
+  const formatted = text
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/`(.*?)`/g, '<code>$1</code>')
+    .split('\n\n')
+    .map(p => `<p>${p.replace(/\n/g, '<br>')}</p>`)
+    .join('');
+
+  const div = document.createElement('div');
+  div.className = `msg ${role}`;
+  div.innerHTML = `
+    <div class="msg-avatar">${isAI ? 'AI' : 'YOU'}</div>
+    <div class="msg-bubble">
+      <div class="msg-name">${isAI ? "Chuck's AI" : 'You'}</div>
+      <div class="msg-text">${formatted}</div>
+    </div>`;
+
+  messages.insertBefore(div, typing);
+  messages.scrollTop = messages.scrollHeight;
+}
+
+/* ── Send message ── */
+async function sendMessage() {
+  const input   = document.getElementById('chat-input');
+  const sendBtn = document.getElementById('send-btn');
+  const text    = input.value.trim();
+  if (!text) return;
+
+  if (!apiKey) {
+    alert('Please enter and save your Anthropic API key first.');
+    document.getElementById('api-key-input').focus();
+    return;
+  }
+
+  appendMsg('user', text);
+  conversationHistory.push({ role: 'user', content: text });
+  input.value = '';
+  input.style.height = 'auto';
+  sendBtn.disabled = true;
+
+  const typing = document.getElementById('typing-indicator');
+  typing.style.display = 'flex';
+  document.getElementById('messages').scrollTop = 99999;
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1024,
+        system: `You are a knowledgeable financial and markets assistant on chucksai.com — a personal AI dashboard built for Chuck. Help with stocks, crypto, ETFs, market data, economic indicators, trading concepts, and financial news. Be concise, clear, and conversational. Format responses with markdown when helpful (**bold** for key terms, bullet points for lists). Always note you are not a financial advisor when giving specific advice.`,
+        messages: conversationHistory
+      })
+    });
+
+    const data = await response.json();
+    typing.style.display = 'none';
+
+    if (data.error) {
+      appendMsg('ai', `⚠️ Error: ${data.error.message || 'Check your API key and try again.'}`);
+    } else {
+      const reply = data.content?.[0]?.text || 'No response received.';
+      conversationHistory.push({ role: 'assistant', content: reply });
+      appendMsg('ai', reply);
+    }
+
+  } catch (err) {
+    typing.style.display = 'none';
+    appendMsg('ai', '⚠️ Connection error. Check your API key and internet connection, then try again.');
+  }
+
+  sendBtn.disabled = false;
+  input.focus();
+}
+
+/* ═══════════════════════════════════════
+   NAV INJECT
+═══════════════════════════════════════ */
+function injectNav(html) {
+  const placeholder = document.getElementById('nav-placeholder');
+  if (!placeholder) return;
+  const tmp = document.createElement('div');
+  tmp.innerHTML = html;
+  Array.from(tmp.childNodes).forEach(node => {
+    if (node.nodeName !== 'SCRIPT')
+      placeholder.parentNode.insertBefore(node.cloneNode(true), placeholder);
+  });
+  tmp.querySelectorAll('script').forEach(oldScript => {
+    const s = document.createElement('script');
+    if (oldScript.src) s.src = oldScript.src;
+    else s.textContent = oldScript.textContent;
+    document.head.appendChild(s);
+  });
+  placeholder.remove();
+}
+
+fetch('nav.html')
+  .then(r => r.text())
+  .then(injectNav)
+  .catch(() => console.warn('nav.html not found'));
+</script>
+</body>
+</html>

@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Chuck's AI — Sector Heatmap</title>
+  <script src="theme.js"></script>
+  <link rel="stylesheet" href="styles.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    /* ── HEATMAP PAGE SPECIFIC ── */
+
+    /* Timeframe toggle */
+    .tf-toggle {
+      display: flex; gap: 5px; flex-wrap: wrap;
+    }
+    .tf-btn {
+      font-family: 'Space Mono', monospace;
+      font-size: 10px; font-weight: 700;
+      padding: 6px 14px; border-radius: 99px;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      cursor: pointer; transition: all .18s;
+      background: none; letter-spacing: .07em;
+      text-transform: uppercase;
+    }
+    .tf-btn:hover { border-color: var(--border-bright); color: var(--text-secondary); }
+    .tf-btn.active {
+      background: rgba(91,200,245,.12);
+      border-color: rgba(91,200,245,.35);
+      color: var(--accent2);
+      box-shadow: 0 0 12px rgba(91,200,245,.18);
+    }
+
+    /* Heatmap grid */
+    .heatmap-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-bottom: 2rem;
+    }
+    @media (max-width: 900px)  { .heatmap-grid { grid-template-columns: repeat(3, 1fr); } }
+    @media (max-width: 600px)  { .heatmap-grid { grid-template-columns: repeat(2, 1fr); gap: 7px; } }
+
+    /* Individual sector tile */
+    .sector-tile {
+      position: relative;
+      border-radius: var(--r-lg);
+      border: 1px solid var(--border);
+      padding: 1.1rem 1rem 1rem;
+      cursor: default;
+      overflow: hidden;
+      transition: transform .2s, border-color .2s, box-shadow .2s;
+      min-height: 105px;
+      display: flex; flex-direction: column; justify-content: space-between;
+      backdrop-filter: blur(14px);
+    }
+    /* Sheen line at top */
+    .sector-tile::before {
+      content: ''; position: absolute; top: 0; left: 10%; right: 10%; height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,.1), transparent);
+    }
+    /* Color wash layer */
+    .sector-tile::after {
+      content: ''; position: absolute; inset: 0;
+      border-radius: inherit;
+      pointer-events: none;
+      transition: opacity .3s;
+    }
+
+    /* Positive tiers (green wash) */
+    .tile-up-1  { background: rgba(61,220,132,.07); border-color: rgba(61,220,132,.18); }
+    .tile-up-2  { background: rgba(61,220,132,.13); border-color: rgba(61,220,132,.28); }
+    .tile-up-3  { background: rgba(61,220,132,.20); border-color: rgba(61,220,132,.40); }
+    .tile-up-4  { background: rgba(61,220,132,.28); border-color: rgba(61,220,132,.55); }
+
+    /* Negative tiers (red wash) */
+    .tile-dn-1  { background: rgba(240,82,82,.07);  border-color: rgba(240,82,82,.18); }
+    .tile-dn-2  { background: rgba(240,82,82,.13);  border-color: rgba(240,82,82,.28); }
+    .tile-dn-3  { background: rgba(240,82,82,.20);  border-color: rgba(240,82,82,.40); }
+    .tile-dn-4  { background: rgba(240,82,82,.28);  border-color: rgba(240,82,82,.55); }
+
+    /* Flat */
+    .tile-flat  { background: rgba(255,255,255,.04); border-color: var(--border); }
+
+    /* Hover glows */
+    .tile-up-1:hover,.tile-up-2:hover { box-shadow: 0 0 22px rgba(61,220,132,.2), 0 8px 28px rgba(0,0,0,.45); transform: translateY(-3px) scale(1.015); border-color: rgba(61,220,132,.5); }
+    .tile-up-3:hover,.tile-up-4:hover { box-shadow: 0 0 30px rgba(61,220,132,.35), 0 10px 32px rgba(0,0,0,.5); transform: translateY(-3px) scale(1.015); border-color: rgba(61,220,132,.7); }
+    .tile-dn-1:hover,.tile-dn-2:hover { box-shadow: 0 0 22px rgba(240,82,82,.2), 0 8px 28px rgba(0,0,0,.45); transform: translateY(-3px) scale(1.015); border-color: rgba(240,82,82,.5); }
+    .tile-dn-3:hover,.tile-dn-4:hover { box-shadow: 0 0 30px rgba(240,82,82,.35), 0 10px 32px rgba(0,0,0,.5); transform: translateY(-3px) scale(1.015); border-color: rgba(240,82,82,.7); }
+    .tile-flat:hover  { box-shadow: 0 8px 28px rgba(0,0,0,.4); transform: translateY(-3px) scale(1.015); border-color: var(--border-bright); }
+
+    /* Light mode overrides */
+    html.light .tile-up-1 { background: rgba(13,122,86,.06); border-color: rgba(13,122,86,.2); }
+    html.light .tile-up-2 { background: rgba(13,122,86,.11); border-color: rgba(13,122,86,.3); }
+    html.light .tile-up-3 { background: rgba(13,122,86,.18); border-color: rgba(13,122,86,.45); }
+    html.light .tile-up-4 { background: rgba(13,122,86,.26); border-color: rgba(13,122,86,.6); }
+    html.light .tile-dn-1 { background: rgba(196,52,52,.06); border-color: rgba(196,52,52,.2); }
+    html.light .tile-dn-2 { background: rgba(196,52,52,.11); border-color: rgba(196,52,52,.3); }
+    html.light .tile-dn-3 { background: rgba(196,52,52,.18); border-color: rgba(196,52,52,.45); }
+    html.light .tile-dn-4 { background: rgba(196,52,52,.26); border-color: rgba(196,52,52,.6); }
+
+    /* Tile content */
+    .tile-icon {
+      font-size: 22px; margin-bottom: 8px;
+      line-height: 1;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,.4));
+    }
+    .tile-name {
+      font-family: 'Space Mono', monospace;
+      font-size: 10px; font-weight: 700;
+      letter-spacing: .05em; text-transform: uppercase;
+      color: var(--text-secondary);
+      line-height: 1.3;
+      margin-bottom: 10px;
+      flex: 1;
+    }
+    .tile-pct {
+      font-family: 'Space Mono', monospace;
+      font-size: 22px; font-weight: 700;
+      line-height: 1;
+      letter-spacing: -.02em;
+    }
+    .tile-pct.up   { color: var(--up);   text-shadow: 0 0 14px rgba(61,220,132,.5); }
+    .tile-pct.down { color: var(--down); text-shadow: 0 0 14px rgba(240,82,82,.5); }
+    .tile-pct.flat { color: var(--text-secondary); }
+
+    html.light .tile-pct.up   { color: var(--up); text-shadow: none; }
+    html.light .tile-pct.down { color: var(--down); text-shadow: none; }
+
+    .tile-label {
+      font-size: 10px; color: var(--text-muted);
+      margin-top: 3px; letter-spacing: .02em;
+    }
+
+    /* Rank badge inside tile */
+    .tile-rank {
+      position: absolute; top: 9px; right: 9px;
+      font-family: 'Space Mono', monospace;
+      font-size: 8px; font-weight: 700; letter-spacing: .08em;
+      padding: 2px 6px; border-radius: 99px;
+      border: 1px solid rgba(255,255,255,.08);
+      background: rgba(0,0,0,.25);
+      color: var(--text-muted);
+    }
+
+    /* Legend strip */
+    .hm-legend {
+      display: flex; align-items: center; gap: 10px;
+      flex-wrap: wrap; margin-bottom: 1.5rem;
+    }
+    .legend-label {
+      font-family: 'Space Mono', monospace;
+      font-size: 9px; letter-spacing: .1em; text-transform: uppercase;
+      color: var(--text-muted); margin-right: 4px;
+    }
+    .legend-bar {
+      display: flex; gap: 3px; align-items: center;
+    }
+    .legend-swatch {
+      width: 22px; height: 12px; border-radius: 3px;
+    }
+    .legend-end {
+      font-family: 'Space Mono', monospace;
+      font-size: 9px; color: var(--text-muted);
+    }
+
+    /* Summary stat chips */
+    .stat-chips {
+      display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 1.5rem;
+    }
+    .stat-chip {
+      font-family: 'Space Mono', monospace;
+      font-size: 10px; font-weight: 700;
+      padding: 5px 12px; border-radius: 99px;
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      color: var(--text-secondary);
+      letter-spacing: .04em;
+    }
+    .stat-chip span { margin-left: 5px; }
+    .stat-chip .up   { color: var(--up); }
+    .stat-chip .down { color: var(--down); }
+
+    /* Error / Loading state */
+    .hm-state {
+      display: flex; align-items: center; justify-content: center;
+      min-height: 280px; flex-direction: column; gap: 14px;
+    }
+    .hm-spinner {
+      width: 36px; height: 36px; border-radius: 50%;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent2);
+      animation: spin .8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .hm-status-text {
+      font-family: 'Space Mono', monospace;
+      font-size: 11px; color: var(--text-muted); letter-spacing: .07em;
+    }
+    .hm-error-text {
+      font-family: 'Space Mono', monospace;
+      font-size: 11px; color: var(--down); letter-spacing: .04em;
+      text-align: center; max-width: 400px; line-height: 1.6;
+    }
+
+    /* Breadcrumb-style timeframe label */
+    .tf-label {
+      font-family: 'Space Mono', monospace;
+      font-size: 10px; color: var(--text-muted); letter-spacing: .06em;
+    }
+
+    /* Market status pill */
+    .market-status {
+      font-family: 'Space Mono', monospace;
+      font-size: 9px; letter-spacing: .1em; text-transform: uppercase;
+      padding: 3px 10px; border-radius: 99px;
+      display: inline-flex; align-items: center; gap: 5px;
+    }
+    .market-status.open {
+      background: rgba(61,220,132,.1); color: var(--up);
+      border: 1px solid rgba(61,220,132,.25);
+    }
+    .market-status.closed {
+      background: rgba(240,82,82,.1); color: var(--down);
+      border: 1px solid rgba(240,82,82,.2);
+    }
+    .ms-dot { width:6px; height:6px; border-radius:50%; background:currentColor; }
+    .market-status.open .ms-dot { animation: blink 1.4s ease-in-out infinite; }
+
+    /* Sort bar */
+    .sort-bar {
+      display: flex; align-items: center; gap: 8px; margin-bottom: 1rem; flex-wrap: wrap;
+    }
+    .sort-lbl {
+      font-family: 'Space Mono', monospace;
+      font-size: 9px; letter-spacing: .1em; text-transform: uppercase;
+      color: var(--text-muted);
+    }
+    .sort-btn {
+      font-family: 'Space Mono', monospace; font-size: 9px; font-weight: 700;
+      letter-spacing: .08em; text-transform: uppercase;
+      padding: 4px 11px; border-radius: 99px;
+      border: 1px solid var(--border); background: none; color: var(--text-muted);
+      cursor: pointer; transition: all .15s;
+    }
+    .sort-btn:hover { color: var(--text-secondary); border-color: var(--border-bright); }
+    .sort-btn.active { color: var(--accent2); border-color: rgba(91,200,245,.3); background: rgba(91,200,245,.08); }
+
+    /* Last-updated row */
+    .updated-row {
+      display: flex; align-items: center; gap: 8px;
+      font-family: 'Space Mono', monospace; font-size: 9px;
+      color: var(--text-muted); letter-spacing: .05em;
+      margin-bottom: 1.25rem;
+    }
+    .updated-row a {
+      color: var(--accent2); cursor: pointer;
+      text-decoration: underline; text-underline-offset: 2px;
+    }
+    .updated-row a:hover { opacity: .8; }
+  </style>
+</head>
+<body data-page="heat-map" data-mob="heat-map">
+
+  <div class="bg-canvas">
+    <div class="orb orb1"></div>
+    <div class="orb orb2"></div>
+    <div class="orb orb3"></div>
+    <div class="orb orb4"></div>
+  </div>
+
+  <div id="nav-placeholder"></div>
+
+  <!-- Ticker strip -->
+  <div class="ticker-strip">
+    <div class="ticker-track" id="tickerTrack">
+      <!-- populated by JS -->
+    </div>
+  </div>
+
+  <div class="container">
+
+    <!-- Page header -->
+    <div class="page-header">
+      <div>
+        <div class="page-title">
+          <span class="live-dot"></span> Sector Heatmap
+        </div>
+        <div class="page-sub">S&amp;P 500 · 11 GICS Sectors · Polygon.io</div>
+      </div>
+      <div class="header-right">
+        <span id="marketStatus" class="market-status closed">
+          <span class="ms-dot"></span> —
+        </span>
+        <div class="tf-toggle" id="tfToggle">
+          <button class="tf-btn active" data-tf="1D">1D</button>
+          <button class="tf-btn" data-tf="5D">5D</button>
+          <button class="tf-btn" data-tf="1M">1M</button>
+          <button class="tf-btn" data-tf="3M">3M</button>
+          <button class="tf-btn" data-tf="1Y">1Y</button>
+        </div>
+        <button class="refresh-btn" id="refreshBtn">↺ Refresh</button>
+      </div>
+    </div>
+
+    <!-- Updated row -->
+    <div class="updated-row">
+      <span id="updatedTs">—</span>
+      · <a onclick="loadData()">refresh now</a>
+    </div>
+
+    <!-- Summary chips -->
+    <div class="stat-chips" id="statChips">
+      <div class="stat-chip">Sectors Up <span id="chipUp" class="up">—</span></div>
+      <div class="stat-chip">Sectors Down <span id="chipDn" class="down">—</span></div>
+      <div class="stat-chip">Best <span id="chipBest" class="up">—</span></div>
+      <div class="stat-chip">Worst <span id="chipWorst" class="down">—</span></div>
+      <div class="stat-chip">Avg Change <span id="chipAvg">—</span></div>
+    </div>
+
+    <!-- Sort bar -->
+    <div class="sort-bar">
+      <span class="sort-lbl">Sort:</span>
+      <button class="sort-btn active" data-sort="performance">Performance</button>
+      <button class="sort-btn" data-sort="alpha">A–Z</button>
+      <button class="sort-btn" data-sort="sector">Sector Order</button>
+    </div>
+
+    <!-- Legend -->
+    <div class="hm-legend">
+      <span class="legend-label">Intensity:</span>
+      <div class="legend-bar">
+        <span class="legend-end down">−3%+</span>
+        <div class="legend-swatch" style="background:rgba(240,82,82,.28)"></div>
+        <div class="legend-swatch" style="background:rgba(240,82,82,.20)"></div>
+        <div class="legend-swatch" style="background:rgba(240,82,82,.13)"></div>
+        <div class="legend-swatch" style="background:rgba(240,82,82,.07)"></div>
+        <div class="legend-swatch" style="background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08)"></div>
+        <div class="legend-swatch" style="background:rgba(61,220,132,.07)"></div>
+        <div class="legend-swatch" style="background:rgba(61,220,132,.13)"></div>
+        <div class="legend-swatch" style="background:rgba(61,220,132,.20)"></div>
+        <div class="legend-swatch" style="background:rgba(61,220,132,.28)"></div>
+        <span class="legend-end up">+3%+</span>
+      </div>
+    </div>
+
+    <!-- Heatmap -->
+    <div id="heatmapWrap">
+      <div class="hm-state">
+        <div class="hm-spinner"></div>
+        <div class="hm-status-text">Loading sector data…</div>
+      </div>
+    </div>
+
+  </div><!-- /container -->
+
+  <footer>
+    <span>Chuck's AI · Sector Heatmap · Data: Polygon.io · &copy; 2025</span>
+  </footer>
+
+  <script>
+  // ── CONSTANTS ──────────────────────────────────────────────────────────────
+  const POLY_KEY = 'mcVUA4y1kkJ_0Vm2d29ckUpiDxNmpjKH';
+
+  // Sector ETF → GICS sector name + meta
+  const SECTOR_ETFS = [
+    { sym: 'XLK',  name: 'Information Technology', icon: '💻', short: 'Tech' },
+    { sym: 'XLV',  name: 'Health Care',             icon: '⚕️',  short: 'Health' },
+    { sym: 'XLF',  name: 'Financials',              icon: '🏦', short: 'Finance' },
+    { sym: 'XLY',  name: 'Consumer Discretionary',  icon: '🛍️',  short: 'Cons. Disc.' },
+    { sym: 'XLC',  name: 'Communication Services',  icon: '📡', short: 'Comm.' },
+    { sym: 'XLI',  name: 'Industrials',             icon: '⚙️',  short: 'Industrials' },
+    { sym: 'XLP',  name: 'Consumer Staples',        icon: '🛒', short: 'Staples' },
+    { sym: 'XLE',  name: 'Energy',                  icon: '⚡', short: 'Energy' },
+    { sym: 'XLU',  name: 'Utilities',               icon: '💡', short: 'Utilities' },
+    { sym: 'XLRE', name: 'Real Estate',             icon: '🏢', short: 'Real Estate' },
+    { sym: 'XLB',  name: 'Materials',               icon: '⛏️',  short: 'Materials' },
+  ];
+
+  // Timeframe → Polygon multiplier/timespan params
+  // We store multi-day data as { tf: { sectorName: pct } }
+  const TF_LABEL_MAP = {
+    '1D': '1 Day',
+    '5D': '5 Day',
+    '1M': '1 Month',
+    '3M': '3 Month',
+    '1Y': '1 Year',
+  };
+
+  let activeTF   = '1D';
+  let activeSort = 'performance';
+
+  // Cache: { tf → { sectors: [...], ts: timestamp } }
+  const CACHE = {};
+  const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+  // rawData[tf] = array of { name, val, meta }
+  const rawData = {};
+
+  // ── NAV FETCH ──────────────────────────────────────────────────────────────
+  fetch('nav.html')
+    .then(r => r.text())
+    .then(html => { document.getElementById('nav-placeholder').innerHTML = html; })
+    .catch(() => {});
+
+  // ── TICKER STRIP ──────────────────────────────────────────────────────────
+  const TICKER_SYMS = ['SPY','QQQ','DIA','IWM','VIX'];
+  async function loadTicker() {
+    const track = document.getElementById('tickerTrack');
+    const url = `https://finnhub.io/api/v1/quote?symbol=SPY&token=d7kohmpr01qiqbcv6f8gd7kohmpr01qiqbcv6f90`;
+    // Build static strip with ETF labels — real prices via Finnhub not in scope, show placeholders
+    const items = [
+      { sym:'SPY', name:'S&P 500 ETF' },
+      { sym:'QQQ', name:'Nasdaq ETF' },
+      { sym:'DIA', name:'Dow ETF' },
+      { sym:'IWM', name:'Russell 2000' },
+      { sym:'SECTOR', name:'Heatmap' },
+    ];
+    let html = items.map(i =>
+      `<div class="ticker-item">
+        <span class="ti-sym">${i.sym}</span>
+        <span class="ti-px">—</span>
+        <span class="ti-chg flat">Loading</span>
+       </div>`
+    ).join('') + items.map(i =>
+      `<div class="ticker-item">
+        <span class="ti-sym">${i.sym}</span>
+        <span class="ti-px">—</span>
+        <span class="ti-chg flat">Loading</span>
+       </div>`
+    ).join('');
+    track.innerHTML = html;
+
+    // Fetch SPY for scale
+    try {
+      const r = await fetch(`https://finnhub.io/api/v1/quote?symbol=SPY&token=d7kohmpr01qiqbcv6f8gd7kohmpr01qiqbcv6f90`);
+      const d = await r.json();
+      if (d && d.c) {
+        const chg = d.dp || 0;
+        const cls = chg >= 0 ? 'up' : 'down';
+        const sign = chg >= 0 ? '+' : '';
+        track.innerHTML = `
+          <div class="ticker-item"><span class="ti-sym">SPY</span><span class="ti-px">$${d.c.toFixed(2)}</span><span class="ti-chg ${cls}">${sign}${chg.toFixed(2)}%</span></div>
+          <div class="ticker-item"><span class="ti-sym">SECTOR</span><span class="ti-px">HEATMAP</span><span class="ti-chg flat">live</span></div>
+          <div class="ticker-item"><span class="ti-sym">S&P 500</span><span class="ti-px">11 Sectors</span><span class="ti-chg flat">alpha vantage</span></div>
+          <div class="ticker-item"><span class="ti-sym">SPY</span><span class="ti-px">$${d.c.toFixed(2)}</span><span class="ti-chg ${cls}">${sign}${chg.toFixed(2)}%</span></div>
+          <div class="ticker-item"><span class="ti-sym">SECTOR</span><span class="ti-px">HEATMAP</span><span class="ti-chg flat">live</span></div>
+          <div class="ticker-item"><span class="ti-sym">S&P 500</span><span class="ti-px">11 Sectors</span><span class="ti-chg flat">alpha vantage</span></div>
+        `;
+      }
+    } catch(e) {}
+  }
+
+  // ── MARKET STATUS ─────────────────────────────────────────────────────────
+  function updateMarketStatus() {
+    const el = document.getElementById('marketStatus');
+    const now = new Date();
+    const et = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+    const day = et.getDay();
+    const h = et.getHours();
+    const m = et.getMinutes();
+    const mins = h * 60 + m;
+    const isWeekday = day >= 1 && day <= 5;
+    const isOpen = isWeekday && mins >= 570 && mins < 960; // 9:30–4:00
+    el.className = 'market-status ' + (isOpen ? 'open' : 'closed');
+    el.innerHTML = `<span class="ms-dot"></span> Market ${isOpen ? 'Open' : 'Closed'}`;
+  }
+
+  // ── FETCH SECTOR DATA VIA POLYGON ────────────────────────────────────────
+  // One batch snapshot call = 1 API hit for 1D.
+  // Multi-day timeframes use aggregates — also 1 call per ETF but cached aggressively.
+
+  // Helper: get trading date N days ago (skip weekends)
+  // Always goes back at least 1 trading day so from != to
+  function tradingDaysAgo(n) {
+    const d = new Date();
+    let skipped = 0;
+    // Always skip at least 1 day back so we don't request today's incomplete data
+    while (skipped < Math.max(n, 1)) {
+      d.setDate(d.getDate() - 1);
+      const day = d.getDay();
+      if (day !== 0 && day !== 6) skipped++;
+    }
+    return d.toISOString().slice(0, 10);
+  }
+
+  // For 1D: use last 2 trading days so we always get a full bar
+  function lastTwoTradingDays() {
+    return tradingDaysAgo(2);
+  }
+
+  // Helper: date string N calendar months ago
+  function monthsAgo(n) {
+    const d = new Date();
+    d.setMonth(d.getMonth() - n);
+    return d.toISOString().slice(0, 10);
+  }
+
+  // Fetch data using Polygon daily aggs — free tier compatible
+  // For 1D: prev day close vs open. For longer: first open to last close.
+  async function fetchSectors(fromDate, toDate) {
+    const results = await Promise.all(SECTOR_ETFS.map(async etf => {
+      const url = `https://api.polygon.io/v2/aggs/ticker/${etf.sym}/range/1/day/${fromDate}/${toDate}?adjusted=true&sort=asc&limit=50&apiKey=${POLY_KEY}`;
+      try {
+        const resp = await fetch(url);
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        const json = await resp.json();
+        const bars = json.results || [];
+        if (bars.length === 0) return { name: etf.name, val: 0, meta: etf };
+        // % change from first bar open to last bar close
+        const pct = ((bars[bars.length - 1].c - bars[0].o) / bars[0].o) * 100;
+        return { name: etf.name, val: pct, meta: etf };
+      } catch {
+        return { name: etf.name, val: 0, meta: etf };
+      }
+    }));
+    return results;
+  }
+
+  async function loadData() {
+    const wrap = document.getElementById('heatmapWrap');
+
+    // Check cache first
+    const cached = CACHE[activeTF];
+    if (cached && (Date.now() - cached.ts) < CACHE_TTL) {
+      rawData[activeTF] = cached.sectors;
+      renderHeatmap();
+      return;
+    }
+
+    wrap.innerHTML = `<div class="hm-state"><div class="hm-spinner"></div><div class="hm-status-text">Fetching sector data…</div></div>`;
+
+    try {
+      const today = new Date().toISOString().slice(0, 10);
+      let fromDate;
+
+      if      (activeTF === '1D') fromDate = lastTwoTradingDays();
+      else if (activeTF === '5D') fromDate = tradingDaysAgo(5);
+      else if (activeTF === '1M') fromDate = monthsAgo(1);
+      else if (activeTF === '3M') fromDate = monthsAgo(3);
+      else if (activeTF === '1Y') fromDate = monthsAgo(12);
+
+      const sectors = await fetchSectors(fromDate, today);
+
+      // Cache it
+      CACHE[activeTF] = { sectors, ts: Date.now() };
+      rawData[activeTF] = sectors;
+
+      document.getElementById('updatedTs').textContent =
+        'Updated ' + new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
+
+      renderHeatmap();
+
+    } catch (err) {
+      wrap.innerHTML = `
+        <div class="hm-state">
+          <div style="font-size:2rem">⚠️</div>
+          <div class="hm-error-text">${err.message}</div>
+          <button class="btn" onclick="loadData()" style="margin-top:8px">↺ Try Again</button>
+        </div>`;
+    }
+  }
+
+  // ── RENDER ─────────────────────────────────────────────────────────────────
+  function renderHeatmap() {
+    if (!rawData[activeTF]) return;
+
+    // sectors is already [{name, val, meta}] — built by fetch functions
+    let sectors = [...rawData[activeTF]];
+
+    // Sort
+    if (activeSort === 'performance') {
+      sectors.sort((a, b) => b.val - a.val);
+    } else if (activeSort === 'alpha') {
+      sectors.sort((a, b) => a.name.localeCompare(b.name));
+    }
+    // 'sector' = default API order (already stable)
+
+    // Summary chips
+    const up    = sectors.filter(s => s.val > 0);
+    const dn    = sectors.filter(s => s.val < 0);
+    const best  = sectors.reduce((a, b) => b.val > a.val ? b : a, sectors[0]);
+    const worst = sectors.reduce((a, b) => b.val < a.val ? b : a, sectors[0]);
+    const avg   = sectors.reduce((s, x) => s + x.val, 0) / (sectors.length || 1);
+
+    document.getElementById('chipUp').textContent    = up.length;
+    document.getElementById('chipDn').textContent    = dn.length;
+    document.getElementById('chipBest').textContent  = best ? `${best.meta.short} ${fmt(best.val)}` : '—';
+    document.getElementById('chipWorst').textContent = worst ? `${worst.meta.short} ${fmt(worst.val)}` : '—';
+    const avgEl = document.getElementById('chipAvg');
+    avgEl.textContent = fmt(avg);
+    avgEl.className = avg >= 0 ? 'up' : 'down';
+
+    // Render tiles
+    const grid = document.createElement('div');
+    grid.className = 'heatmap-grid';
+
+    sectors.forEach((s, idx) => {
+      const tile = document.createElement('div');
+      tile.className = 'sector-tile ' + tileClass(s.val);
+
+      const sign = s.val > 0 ? '+' : '';
+      const pctCls = s.val > 0.01 ? 'up' : s.val < -0.01 ? 'down' : 'flat';
+      const rank = activeSort === 'performance' ? `#${idx + 1}` : '';
+
+      tile.innerHTML = `
+        ${rank ? `<span class="tile-rank">${rank}</span>` : ''}
+        <div class="tile-icon">${s.meta.icon}</div>
+        <div class="tile-name">${s.name}</div>
+        <div>
+          <div class="tile-pct ${pctCls}">${sign}${s.val.toFixed(2)}%</div>
+          <div class="tile-label">${tfLabel(activeTF)}</div>
+        </div>
+      `;
+
+      grid.appendChild(tile);
+    });
+
+    const wrap = document.getElementById('heatmapWrap');
+    wrap.innerHTML = '';
+    wrap.appendChild(grid);
+  }
+
+  // ── HELPERS ───────────────────────────────────────────────────────────────
+  function fmt(v) {
+    const sign = v >= 0 ? '+' : '';
+    return sign + v.toFixed(2) + '%';
+  }
+
+  function tileClass(val) {
+    const abs = Math.abs(val);
+    if (val > 0) {
+      if (abs >= 3)   return 'tile-up-4';
+      if (abs >= 1.5) return 'tile-up-3';
+      if (abs >= 0.5) return 'tile-up-2';
+      return 'tile-up-1';
+    } else if (val < 0) {
+      if (abs >= 3)   return 'tile-dn-4';
+      if (abs >= 1.5) return 'tile-dn-3';
+      if (abs >= 0.5) return 'tile-dn-2';
+      return 'tile-dn-1';
+    }
+    return 'tile-flat';
+  }
+
+  function tfLabel(tf) {
+    return TF_LABEL_MAP[tf] || tf;
+  }
+
+  // ── EVENT WIRING ──────────────────────────────────────────────────────────
+  document.getElementById('tfToggle').addEventListener('click', e => {
+    const btn = e.target.closest('.tf-btn');
+    if (!btn) return;
+    document.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    activeTF = btn.dataset.tf;
+    loadData();  // fetch if not cached, else render from cache
+  });
+
+  document.querySelectorAll('.sort-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      activeSort = btn.dataset.sort;
+      renderHeatmap();
+    });
+  });
+
+  document.getElementById('refreshBtn').addEventListener('click', loadData);
+
+  // ── INIT ──────────────────────────────────────────────────────────────────
+  updateMarketStatus();
+  setInterval(updateMarketStatus, 60000);
+  loadTicker();
+  loadData();
+  </script>
+</body>
+</html>

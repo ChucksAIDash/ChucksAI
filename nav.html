@@ -1,0 +1,456 @@
+<!-- nav.html — Chuck's AI v7
+     Inject via: fetch('nav.html') → #nav-placeholder
+     Requires: theme.js loaded first in <head>
+     Active state: data-page / data-mob attributes
+-->
+<style>
+  /* ── SHELL ── */
+  #site-nav {
+    position: sticky; top: 0; z-index: 500;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: .6rem 1.75rem;
+    border-bottom: 1px solid var(--border);
+    backdrop-filter: blur(28px) saturate(160%);
+    background: rgba(5,8,12,.88);
+    gap: 10px; flex-wrap: nowrap; overflow: visible !important;
+  }
+  html.light #site-nav {
+    background: rgba(255,255,255,.92);
+    border-bottom-color: #dde2ea;
+  }
+
+  .nav-left  { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+  .nav-right { display: flex; align-items: center; gap: 4px; flex-wrap: nowrap; }
+
+  /* ── LOGO ── */
+  .nav-logo {
+    font-family: 'Space Mono', monospace; font-size: 14px; font-weight: 700;
+    letter-spacing: -.5px; text-decoration: none; color: var(--text-primary);
+    white-space: nowrap;
+  }
+  .nav-logo .hi  { color: var(--accent2); text-shadow: 0 0 18px rgba(91,200,245,.5); }
+  .nav-logo .dot { color: var(--accent);  text-shadow: 0 0 18px rgba(127,217,184,.5); }
+
+  /* ── MARKET STATUS CLOCK ── */
+  .market-clock {
+    display: flex; align-items: center; gap: 6px;
+    font-family: 'Space Mono', monospace; font-size: 9px;
+    color: var(--text-muted); letter-spacing: .06em;
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 6px; padding: 3px 10px; white-space: nowrap;
+    user-select: none;
+  }
+  html.light .market-clock { background: #f4f6fa; border-color: #dde2ea; color: #7a8494; }
+  .market-status-dot {
+    width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
+    background: #555; transition: background .3s;
+  }
+  .market-status-dot.open   { background: #3ddc84; box-shadow: 0 0 6px rgba(61,220,132,.6); }
+  .market-status-dot.pre    { background: #f0b86a; box-shadow: 0 0 6px rgba(240,184,106,.6); }
+  .market-status-dot.after  { background: #a78bfa; box-shadow: 0 0 6px rgba(167,139,250,.6); }
+  .market-status-dot.closed { background: #555; }
+  #marketStatusText { color: var(--text-secondary); }
+  #navClock { color: var(--text-muted); }
+
+  /* ── WEATHER WIDGET ── */
+  .nav-weather {
+    position: relative; display: flex; align-items: center; gap: 5px;
+    font-family: 'Space Mono', monospace; font-size: 10px; color: var(--text-secondary);
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 6px; padding: 3px 9px; white-space: nowrap;
+    cursor: pointer; user-select: none; transition: border-color .18s;
+  }
+  html.light .nav-weather { background: #f4f6fa; border-color: #dde2ea; }
+  .nav-weather:hover { border-color: var(--border-bright); }
+  .nav-weather .wt   { color: var(--text-primary); font-weight: 700; font-size: 11px; }
+
+  .wx-panel {
+    display: none; position: absolute; top: calc(100% + 8px); left: 0;
+    background: rgba(5,8,12,.97); border: 1px solid var(--border-bright);
+    border-radius: 10px; padding: 12px 14px; min-width: 190px; z-index: 9999;
+    backdrop-filter: blur(28px);
+    box-shadow: 0 20px 50px rgba(0,0,0,.85), 0 0 0 1px rgba(255,255,255,.04);
+    font-family: 'Space Mono', monospace;
+  }
+  html.light .wx-panel {
+    background: rgba(255,255,255,.97); border-color: #dde2ea;
+    box-shadow: 0 12px 36px rgba(0,0,0,.12);
+  }
+  .nav-weather.wx-open .wx-panel { display: block; }
+  .wx-panel-title { font-size: 9px; letter-spacing: .12em; text-transform: uppercase; color: var(--accent2); margin-bottom: 8px; }
+  .wx-row { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; border-bottom: 1px solid var(--border); font-size: 10px; }
+  .wx-row:last-child { border-bottom: none; }
+  .wx-label { color: var(--text-secondary); }
+  .wx-val   { color: var(--text-primary); font-weight: 700; }
+
+  /* ── NAV LINKS ── */
+  .nav-link {
+    font-family: 'Space Mono', monospace; font-size: 10px; font-weight: 700;
+    letter-spacing: .07em; text-decoration: none; color: var(--text-secondary);
+    text-transform: uppercase; padding: 5px 9px; border-radius: 6px;
+    border: 1px solid transparent; transition: all .18s; white-space: nowrap;
+    background: none; cursor: pointer;
+  }
+  .nav-link:hover {
+    color: var(--text-primary); border-color: var(--border-bright); background: var(--bg-card);
+  }
+  .nav-link.active {
+    color: var(--accent2); border-color: rgba(91,200,245,.28);
+    background: rgba(91,200,245,.07); text-shadow: 0 0 12px rgba(91,200,245,.4);
+  }
+  html.light .nav-link:hover { background: #f4f6fa; border-color: #dde2ea; color: #1c2333; }
+  html.light .nav-link.active { color: #1a6fb5; border-color: #c8dff7; background: #eef6ff; text-shadow: none; }
+
+  /* ── DROPDOWN ── */
+  .nav-drop { position: relative; display: inline-block; }
+  .nav-drop > .nav-link::after { content: ' ▾'; font-size: 8px; opacity: .6; }
+  .nav-drop.drop-open > .nav-link { color: var(--text-primary); }
+
+  .nav-drop-menu {
+    display: none; position: absolute; top: calc(100% + 6px); left: 0;
+    background: rgba(5,8,12,.97); border: 1px solid var(--border-bright);
+    border-radius: 10px; padding: 5px; min-width: 185px; z-index: 9999;
+    backdrop-filter: blur(28px);
+    box-shadow: 0 20px 50px rgba(0,0,0,.85), 0 0 0 1px rgba(255,255,255,.04);
+  }
+  html.light .nav-drop-menu {
+    background: rgba(255,255,255,.97); border-color: #dde2ea;
+    box-shadow: 0 12px 36px rgba(0,0,0,.12);
+  }
+  .nav-drop.drop-open > .nav-drop-menu { display: block; }
+
+  .nav-drop-item {
+    display: block; font-family: 'Space Mono', monospace; font-size: 9px; font-weight: 700;
+    letter-spacing: .07em; text-decoration: none; color: var(--text-secondary);
+    text-transform: uppercase; padding: 8px 13px; border-radius: 6px;
+    transition: all .15s; white-space: nowrap;
+  }
+  .nav-drop-item:hover { color: var(--text-primary); background: rgba(255,255,255,.07); }
+  html.light .nav-drop-item:hover { color: #1c2333; background: #f4f6fa; }
+  .nav-drop-item.active { color: var(--accent2); }
+  html.light .nav-drop-item.active { color: #1a6fb5; }
+
+  /* ── THEME TOGGLE ── */
+  .theme-btn {
+    background: var(--bg-card); border: 1px solid var(--border-bright);
+    border-radius: 99px; padding: 4px 11px; cursor: pointer; font-size: 13px;
+    transition: all .2s; flex-shrink: 0; line-height: 1.4;
+  }
+  .theme-btn:hover { border-color: var(--accent2); transform: scale(1.05); }
+  html.light .theme-btn { background: #f4f6fa; border-color: #dde2ea; }
+  html.light .theme-btn:hover { border-color: #1a6fb5; }
+
+  /* icon visibility */
+  .icon-dark  { display: inline; }
+  .icon-light { display: none; }
+  html.light .icon-dark  { display: none; }
+  html.light .icon-light { display: inline; }
+
+  /* ── HAMBURGER ── */
+  .hamburger {
+    display: none; background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 6px; padding: 5px 10px; color: var(--text-secondary);
+    font-size: 16px; cursor: pointer; flex-shrink: 0;
+  }
+  html.light .hamburger { background: #f4f6fa; border-color: #dde2ea; }
+
+  /* ── MOBILE MENU ── */
+  .mob-menu {
+    display: none; flex-direction: column; gap: 2px;
+    position: fixed; top: 0; right: 0; bottom: 0; width: 260px;
+    background: rgba(5,8,12,.97); border-left: 1px solid var(--border-bright);
+    padding: 1.25rem; z-index: 600; backdrop-filter: blur(28px);
+    transform: translateX(100%); transition: transform .25s ease; overflow-y: auto;
+  }
+  html.light .mob-menu { background: rgba(255,255,255,.97); border-left-color: #dde2ea; }
+  .mob-menu.open { display: flex; transform: translateX(0); }
+
+  .mob-close {
+    align-self: flex-end; background: none; border: 1px solid var(--border);
+    border-radius: 6px; color: var(--text-secondary); font-family: 'Space Mono', monospace;
+    font-size: 10px; padding: 5px 12px; cursor: pointer; margin-bottom: 1rem;
+  }
+  .mob-link {
+    font-family: 'Space Mono', monospace; font-size: 11px; font-weight: 700;
+    letter-spacing: .06em; text-transform: uppercase; text-decoration: none;
+    color: var(--text-secondary); padding: 10px 14px; border-radius: 8px;
+    border: 1px solid transparent; transition: all .15s;
+  }
+  .mob-link:hover,
+  .mob-link.active {
+    color: var(--accent2); background: rgba(91,200,245,.07); border-color: rgba(91,200,245,.2);
+  }
+  html.light .mob-link:hover,
+  html.light .mob-link.active { color: #1a6fb5; background: #eef6ff; border-color: #c8dff7; }
+
+  .mob-section {
+    font-family: 'Space Mono', monospace; font-size: 9px; letter-spacing: .14em;
+    color: var(--text-muted); text-transform: uppercase; padding: 12px 14px 4px;
+  }
+  .mob-overlay {
+    display: none; position: fixed; inset: 0; z-index: 599;
+    background: rgba(0,0,0,.45); backdrop-filter: blur(2px);
+  }
+  .mob-overlay.open { display: block; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 960px) {
+    .hamburger { display: block; }
+    .nav-right .nav-link,
+    .nav-right .nav-drop { display: none; }
+    .nav-right .theme-btn { display: block; }
+    .market-clock #marketStatusText { display: none; }
+  }
+  @media (max-width: 600px) {
+    #site-nav { padding: .6rem 1rem; }
+    .nav-weather .wloc { display: none; }
+  }
+</style>
+
+<nav id="site-nav">
+  <div class="nav-left">
+    <a class="nav-logo" href="index.html">
+      <span class="hi">chuck</span><span class="dot">.</span><span>ai</span>
+    </a>
+
+    <!-- Market status + clock -->
+    <div class="market-clock" id="marketClock">
+      <span class="market-status-dot closed" id="marketDot"></span>
+      <span id="marketStatusText">CLOSED</span>
+      <span id="navClock">--:-- --</span>
+    </div>
+
+    <!-- Weather widget -->
+    <div class="nav-weather" id="navWeather">
+      <span id="navIcon">⏳</span>
+      <span class="wt" id="navTemp">--°</span>
+      <span id="navCond" style="font-size:9px;color:var(--text-muted)">…</span>
+      <span class="wloc" style="font-size:9px;color:var(--text-muted)">📍 Lombard</span>
+      <div class="wx-panel" id="wxPanel">
+        <div class="wx-panel-title">⛅ Lombard, IL — Current</div>
+        <div class="wx-row"><span class="wx-label">Temp</span>       <span class="wx-val" id="wxTemp">—</span></div>
+        <div class="wx-row"><span class="wx-label">Feels Like</span> <span class="wx-val" id="wxFeels">—</span></div>
+        <div class="wx-row"><span class="wx-label">Condition</span>  <span class="wx-val" id="wxCond">—</span></div>
+        <div class="wx-row"><span class="wx-label">Wind</span>       <span class="wx-val" id="wxWind">—</span></div>
+        <div class="wx-row"><span class="wx-label">Humidity</span>   <span class="wx-val" id="wxHumid">—</span></div>
+        <div class="wx-row" style="margin-top:6px;border-top:1px solid var(--border)">
+          <span style="font-size:8px;color:var(--text-muted)">Open-Meteo · Updates hourly</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="nav-right">
+    <a class="nav-link" href="index.html"      data-page="index">Home</a>
+    <a class="nav-link" href="currency.html"   data-page="currency">Markets</a>
+    <a class="nav-link" href="crypto.html"     data-page="crypto">Crypto</a>
+    <a class="nav-link" href="news.html"       data-page="news">News</a>
+
+    <!-- Data dropdown -->
+    <div class="nav-drop" id="dropData">
+      <span class="nav-link" tabindex="0">Data</span>
+      <div class="nav-drop-menu">
+        <a class="nav-drop-item" href="fear-greed.html"        data-page="fear-greed">Fear &amp; Greed</a>
+        <a class="nav-drop-item" href="treasuries.html"        data-page="treasuries">Treasuries</a>
+        <a class="nav-drop-item" href="economic-calendar.html" data-page="economic-calendar">Economic Calendar</a>
+        <a class="nav-drop-item" href="earnings.html"          data-page="earnings">Earnings Calendar</a>
+        <a class="nav-drop-item" href="options-flow.html"      data-page="options-flow">Options Flow</a>
+        <a class="nav-drop-item" href="heat-map.html"          data-page="heat-map">Sector Heatmap</a>
+      </div>
+    </div>
+
+    <!-- AI dropdown -->
+    <div class="nav-drop" id="dropAI">
+      <span class="nav-link" tabindex="0">AI</span>
+      <div class="nav-drop-menu">
+        <a class="nav-drop-item" href="morning-briefing.html" data-page="morning-briefing">Morning Briefing</a>
+        <a class="nav-drop-item" href="chat.html"             data-page="chat">AI Market Chat</a>
+      </div>
+    </div>
+
+    <button class="theme-btn" id="navThemeBtn" title="Toggle light / dark mode">
+      <span class="icon-dark">🌙</span><span class="icon-light">☀️</span>
+    </button>
+    <button class="hamburger" id="navHamburger">☰</button>
+  </div>
+</nav>
+
+<!-- Mobile overlay + menu -->
+<div class="mob-overlay" id="mobOverlay"></div>
+<div class="mob-menu" id="mobMenu">
+  <button class="mob-close" id="mobClose">✕ CLOSE</button>
+
+  <a class="mob-link" href="index.html"              data-mob="index">🏠 Home</a>
+  <a class="mob-link" href="currency.html"           data-mob="currency">📊 Markets</a>
+  <a class="mob-link" href="crypto.html"             data-mob="crypto">₿ Crypto</a>
+  <a class="mob-link" href="news.html"               data-mob="news">📰 News</a>
+
+  <div class="mob-section">Data</div>
+  <a class="mob-link" href="fear-greed.html"         data-mob="fear-greed">😨 Fear &amp; Greed</a>
+  <a class="mob-link" href="treasuries.html"         data-mob="treasuries">🏛️ Treasuries</a>
+  <a class="mob-link" href="economic-calendar.html"  data-mob="economic-calendar">📅 Economic Calendar</a>
+  <a class="mob-link" href="earnings.html"           data-mob="earnings">📈 Earnings Calendar</a>
+  <a class="mob-link" href="options-flow.html"       data-mob="options-flow">📋 Options Flow</a>
+  <a class="mob-link" href="heat-map.html"           data-mob="heat-map">🗺️ Sector Heatmap</a>
+
+  <div class="mob-section">AI Tools</div>
+  <a class="mob-link" href="morning-briefing.html"   data-mob="morning-briefing">🌅 Morning Briefing</a>
+  <a class="mob-link" href="chat.html"               data-mob="chat">🤖 AI Market Chat</a>
+</div>
+
+<script>
+(function () {
+
+  /* ── ACTIVE PAGE ── */
+  const pageKey = window.location.pathname.split('/').pop().replace('.html','') || 'index';
+  document.querySelectorAll('[data-page]').forEach(el => {
+    if (el.dataset.page === pageKey) el.classList.add('active');
+  });
+  document.querySelectorAll('[data-mob]').forEach(el => {
+    if (el.dataset.mob === pageKey) el.classList.add('active');
+  });
+  document.querySelectorAll('.nav-drop').forEach(drop => {
+    if (drop.querySelector('[data-page].active')) {
+      drop.querySelector('.nav-link').classList.add('active');
+    }
+  });
+
+  /* ── DROPDOWNS ── */
+  function closeAllDrops() {
+    document.querySelectorAll('.nav-drop').forEach(d => d.classList.remove('drop-open'));
+  }
+  document.querySelectorAll('.nav-drop').forEach(drop => {
+    let leaveTimer = null;
+    drop.addEventListener('mouseenter', () => { clearTimeout(leaveTimer); closeAllDrops(); drop.classList.add('drop-open'); });
+    drop.addEventListener('mouseleave', () => { leaveTimer = setTimeout(() => drop.classList.remove('drop-open'), 180); });
+    drop.querySelector('.nav-link').addEventListener('click', e => {
+      e.stopPropagation();
+      const wasOpen = drop.classList.contains('drop-open');
+      closeAllDrops();
+      if (!wasOpen) drop.classList.add('drop-open');
+    });
+  });
+  document.addEventListener('click', closeAllDrops);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeAllDrops(); closeMenu(); } });
+
+  /* ── MOBILE MENU ── */
+  const menu    = document.getElementById('mobMenu');
+  const overlay = document.getElementById('mobOverlay');
+  const ham     = document.getElementById('navHamburger');
+  const cls     = document.getElementById('mobClose');
+
+  function openMenu()  { menu.classList.add('open'); overlay.classList.add('open'); document.body.style.overflow = 'hidden'; }
+  function closeMenu() { menu.classList.remove('open'); overlay.classList.remove('open'); document.body.style.overflow = ''; }
+
+  ham?.addEventListener('click', e => { e.stopPropagation(); openMenu(); });
+  cls?.addEventListener('click', closeMenu);
+  overlay?.addEventListener('click', closeMenu);
+  menu?.querySelectorAll('.mob-link').forEach(l => l.addEventListener('click', closeMenu));
+  window.openMenu  = openMenu;
+  window.closeMenu = closeMenu;
+
+  /* ── THEME TOGGLE ── wired to global CAI.toggleTheme from theme.js ── */
+  const themeBtn = document.getElementById('navThemeBtn');
+  themeBtn?.addEventListener('click', () => {
+    if (window.CAI?.toggleTheme) {
+      window.CAI.toggleTheme();
+    } else {
+      // Fallback if theme.js somehow not loaded
+      const isLight = document.body.classList.toggle('light');
+      document.documentElement.classList.toggle('light', isLight);
+      localStorage.setItem('cai_theme', isLight ? 'light' : 'dark');
+    }
+  });
+
+  /* ── MARKET STATUS CLOCK ── */
+  function updateClock() {
+    const now = new Date();
+    const et  = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+    const h = et.getHours(), m = et.getMinutes(), day = et.getDay();
+
+    const hhmm = h * 60 + m;
+    const pre   = 4 * 60;          // 4:00 AM
+    const open  = 9 * 60 + 30;     // 9:30 AM
+    const close = 16 * 60;         // 4:00 PM
+    const after = 20 * 60;         // 8:00 PM
+
+    const dot  = document.getElementById('marketDot');
+    const txt  = document.getElementById('marketStatusText');
+    const clk  = document.getElementById('navClock');
+
+    // Format time
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    const hd   = h % 12 || 12;
+    const md   = String(m).padStart(2, '0');
+    clk.textContent = `${hd}:${md} ${ampm} ET`;
+
+    const isWeekend = (day === 0 || day === 6);
+    dot.className = 'market-status-dot';
+
+    if (isWeekend || hhmm < pre || hhmm >= after) {
+      dot.classList.add('closed'); txt.textContent = 'CLOSED';
+    } else if (hhmm >= pre && hhmm < open) {
+      dot.classList.add('pre');    txt.textContent = 'PRE-MKT';
+    } else if (hhmm >= open && hhmm < close) {
+      dot.classList.add('open');   txt.textContent = 'OPEN';
+    } else {
+      dot.classList.add('after');  txt.textContent = 'AFTER-HRS';
+    }
+  }
+  updateClock();
+  setInterval(updateClock, 30000);
+
+  /* ── WEATHER ── */
+  const WMO_ICON = {
+    0:'☀️',1:'🌤️',2:'⛅',3:'☁️',45:'🌫️',48:'🌫️',
+    51:'🌦️',53:'🌦️',55:'🌧️',61:'🌧️',63:'🌧️',65:'🌧️',
+    71:'🌨️',73:'❄️',75:'❄️',77:'❄️',80:'🌦️',81:'🌧️',82:'⛈️',
+    85:'🌨️',86:'❄️',95:'⛈️',96:'⛈️',99:'⛈️'
+  };
+  const WMO_LABEL = {
+    0:'Clear',1:'Mostly Clear',2:'Partly Cloudy',3:'Overcast',
+    45:'Foggy',48:'Icy Fog',51:'Light Drizzle',53:'Drizzle',55:'Heavy Drizzle',
+    61:'Light Rain',63:'Rain',65:'Heavy Rain',71:'Light Snow',73:'Snow',
+    75:'Heavy Snow',77:'Snow Grains',80:'Light Showers',81:'Showers',82:'Heavy Showers',
+    85:'Snow Showers',86:'Heavy Snow Showers',95:'Thunderstorm',96:'Thunderstorm w/ Hail',99:'Thunderstorm'
+  };
+  const WIND_DIR = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+
+  async function loadWeather() {
+    try {
+      const url = 'https://api.open-meteo.com/v1/forecast'
+        + '?latitude=41.880&longitude=-88.007'
+        + '&current=temperature_2m,apparent_temperature,weathercode,windspeed_10m,winddirection_10m,relativehumidity_2m'
+        + '&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=America%2FChicago';
+      const c = (await (await fetch(url)).json()).current;
+      const temp  = Math.round(c.temperature_2m);
+      const feels = Math.round(c.apparent_temperature);
+      const wc    = c.weathercode;
+      const wind  = Math.round(c.windspeed_10m);
+      const wdir  = WIND_DIR[Math.round(c.winddirection_10m / 22.5) % 16];
+      const icon  = WMO_ICON[wc]  || '🌡️';
+      const cond  = WMO_LABEL[wc] || 'Unknown';
+
+      document.getElementById('navIcon').textContent  = icon;
+      document.getElementById('navTemp').textContent  = temp + '°F';
+      document.getElementById('navCond').textContent  = cond;
+      document.getElementById('wxTemp').textContent   = temp + '°F';
+      document.getElementById('wxFeels').textContent  = feels + '°F';
+      document.getElementById('wxCond').textContent   = icon + ' ' + cond;
+      document.getElementById('wxWind').textContent   = wind + ' mph ' + wdir;
+      document.getElementById('wxHumid').textContent  = c.relativehumidity_2m + '%';
+    } catch(e) {
+      document.getElementById('navTemp').textContent = '--°F';
+      document.getElementById('navCond').textContent = 'N/A';
+    }
+  }
+  loadWeather();
+  setInterval(loadWeather, 30 * 60 * 1000);
+
+  /* Weather tooltip toggle */
+  const wxWidget = document.getElementById('navWeather');
+  wxWidget?.addEventListener('click', e => { e.stopPropagation(); wxWidget.classList.toggle('wx-open'); });
+  document.addEventListener('click', () => wxWidget?.classList.remove('wx-open'));
+
+})();
+</script>

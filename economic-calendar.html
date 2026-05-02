@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Chuck's AI — Economic Calendar</title>
+  <script src="theme.js"></script>
+  <link rel="stylesheet" href="styles.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    /* ── ECONOMIC CALENDAR PAGE SPECIFIC ── */
+
+    /* Filter bar */
+    .filter-bar {
+      display: flex; gap: 7px; flex-wrap: wrap;
+      margin-bottom: 1.25rem; align-items: center;
+    }
+    .filter-lbl {
+      font-family: 'Space Mono', monospace;
+      font-size: 10px; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: .1em;
+      white-space: nowrap;
+    }
+    .fbtn {
+      font-family: 'Space Mono', monospace;
+      font-size: 10px; font-weight: 700;
+      padding: 5px 13px; border-radius: 99px;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      cursor: pointer; transition: all .15s;
+      background: none; letter-spacing: .06em;
+    }
+    .fbtn:hover { border-color: var(--border-bright); color: var(--text-secondary); }
+    .fbtn.active {
+      background: rgba(91,200,245,.1);
+      border-color: rgba(91,200,245,.3);
+      color: var(--accent2);
+    }
+
+    /* Legend */
+    .legend {
+      display: flex; gap: 14px; flex-wrap: wrap;
+      margin-bottom: 1.25rem;
+    }
+    .leg-item {
+      display: flex; align-items: center; gap: 6px;
+      font-family: 'Space Mono', monospace;
+      font-size: 10px; color: var(--text-secondary);
+    }
+    .leg-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+
+    /* Impact badges */
+    .impact-badge {
+      font-family: 'Space Mono', monospace;
+      font-size: 9px; font-weight: 700;
+      padding: 2px 8px; border-radius: 99px;
+      display: inline-block; margin-right: 4px;
+    }
+    .impact-badge.high { background: rgba(240,82,82,.12);   color: #f07070;          border: 1px solid rgba(240,82,82,.25); }
+    .impact-badge.med  { background: rgba(240,184,106,.12); color: var(--accent3);   border: 1px solid rgba(240,184,106,.25); }
+    .impact-badge.low  { background: rgba(90,112,128,.1);   color: var(--text-secondary); border: 1px solid var(--border); }
+
+    /* ── SPOTLIGHT CARDS ── */
+    .spotlight {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 12px; margin-bottom: 2rem;
+    }
+    .spot-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--r-lg); padding: 1.2rem 1.4rem;
+      position: relative; overflow: hidden;
+      transition: border-color .2s, transform .15s;
+    }
+    .spot-card::before {
+      content: ''; position: absolute; top: 0; left: 10%; right: 10%; height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,.1), transparent);
+    }
+    .spot-card:hover { border-color: var(--border-bright); transform: translateY(-2px); }
+    .spot-card.high { border-left: 3px solid #f05252; }
+    .spot-card.med  { border-left: 3px solid var(--accent3); }
+
+    html.light .spot-card { background: rgba(255,255,255,.85); }
+
+    .spot-cd {
+      font-family: 'Space Mono', monospace;
+      font-size: 10px; font-weight: 700;
+      letter-spacing: .07em; margin-bottom: .4rem;
+    }
+    .spot-name {
+      font-size: 14px; font-weight: 500;
+      color: var(--text-primary); margin-bottom: .4rem; line-height: 1.3;
+    }
+    .spot-row {
+      display: flex; justify-content: space-between; margin-top: .6rem;
+    }
+    .spot-lbl {
+      font-family: 'Space Mono', monospace;
+      font-size: 9px; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: .06em;
+    }
+    .spot-val {
+      font-family: 'Space Mono', monospace;
+      font-size: 12px; color: var(--text-secondary);
+    }
+
+    /* ── TIMELINE ── */
+    .timeline { position: relative; padding-left: 90px; }
+    .timeline::before {
+      content: ''; position: absolute;
+      left: 76px; top: 0; bottom: 0;
+      width: 1px; background: var(--border);
+    }
+    @media(max-width:550px) {
+      .timeline { padding-left: 0; }
+      .timeline::before { display: none; }
+    }
+
+    .tl-item { position: relative; margin-bottom: 3px; }
+    .tl-date {
+      position: absolute; left: -90px; top: 14px;
+      width: 80px; text-align: right;
+      font-family: 'Space Mono', monospace;
+      font-size: 10px; color: var(--text-secondary);
+    }
+    @media(max-width:550px) { .tl-date { display: none; } }
+
+    .tl-dot {
+      position: absolute; left: -18px; top: 18px;
+      width: 12px; height: 12px;
+      border-radius: 50%; border: 2px solid var(--bg-deep); z-index: 1;
+    }
+    .tl-dot.high      { background: #f05252; box-shadow: 0 0 8px rgba(240,82,82,.6); }
+    .tl-dot.med       { background: var(--accent3); box-shadow: 0 0 6px rgba(240,184,106,.5); }
+    .tl-dot.low       { background: var(--text-muted); }
+    .tl-dot.today-dot {
+      background: var(--accent2);
+      box-shadow: 0 0 10px rgba(91,200,245,.8);
+      animation: pd 1.5s ease-in-out infinite;
+    }
+    @keyframes pd {
+      0%,100% { box-shadow: 0 0 8px rgba(91,200,245,.7); }
+      50%      { box-shadow: 0 0 18px rgba(91,200,245,.95); }
+    }
+
+    .tl-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--r-md); padding: 11px 15px; margin-bottom: 3px;
+      transition: border-color .15s, background .15s;
+    }
+    .tl-card:hover { border-color: var(--border-bright); background: var(--bg-card-hover); }
+    .tl-card.high { border-left: 2px solid #f05252; }
+    .tl-card.med  { border-left: 2px solid var(--accent3); }
+    html.light .tl-card { background: rgba(255,255,255,.8); }
+
+    .tl-name { font-size: 13px; font-weight: 500; color: var(--text-primary); margin-bottom: 5px; }
+    .tl-meta { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .tl-time { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--text-muted); }
+    .tl-fc   { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--text-secondary); }
+
+    .today-banner {
+      background: rgba(91,200,245,.08);
+      border: 1px solid rgba(91,200,245,.25);
+      border-radius: var(--r-sm); padding: 5px 14px;
+      font-family: 'Space Mono', monospace;
+      font-size: 10px; font-weight: 700; color: var(--accent2);
+      margin: 10px 0; display: inline-block;
+    }
+
+    /* Utility */
+    .fade-in { animation: fadeUp .35s ease both; }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+    .footer-note {
+      text-align: center;
+      font-family: 'Space Mono', monospace;
+      font-size: 9px; color: var(--text-muted);
+      letter-spacing: .1em; text-transform: uppercase;
+      margin-top: 2rem; padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+    }
+  </style>
+</head>
+<body>
+
+<div class="bg-canvas">
+  <div class="orb orb1"></div>
+  <div class="orb orb2"></div>
+  <div class="orb orb3"></div>
+  <div class="orb orb4"></div>
+</div>
+
+<div id="nav-placeholder"></div>
+
+<div class="container">
+
+  <!-- Page header -->
+  <div class="page-header">
+    <div>
+      <div class="page-title">🏦 Economic <span style="color:var(--accent2)">Calendar</span></div>
+      <div class="page-sub">US macro events — next 14 days · Fed, CPI, Jobs, GDP</div>
+    </div>
+    <div class="header-right">
+      <button class="refresh-btn" onclick="render()">⟳ REFRESH</button>
+    </div>
+  </div>
+
+  <!-- Legend -->
+  <div class="legend">
+    <div class="leg-item">
+      <div class="leg-dot" style="background:#f05252"></div>High Impact
+    </div>
+    <div class="leg-item">
+      <div class="leg-dot" style="background:#f0b86a"></div>Medium
+    </div>
+    <div class="leg-item">
+      <div class="leg-dot" style="background:#2e3f4e"></div>Low
+    </div>
+    <div class="leg-item">
+      <div class="leg-dot" style="background:#5bc8f5;box-shadow:0 0 8px rgba(91,200,245,.6)"></div>Today
+    </div>
+  </div>
+
+  <!-- Filter bar -->
+  <div class="filter-bar">
+    <span class="filter-lbl">Filter:</span>
+    <button class="fbtn active" onclick="setFilter('all',this)">All</button>
+    <button class="fbtn" onclick="setFilter('high',this)" style="color:#f07070;border-color:rgba(240,82,82,.3)">🔴 High Only</button>
+    <button class="fbtn" onclick="setFilter('fed',this)">🏦 Fed</button>
+    <button class="fbtn" onclick="setFilter('inflation',this)">📈 Inflation</button>
+    <button class="fbtn" onclick="setFilter('jobs',this)">💼 Jobs</button>
+    <button class="fbtn" onclick="setFilter('gdp',this)">📊 GDP</button>
+  </div>
+
+  <!-- Spotlight -->
+  <div class="section-label" style="margin-bottom:1rem">Coming Up</div>
+  <div class="spotlight" id="spotlight"></div>
+
+  <!-- Timeline -->
+  <div class="section-label" style="margin-bottom:1rem">Timeline</div>
+  <div class="timeline" id="timeline"></div>
+
+  <p class="footer-note">Economic Calendar · Scheduled Release Dates 2026</p>
+
+</div><!-- /.container -->
+
+<script>
+/* ═══════════════════════════════════════
+   ECONOMIC CALENDAR — Chuck's AI v7
+═══════════════════════════════════════ */
+
+const EVENTS = [
+  /* ── April 2026 ── */
+  {date:'2026-04-29',time:'08:30',name:'Q1 2026 GDP (Advance)',          cat:'GDP',       impact:'high', forecast:'2.1%'},
+  {date:'2026-04-30',time:'10:00',name:'Consumer Confidence Index',       cat:'Sentiment', impact:'med',  forecast:'98.5'},
+  /* ── May 2026 ── */
+  {date:'2026-05-01',time:'08:30',name:'Initial Jobless Claims',          cat:'Jobs',      impact:'med',  forecast:'215K'},
+  {date:'2026-05-02',time:'08:30',name:'Non-Farm Payrolls (Apr)',         cat:'Jobs',      impact:'high', forecast:'+175K'},
+  {date:'2026-05-02',time:'08:30',name:'Unemployment Rate',               cat:'Jobs',      impact:'high', forecast:'4.1%'},
+  {date:'2026-05-07',time:'14:00',name:'FOMC Interest Rate Decision',     cat:'Fed',       impact:'high', forecast:'4.25–4.50%'},
+  {date:'2026-05-07',time:'14:30',name:'Fed Press Conference',            cat:'Fed',       impact:'high', forecast:'—'},
+  {date:'2026-05-13',time:'08:30',name:'CPI (April)',                     cat:'Inflation', impact:'high', forecast:'2.4% YoY'},
+  {date:'2026-05-14',time:'08:30',name:'PPI (April)',                     cat:'Inflation', impact:'med',  forecast:'2.1% YoY'},
+  {date:'2026-05-15',time:'08:30',name:'Retail Sales (April)',            cat:'Consumer',  impact:'high', forecast:'+0.3%'},
+  {date:'2026-05-22',time:'08:30',name:'Initial Jobless Claims',          cat:'Jobs',      impact:'med',  forecast:'210K'},
+  {date:'2026-05-27',time:'14:00',name:'FOMC Meeting Minutes',            cat:'Fed',       impact:'high', forecast:'—'},
+  {date:'2026-05-28',time:'08:30',name:'Q1 GDP (Second Estimate)',        cat:'GDP',       impact:'high', forecast:'2.1%'},
+  {date:'2026-05-29',time:'08:30',name:'PCE Price Index (April)',         cat:'Inflation', impact:'high', forecast:'2.3% YoY'},
+  /* ── June 2026 ── */
+  {date:'2026-06-06',time:'08:30',name:'Non-Farm Payrolls (May)',         cat:'Jobs',      impact:'high', forecast:'+160K'},
+  {date:'2026-06-11',time:'08:30',name:'CPI (May)',                       cat:'Inflation', impact:'high', forecast:'2.3% YoY'},
+  {date:'2026-06-17',time:'14:00',name:'FOMC Interest Rate Decision',     cat:'Fed',       impact:'high', forecast:'4.00–4.25%'},
+  {date:'2026-06-26',time:'08:30',name:'PCE Price Index (May)',           cat:'Inflation', impact:'high', forecast:'2.2% YoY'},
+  /* ── July 2026 ── */
+  {date:'2026-07-02',time:'08:30',name:'Non-Farm Payrolls (June)',        cat:'Jobs',      impact:'high', forecast:'+155K'},
+  {date:'2026-07-14',time:'08:30',name:'CPI (June)',                      cat:'Inflation', impact:'high', forecast:'2.2% YoY'},
+  {date:'2026-07-29',time:'14:00',name:'FOMC Interest Rate Decision',     cat:'Fed',       impact:'high', forecast:'4.00–4.25%'},
+];
+
+const CAT_C = {
+  Fed:'#5bc8f5', Inflation:'#f07040', Jobs:'#7fd9b8',
+  GDP:'#a78bfa', Housing:'#f0b86a',  Consumer:'#f0c060', Sentiment:'#5a7080'
+};
+
+let currentFilter = 'all';
+
+/* ── Filter toggle ── */
+function setFilter(f, btn) {
+  currentFilter = f;
+  document.querySelectorAll('.fbtn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  render();
+}
+
+/* ── Days from today ── */
+function diff(ds) {
+  const d = new Date(ds); d.setHours(12);
+  const t = new Date(); t.setHours(0, 0, 0, 0);
+  return Math.round((d - t) / 86400000);
+}
+
+function cdStr(d) {
+  if (d < 0)  return `${Math.abs(d)}d ago`;
+  if (d === 0) return 'TODAY';
+  if (d === 1) return 'Tomorrow';
+  return `In ${d} days`;
+}
+
+/* ── Main render ── */
+function render() {
+  const f = currentFilter;
+  let evts = EVENTS.filter(e => {
+    const d = diff(e.date);
+    if (d < -3 || d > 90) return false;
+    if (f === 'high')     return e.impact === 'high';
+    if (f === 'fed')      return e.cat === 'Fed';
+    if (f === 'inflation')return e.cat === 'Inflation';
+    if (f === 'jobs')     return e.cat === 'Jobs';
+    if (f === 'gdp')      return e.cat === 'GDP';
+    return true;
+  });
+
+  /* ── Spotlight (next high-impact events) ── */
+  const upcoming = evts.filter(e => diff(e.date) >= 0).sort((a, b) => new Date(a.date) - new Date(b.date));
+  const spotHTML = upcoming.filter(e => e.impact === 'high').slice(0, 4).map(e => {
+    const d  = diff(e.date);
+    const cc = CAT_C[e.cat] || '#5a7080';
+    const cdColor = d === 0 ? 'var(--accent2)' : d <= 2 ? '#f07070' : 'var(--text-muted)';
+    const cdLabel = d === 0 ? '🔴 TODAY' : d === 1 ? '⚡ Tomorrow' : `📅 ${cdStr(d)}`;
+    return `<div class="spot-card ${e.impact} fade-in">
+      <div class="spot-cd" style="color:${cdColor}">${cdLabel}</div>
+      <div class="spot-name">${e.name}</div>
+      <span class="impact-badge ${e.impact}">${e.impact.toUpperCase()}</span>
+      <span style="font-family:'Space Mono',monospace;font-size:9px;color:${cc};padding:2px 8px;border-radius:99px;border:1px solid ${cc}40;background:rgba(0,0,0,.18)">${e.cat}</span>
+      <div class="spot-row">
+        <div><div class="spot-lbl">Time</div><div class="spot-val">${e.time} ET</div></div>
+        <div style="text-align:right"><div class="spot-lbl">Forecast</div><div class="spot-val">${e.forecast}</div></div>
+      </div>
+    </div>`;
+  }).join('') || '<div style="color:var(--text-muted);font-size:13px">No high-impact events in next 14 days.</div>';
+
+  document.getElementById('spotlight').innerHTML = spotHTML;
+
+  /* ── Timeline ── */
+  let html = '';
+  let lastDate = '';
+  evts.sort((a, b) => new Date(a.date) - new Date(b.date)).forEach(e => {
+    const d       = diff(e.date);
+    const isToday = d === 0;
+    const dObj    = new Date(e.date); dObj.setHours(12);
+    const ds      = dObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const showDate = e.date !== lastDate; lastDate = e.date;
+
+    if (isToday && showDate) {
+      html += `<div class="today-banner">▶ TODAY — ${dObj.toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' })}</div>`;
+    }
+
+    html += `<div class="tl-item fade-in">
+      ${showDate ? `<div class="tl-date">${ds}</div>` : ''}
+      <div class="tl-dot ${isToday ? 'today-dot' : e.impact}"></div>
+      <div class="tl-card ${e.impact}">
+        <div class="tl-name">${e.name}</div>
+        <div class="tl-meta">
+          <span class="tl-time">${e.time} ET</span>
+          <span class="impact-badge ${e.impact}">${e.impact}</span>
+          <span class="tl-fc">Forecast: ${e.forecast}</span>
+        </div>
+      </div>
+    </div>`;
+  });
+
+  document.getElementById('timeline').innerHTML =
+    html || '<div style="padding:1rem;color:var(--text-muted);font-size:13px">No events match this filter.</div>';
+}
+
+render();
+
+/* ═══════════════════════════════════════
+   NAV INJECT
+═══════════════════════════════════════ */
+function injectNav(html) {
+  const placeholder = document.getElementById('nav-placeholder');
+  if (!placeholder) return;
+  const tmp = document.createElement('div');
+  tmp.innerHTML = html;
+  Array.from(tmp.childNodes).forEach(node => {
+    if (node.nodeName !== 'SCRIPT')
+      placeholder.parentNode.insertBefore(node.cloneNode(true), placeholder);
+  });
+  tmp.querySelectorAll('script').forEach(oldScript => {
+    const s = document.createElement('script');
+    if (oldScript.src) s.src = oldScript.src;
+    else s.textContent = oldScript.textContent;
+    document.head.appendChild(s);
+  });
+  placeholder.remove();
+}
+
+fetch('nav.html')
+  .then(r => r.text())
+  .then(injectNav)
+  .catch(() => console.warn('nav.html not found'));
+</script>
+</body>
+</html>

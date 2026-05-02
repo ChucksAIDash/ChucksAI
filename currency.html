@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Chuck's AI — Markets</title>
+  <script src="theme.js"></script>
+  <link rel="stylesheet" href="styles.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    /* ── MARKETS PAGE SPECIFIC ── */
+
+    /* Crypto cards — distinct from regular ticker cards */
+    .crypto-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 9px;
+    }
+    .crypto-card {
+      background: var(--bg-ticker);
+      border: 1px solid rgba(91,200,245,.18);
+      border-radius: var(--r-lg);
+      padding: 16px 18px 13px;
+      backdrop-filter: blur(14px);
+      position: relative; overflow: hidden;
+      transition: transform .15s, border-color .2s;
+      cursor: pointer;
+    }
+    .crypto-card::before {
+      content: ''; position: absolute; top: 0; left: 10%; right: 10%; height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(91,200,245,.35), transparent);
+    }
+    .crypto-card:hover { transform: translateY(-2px); }
+    .crypto-card.is-up   { border-color: rgba(61,220,132,.35); }
+    .crypto-card.is-down { border-color: rgba(240,82,82,.3); }
+    .crypto-sym {
+      font-family: 'Space Mono', monospace; font-size: 11px; font-weight: 700;
+      color: var(--accent2); letter-spacing: .1em; margin-bottom: 5px;
+      text-shadow: 0 0 10px rgba(91,200,245,.5);
+    }
+    .crypto-price {
+      font-family: 'Space Mono', monospace; font-size: 19px; font-weight: 400;
+      color: var(--text-primary); line-height: 1.1;
+    }
+    .crypto-card.is-up   .crypto-price { color: var(--up);   text-shadow: 0 0 16px rgba(61,220,132,.6); }
+    .crypto-card.is-down .crypto-price { color: var(--down); text-shadow: 0 0 16px rgba(240,82,82,.6); }
+    .crypto-chg { font-family: 'Space Mono', monospace; font-size: 11px; font-weight: 700; margin-top: 3px; }
+    .crypto-card.is-up   .crypto-chg { color: var(--up);   text-shadow: var(--up-glow); }
+    .crypto-card.is-down .crypto-chg { color: var(--down); text-shadow: var(--down-glow); }
+    .crypto-card.is-flat .crypto-chg { color: var(--text-secondary); }
+    .crypto-name { font-size: 10px; color: var(--text-muted); margin-top: 5px; }
+
+    /* Precious metals symbol colors */
+    .sym-gold   .ticker-sym { color: var(--gold);   text-shadow: 0 0 10px rgba(240,192,96,.6); }
+    .sym-silver .ticker-sym { color: var(--silver); text-shadow: 0 0 10px rgba(176,200,208,.6); }
+    .sym-copper .ticker-sym { color: var(--copper); text-shadow: 0 0 10px rgba(212,144,96,.6); }
+
+    /* Sector heat map */
+    .sector-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(138px, 1fr));
+      gap: 8px;
+    }
+    .sector-card {
+      border-radius: var(--r-md); padding: 13px 15px 11px;
+      position: relative; overflow: hidden;
+      cursor: default; transition: transform .15s;
+      border: 1px solid transparent;
+    }
+    .sector-card:hover { transform: translateY(-2px); }
+    .sector-card::before {
+      content: ''; position: absolute; top: 0; left: 10%; right: 10%; height: 1px;
+      background: rgba(255,255,255,.1);
+    }
+    .sec-name {
+      font-family: 'Space Mono', monospace; font-size: 9px; font-weight: 700;
+      letter-spacing: .06em; text-transform: uppercase; margin-bottom: 4px; opacity: .8;
+    }
+    .sec-etf  { font-size: 9px; opacity: .5; margin-bottom: 5px; }
+    .sec-pct  { font-family: 'Space Mono', monospace; font-size: 1.25rem; font-weight: 700; }
+
+    /* Heat map color scale — dark mode */
+    .c-sup  { background:#004400; border-color:#006600; color:#7fff7f; }
+    .c-up   { background:#002a00; border-color:#004400; color:#60e060; }
+    .c-lup  { background:#001500; border-color:#002a00; color:#50c050; }
+    .c-flat { background:rgba(255,255,255,.035); border-color:rgba(255,255,255,.07); color:var(--text-secondary); }
+    .c-ldn  { background:#150000; border-color:#2a0000; color:#e06060; }
+    .c-dn   { background:#2a0000; border-color:#440000; color:#f07070; }
+    .c-sdn  { background:#440000; border-color:#660000; color:#ff9090; }
+
+    /* Heat map color scale — light mode */
+    html.light .c-sup  { background:#c8f5c8; border-color:#a0dca0; color:#004400; }
+    html.light .c-up   { background:#d8f8d8; border-color:#b0e8b0; color:#005500; }
+    html.light .c-lup  { background:#eafaea; border-color:#c8ecc8; color:#007700; }
+    html.light .c-flat { background:rgba(0,0,0,.04); border-color:rgba(0,0,0,.08); color:var(--text-secondary); }
+    html.light .c-ldn  { background:#faeaea; border-color:#ecc8c8; color:#770000; }
+    html.light .c-dn   { background:#f8d8d8; border-color:#e8b0b0; color:#660000; }
+    html.light .c-sdn  { background:#f5c8c8; border-color:#dca0a0; color:#550000; }
+
+    /* Loading state */
+    .loading-text {
+      font-size: 12px; color: var(--text-secondary);
+      padding: .6rem 0; display: flex; align-items: center; gap: 8px;
+    }
+    .spinner {
+      display: inline-block; width: 12px; height: 12px; flex-shrink: 0;
+      border: 1.5px solid rgba(255,255,255,.1);
+      border-top-color: var(--accent); border-radius: 50%;
+      animation: spin .7s linear infinite;
+    }
+    html.light .spinner { border-color: rgba(0,0,0,.08); border-top-color: var(--accent2); }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .fade-in { animation: fadeUp .35s ease both; }
+    @keyframes fadeUp { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+
+    /* Chart modal — overrides shared modal styles */
+    .modal-overlay {
+      position: fixed; inset: 0; z-index: 1000;
+      background: rgba(0,0,0,.82); backdrop-filter: blur(12px);
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none; transition: opacity .25s;
+    }
+    .modal-overlay.open { opacity: 1; pointer-events: all; }
+    .modal-box {
+      background: #060d18; border: 1px solid var(--border-bright);
+      border-radius: var(--r-xl); width: min(700px, 96vw);
+      padding: 1.75rem 2rem; position: relative;
+      box-shadow: 0 40px 100px rgba(0,0,0,.95);
+      transform: scale(.95) translateY(12px); transition: transform .25s;
+    }
+    html.light .modal-box { background: #e8edf2; }
+    .modal-overlay.open .modal-box { transform: scale(1) translateY(0); }
+    .modal-close {
+      position: absolute; top: 1rem; right: 1rem;
+      font-family: 'Space Mono', monospace; font-size: 11px;
+      color: var(--text-secondary); background: rgba(255,255,255,.05);
+      border: 1px solid var(--border-bright); border-radius: var(--r-sm);
+      padding: 4px 10px; cursor: pointer; transition: all .15s;
+    }
+    .modal-close:hover { color: var(--text-primary); border-color: var(--accent2); }
+    .modal-sym   { font-family:'Space Mono',monospace; font-size:22px; font-weight:700; color:var(--text-primary); margin-bottom:2px; }
+    .modal-name  { font-size:12px; color:var(--text-muted); margin-bottom:1rem; }
+    .modal-price-row { display:flex; align-items:baseline; gap:14px; margin-bottom:1.25rem; }
+    .modal-price { font-family:'Space Mono',monospace; font-size:2rem; font-weight:400; }
+    .modal-pct   { font-family:'Space Mono',monospace; font-size:14px; font-weight:700; }
+    .chart-tabs  { display:flex; gap:5px; margin-bottom:1rem; flex-wrap:wrap; }
+    .chart-tab {
+      font-family:'Space Mono',monospace; font-size:10px; font-weight:700;
+      padding:4px 11px; border-radius:var(--r-sm);
+      border:1px solid var(--border); color:var(--text-muted);
+      cursor:pointer; transition:all .15s; background:none;
+    }
+    .chart-tab:hover  { border-color:var(--border-bright); color:var(--text-secondary); }
+    .chart-tab.active { background:rgba(91,200,245,.12); border-color:rgba(91,200,245,.4); color:var(--accent2); }
+    .chart-wrap { width:100%; height:220px; position:relative; }
+    .chart-wrap svg { width:100%; height:100%; display:block; }
+    .chart-msg {
+      position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+      font-family:'Space Mono',monospace; font-size:11px; color:var(--text-muted);
+      background:rgba(6,13,24,.85); border-radius:var(--r-sm);
+      text-align:center; padding:1rem;
+    }
+    html.light .chart-msg { background:rgba(232,237,242,.92); }
+
+    /* Header controls */
+    .dash-time {
+      font-family: 'Space Mono', monospace; font-size: 11px;
+      color: var(--text-secondary); display: flex; align-items: center;
+    }
+  </style>
+</head>
+<body>
+
+<div class="bg-canvas">
+  <div class="orb orb1"></div><div class="orb orb2"></div>
+  <div class="orb orb3"></div><div class="orb orb4"></div>
+</div>
+
+<div id="nav-placeholder"></div>
+
+<div class="container">
+
+  <!-- Page header -->
+  <div class="page-header">
+    <div>
+      <div class="page-title">chuck's <span style="color:var(--accent2)">markets</span></div>
+      <div class="page-sub">Live prices · click any ticker for chart</div>
+    </div>
+    <div class="header-right">
+      <div class="countdown-badge" id="countdown">AUTO ⟳ 60s</div>
+      <div class="dash-time"><span class="live-dot"></span><span id="clock">--:--:-- ET</span></div>
+      <button class="refresh-btn" onclick="manualRefresh()">⟳ REFRESH</button>
+    </div>
+  </div>
+
+  <!-- Crypto -->
+  <div class="section-wrap">
+    <div class="section-label lbl-green">Crypto</div>
+    <div class="crypto-grid" id="crypto-row">
+      <div class="loading-text"><span class="spinner"></span>Loading…</div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Indices & ETFs -->
+  <div class="section-wrap">
+    <div class="section-label">Indices &amp; ETFs</div>
+    <div class="ticker-row" id="market-row">
+      <div class="loading-text"><span class="spinner"></span>Loading…</div>
+    </div>
+  </div>
+
+  <!-- Futures -->
+  <div class="section-wrap">
+    <div class="section-label lbl-amber">Futures</div>
+    <div class="ticker-row" id="futures-row">
+      <div class="loading-text"><span class="spinner"></span>Loading…</div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Mag 7 -->
+  <div class="section-wrap">
+    <div class="section-label">Mag 7</div>
+    <div class="ticker-row" id="mag-row">
+      <div class="loading-text"><span class="spinner"></span>Loading…</div>
+    </div>
+  </div>
+
+  <!-- Tickers -->
+  <div class="section-wrap">
+    <div class="section-label">Tickers</div>
+    <div class="ticker-row" id="tickers-row">
+      <div class="loading-text"><span class="spinner"></span>Loading…</div>
+    </div>
+  </div>
+
+  <!-- Memes -->
+  <div class="section-wrap">
+    <div class="section-label lbl-meme">Meme Stocks</div>
+    <div class="ticker-row" id="meme-row">
+      <div class="loading-text"><span class="spinner"></span>Loading…</div>
+    </div>
+  </div>
+
+  <!-- Precious metals -->
+  <div class="section-wrap">
+    <div class="section-label lbl-amber">Precious Metals</div>
+    <div class="ticker-row" id="metals-row">
+      <div class="loading-text"><span class="spinner"></span>Loading…</div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Sector heat map -->
+  <div class="section-wrap">
+    <div class="section-label">S&amp;P 500 Sector Heat Map</div>
+    <div class="sector-grid" id="sector-grid">
+      <div class="loading-text"><span class="spinner"></span>Loading sectors…</div>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<!-- Chart modal -->
+<div class="modal-overlay" id="chartModal" onclick="if(event.target===this)closeChart()">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeChart()">✕ CLOSE</button>
+    <div class="modal-sym"  id="m-sym">—</div>
+    <div class="modal-name" id="m-name">—</div>
+    <div class="modal-price-row">
+      <div class="modal-price" id="m-price">—</div>
+      <div class="modal-pct"   id="m-pct"></div>
+    </div>
+    <div class="chart-tabs">
+      <button class="chart-tab active" onclick="switchRange(this,'1d')">1D</button>
+      <button class="chart-tab" onclick="switchRange(this,'7d')">7D</button>
+      <button class="chart-tab" onclick="switchRange(this,'1m')">1M</button>
+      <button class="chart-tab" onclick="switchRange(this,'3m')">3M</button>
+      <button class="chart-tab" onclick="switchRange(this,'6m')">6M</button>
+      <button class="chart-tab" onclick="switchRange(this,'1y')">12M</button>
+    </div>
+    <div class="chart-wrap">
+      <svg id="chart-svg"></svg>
+      <div class="chart-msg" id="chart-msg" style="display:none"></div>
+    </div>
+  </div>
+</div>
+
+<footer>STOCKS · FINNHUB &nbsp;·&nbsp; CRYPTO · COINBASE &nbsp;·&nbsp; CHARTS · POLYGON &nbsp;·&nbsp; AUTO-REFRESH 60s</footer>
+
+<script>
+/* ═══════════════════════════════════════
+   API KEYS & HELPERS
+═══════════════════════════════════════ */
+const FH_KEY = 'd7kohmpr01qiqbcv6f8gd7kohmpr01qiqbcv6f90';
+const PG_KEY = 'mcVUA4y1kkJ_0Vm2d29ckUpiDxNmpjKH';
+
+function fmtPrice(n, dec=2){
+  if(n==null || isNaN(n) || n===0) return '—';
+  if(n>=1000) return '$'+n.toLocaleString('en-US',{minimumFractionDigits:dec,maximumFractionDigits:dec});
+  return '$'+Number(n).toFixed(dec);
+}
+function fmtPct(n){ return n==null||isNaN(n) ? '' : (n>=0?'+':'')+n.toFixed(2)+'%'; }
+function pctClass(n){ return n>0.01?'up':n<-0.01?'down':'flat'; }
+
+async function fhQuote(sym){
+  const r = await fetch(`https://finnhub.io/api/v1/quote?symbol=${encodeURIComponent(sym)}&token=${FH_KEY}`);
+  const d = await r.json();
+  if(!d||!d.c||d.c===0) throw new Error('no data');
+  return { price:d.c, pct:((d.c-d.pc)/d.pc)*100 };
+}
+
+/* ═══════════════════════════════════════
+   CLOCK & AUTO-REFRESH
+═══════════════════════════════════════ */
+function updateClock(){
+  const el = document.getElementById('clock');
+  if(el) el.textContent = new Date().toLocaleTimeString('en-US',{
+    hour:'2-digit', minute:'2-digit', second:'2-digit', timeZone:'America/New_York'
+  })+' ET';
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+let secsLeft = 60;
+const cdEl = document.getElementById('countdown');
+setInterval(()=>{
+  secsLeft--;
+  if(cdEl) cdEl.textContent = `AUTO ⟳ ${secsLeft}s`;
+  if(secsLeft <= 0){ secsLeft = 60; loadMarketData(); }
+}, 1000);
+
+function manualRefresh(){ secsLeft = 60; if(cdEl) cdEl.textContent='AUTO ⟳ 60s'; loadMarketData(); }
+
+/* ═══════════════════════════════════════
+   TICKER CARD BUILDER
+═══════════════════════════════════════ */
+function tickerCard(sym, label, price, pct, sub, xCls, featured, fullName){
+  const cls   = pctClass(pct);
+  const state = cls==='up'?'is-up':cls==='down'?'is-down':'';
+  const name  = (fullName||sub||label).replace(/'/g,"\\'");
+  const click = `onclick="openChart('${sym}','${name}',${price},${pct})"`;
+  return `<div class="ticker-card ${xCls||''} ${state} ${featured?'featured':''} fade-in" ${click}>
+    <div class="ticker-sym">${label}</div>
+    <div class="ticker-price">${fmtPrice(price)}</div>
+    <div class="ticker-change ${cls}">${fmtPct(pct)}</div>
+    ${sub ? `<div class="ticker-sub">${sub}</div>` : ''}
+  </div>`;
+}
+
+function tickerError(label, sub, xCls){
+  return `<div class="ticker-card ${xCls||''} fade-in">
+    <div class="ticker-sym">${label}</div>
+    <div class="ticker-price" style="color:var(--text-muted)">—</div>
+    ${sub ? `<div class="ticker-sub">${sub}</div>` : ''}
+  </div>`;
+}
+
+/* loadRow: fetches a list of tickers in batches of 5 with 1.1s between batches
+   to avoid Finnhub free-tier rate limits (30 calls/s but ~60/min overall) */
+async function loadRow(id, list){
+  const el = document.getElementById(id);
+  if(!el) return;
+  const cards = [];
+  for(let i=0; i<list.length; i+=5){
+    const batch = list.slice(i, i+5);
+    const res = await Promise.all(batch.map(async([sym,label,sub,xCls,feat,fullName])=>{
+      try{
+        const q = await fhQuote(sym);
+        return tickerCard(sym, label, q.price, q.pct, sub||'', xCls||'', !!feat, fullName||sub||label);
+      }catch{
+        return tickerError(label, sub, xCls);
+      }
+    }));
+    cards.push(...res);
+    if(i+5 < list.length) await new Promise(r=>setTimeout(r,1100));
+  }
+  el.innerHTML = cards.join('');
+}
+
+/* ═══════════════════════════════════════
+   CRYPTO (Coinbase — spot + 24h change)
+═══════════════════════════════════════ */
+async function loadCrypto(){
+  const el = document.getElementById('crypto-row');
+  if(!el) return;
+  const coins = [
+    {id:'BTC-USD', label:'BTC', name:'Bitcoin',    dec:2},
+    {id:'ETH-USD', label:'ETH', name:'Ethereum',   dec:2},
+    {id:'LTC-USD', label:'LTC', name:'Litecoin',   dec:2},
+    {id:'DOGE-USD',label:'DOGE',name:'Dogecoin',   dec:4},
+    {id:'SHIB-USD',label:'SHIB',name:'Shiba Inu',  dec:8},
+    {id:'XLM-USD', label:'XLM', name:'Stellar',    dec:4},
+  ];
+  try{
+    // Fetch spot prices and 24h historic prices simultaneously
+    const [spots, hists] = await Promise.all([
+      Promise.all(coins.map(c=>
+        fetch(`https://api.coinbase.com/v2/prices/${c.id}/spot`)
+          .then(r=>r.json()).catch(()=>null)
+      )),
+      Promise.all(coins.map(c=>
+        fetch(`https://api.coinbase.com/v2/prices/${c.id}/historic?period=day`)
+          .then(r=>r.json()).catch(()=>null)
+      )),
+    ]);
+
+    el.innerHTML = coins.map((coin, i)=>{
+      const price = parseFloat(spots[i]?.data?.amount || 0);
+      const prices = hists[i]?.data?.prices || [];
+      // Coinbase historic returns newest-first; oldest entry = 24h ago
+      const old = prices.length ? parseFloat(prices[prices.length-1]?.price || price) : price;
+      const pct = old ? ((price-old)/old)*100 : 0;
+      const cls = pctClass(pct);
+      const state = cls==='up'?'is-up':cls==='down'?'is-down':'is-flat';
+      // Shrink font for very small prices
+      const fs = price<0.00001?'11px':price<0.001?'14px':price<1?'17px':'19px';
+      return `<div class="crypto-card ${state} fade-in">
+        <div class="crypto-sym">${coin.label}</div>
+        <div class="crypto-price" style="font-size:${fs}">${price>0?'$'+price.toFixed(coin.dec):'—'}</div>
+        <div class="crypto-chg">${pct!==0?fmtPct(pct):'—'}</div>
+        <div class="crypto-name">${coin.name}</div>
+      </div>`;
+    }).join('');
+  }catch{
+    el.innerHTML = '<div class="loading-text">Crypto data unavailable.</div>';
+  }
+}
+
+/* ═══════════════════════════════════════
+   SECTOR HEAT MAP
+═══════════════════════════════════════ */
+const SECTORS = [
+  {n:'Technology',   e:'XLK'},{n:'Healthcare',    e:'XLV'},{n:'Financials',  e:'XLF'},
+  {n:'Consumer Disc',e:'XLY'},{n:'Industrials',   e:'XLI'},{n:'Energy',      e:'XLE'},
+  {n:'Consumer Stap',e:'XLP'},{n:'Materials',     e:'XLB'},{n:'Utilities',   e:'XLU'},
+  {n:'Real Estate',  e:'XLRE'},{n:'Comm Svcs',    e:'XLC'},
+];
+
+function heatCls(p){
+  return p>=3?'c-sup':p>=1.5?'c-up':p>=0.2?'c-lup':p>-0.2?'c-flat':p>-1.5?'c-ldn':p>-3?'c-dn':'c-sdn';
+}
+
+async function loadSectors(){
+  const g = document.getElementById('sector-grid');
+  if(!g) return;
+  const results = [];
+  // Batch in groups of 5 to stay within rate limits
+  for(let i=0; i<SECTORS.length; i+=5){
+    const batch = SECTORS.slice(i,i+5);
+    const res = await Promise.all(batch.map(s=>fhQuote(s.e).catch(()=>({price:0,pct:0}))));
+    results.push(...res);
+    if(i+5 < SECTORS.length) await new Promise(r=>setTimeout(r,1100));
+  }
+  g.innerHTML = SECTORS.map((s,i)=>{
+    const q = results[i]||{pct:0,price:0};
+    const cls = heatCls(q.pct);
+    return `<div class="sector-card ${cls} fade-in">
+      <div class="sec-name">${s.n}</div>
+      <div class="sec-etf">${s.e}</div>
+      <div class="sec-pct">${q.pct?fmtPct(q.pct):'—'}</div>
+    </div>`;
+  }).join('');
+}
+
+/* ═══════════════════════════════════════
+   TICKER ROW DEFINITIONS
+═══════════════════════════════════════ */
+// [finnhub_sym, display_label, sub_label, extra_class, featured, full_name]
+const loadMarkets = ()=>loadRow('market-row',[
+  ['SPY', 'SPY',  'S&P 500 ETF',    '', '', 'S&P 500 ETF'],
+  ['QQQ', 'QQQ',  'Nasdaq 100',     '', '', 'Nasdaq 100 ETF'],
+  ['DIA', 'DIA',  'Dow Jones ETF',  '', '', 'Dow Jones ETF'],
+  ['IWM', 'IWM',  'Russell 2000',   '', '', 'Russell 2000'],
+  ['VXX', 'VXX',  'VIX ETN',        '', '', 'VIX ETN'],
+  ['TQQQ','TQQQ', '3× Nasdaq Bull', '', '', '3× Nasdaq Bull'],
+]);
+
+const loadFutures = ()=>loadRow('futures-row',[
+  ['SPY','ES · SPY', 'E-mini S&P',   '', 'true', 'E-mini S&P 500'],
+  ['QQQ','NQ · QQQ', 'E-mini Nasdaq','', '',     'E-mini Nasdaq'],
+  ['DIA','YM · DIA', 'E-mini Dow',   '', '',     'E-mini Dow'],
+  ['USO','CL · USO', 'Crude Oil',    '', '',     'Crude Oil ETF'],
+  ['GLD','GC · GLD', 'Gold',         'sym-gold','','Gold ETF'],
+]);
+
+const loadMag7 = ()=>loadRow('mag-row',[
+  ['AAPL', 'AAPL',  'Apple',     '', '', 'Apple Inc'],
+  ['MSFT', 'MSFT',  'Microsoft', '', '', 'Microsoft Corp'],
+  ['NVDA', 'NVDA',  'Nvidia',    '', '', 'Nvidia Corp'],
+  ['AMZN', 'AMZN',  'Amazon',    '', '', 'Amazon.com'],
+  ['GOOGL','GOOGL', 'Alphabet',  '', '', 'Alphabet Inc'],
+  ['META', 'META',  'Meta',      '', '', 'Meta Platforms'],
+  ['TSLA', 'TSLA',  'Tesla',     '', '', 'Tesla Inc'],
+]);
+
+const loadTickers = ()=>loadRow('tickers-row',[
+  ['FUBO', 'FUBO', 'FuboTV',        '', '', 'FuboTV Inc'],
+  ['SNAP', 'SNAP', 'Snap',          '', '', 'Snap Inc'],
+  ['ASTS', 'ASTS', 'AST SpaceMobile','','', 'AST SpaceMobile'],
+  ['DDD',  'DDD',  '3D Systems',    '', '', '3D Systems'],
+  ['ARKX', 'ARKX', 'ARK Space ETF', '', '', 'ARK Space ETF'],
+  ['UFO',  'UFO',  'Space ETF',     '', '', 'Procure Space ETF'],
+]);
+
+const loadMemes = ()=>loadRow('meme-row',[
+  ['GME',  'GME',  'GameStop',   'is-meme','','GameStop'],
+  ['AMC',  'AMC',  'AMC',        'is-meme','','AMC Entertainment'],
+  ['UPST', 'UPST', 'Upstart',    'is-meme','','Upstart Holdings'],
+  ['BYND', 'BYND', 'Beyond Meat','is-meme','','Beyond Meat'],
+]);
+
+const loadMetals = ()=>loadRow('metals-row',[
+  ['GLD',  'GOLD · GLD',   'Gold ETF',    'sym-gold',  '', 'Gold ETF'],
+  ['SLV',  'SILVER · SLV', 'Silver ETF',  'sym-silver','', 'Silver ETF'],
+  ['COPX', 'COPPER · COPX','Copper ETF',  'sym-copper','', 'Copper Miners ETF'],
+]);
+
+/* ═══════════════════════════════════════
+   CHART MODAL (Polygon.io)
+═══════════════════════════════════════ */
+let modalSym = '';
+let modalIsUp = true;
+
+function dStr(d){ return d.toISOString().split('T')[0]; }
+function dAgo(n){ const d=new Date(); d.setDate(d.getDate()-n); return dStr(d); }
+
+const RANGES = {
+  '1d':{ mult:5,  span:'minute', from:dAgo(1),   to:dStr(new Date()) },
+  '7d':{ mult:1,  span:'hour',   from:dAgo(7),   to:dStr(new Date()) },
+  '1m':{ mult:1,  span:'day',    from:dAgo(30),  to:dStr(new Date()) },
+  '3m':{ mult:1,  span:'day',    from:dAgo(90),  to:dStr(new Date()) },
+  '6m':{ mult:1,  span:'week',   from:dAgo(180), to:dStr(new Date()) },
+  '1y':{ mult:1,  span:'week',   from:dAgo(365), to:dStr(new Date()) },
+};
+
+async function pgCandles(sym, from, to, timespan, mult){
+  const url = `https://api.polygon.io/v2/aggs/ticker/${sym}/range/${mult}/${timespan}/${from}/${to}`
+            + `?adjusted=true&sort=asc&limit=300&apiKey=${PG_KEY}`;
+  const r = await fetch(url);
+  const d = await r.json();
+  if(!d.results?.length) throw new Error('no candles');
+  return d.results.map(b=>b.c);
+}
+
+async function loadChartRange(sym, range){
+  const svg = document.getElementById('chart-svg');
+  const msg = document.getElementById('chart-msg');
+  svg.innerHTML = '';
+  if(msg){ msg.style.display='flex'; msg.textContent='Loading chart…'; }
+  try{
+    const {mult,span,from,to} = RANGES[range];
+    const closes = await pgCandles(sym, from, to, span, mult);
+    if(msg) msg.style.display='none';
+    drawChart(closes, modalIsUp, svg);
+  }catch{
+    if(msg){ msg.style.display='flex'; msg.textContent='Chart unavailable. Try a different range.'; }
+  }
+}
+
+function drawChart(closes, isUp, svg){
+  const w   = svg.clientWidth||640, h=svg.clientHeight||215;
+  const pad = {t:14, r:12, b:28, l:55};
+  const cw  = w-pad.l-pad.r, ch=h-pad.t-pad.b;
+  const mn  = Math.min(...closes), mx=Math.max(...closes), rng=mx-mn||1;
+  const color = isUp?'#3ddc84':'#f05252';
+  const uid   = 'c'+Date.now();
+  const pts   = closes.map((v,i)=>`${(pad.l+(i/(closes.length-1))*cw).toFixed(1)},${(pad.t+ch-((v-mn)/rng)*ch).toFixed(1)}`).join(' ');
+  const fill  = `${pad.l},${pad.t+ch} ${pts} ${pad.l+cw},${pad.t+ch}`;
+  const yLines = [0,.5,1].map(f=>{
+    const val = mn+f*rng;
+    const y   = pad.t+ch-f*ch;
+    const lbl = val>=1000?'$'+(val/1000).toFixed(1)+'k':'$'+val.toFixed(val<1?4:0);
+    const axisColor = document.documentElement.classList.contains('light')?'rgba(0,0,0,.35)':'rgba(255,255,255,.3)';
+    const gridColor = document.documentElement.classList.contains('light')?'rgba(0,0,0,.06)':'rgba(255,255,255,.05)';
+    return `<line x1="${pad.l}" y1="${y.toFixed(1)}" x2="${(pad.l+cw).toFixed(1)}" y2="${y.toFixed(1)}" stroke="${gridColor}" stroke-width="1"/>
+            <text x="${(pad.l-5).toFixed(1)}" y="${(y+4).toFixed(1)}" text-anchor="end" fill="${axisColor}" font-family="Space Mono,monospace" font-size="9">${lbl}</text>`;
+  }).join('');
+
+  svg.innerHTML = `<defs>
+    <linearGradient id="${uid}" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"   stop-color="${color}" stop-opacity="0.28"/>
+      <stop offset="100%" stop-color="${color}" stop-opacity="0.02"/>
+    </linearGradient>
+    <clipPath id="cp${uid}"><rect x="${pad.l}" y="${pad.t}" width="${cw}" height="${ch}"/></clipPath>
+    <filter id="glow${uid}">
+      <feGaussianBlur stdDeviation="2" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  ${yLines}
+  <polygon points="${fill}" fill="url(#${uid})" clip-path="url(#cp${uid})"/>
+  <polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2.5"
+    stroke-linejoin="round" stroke-linecap="round"
+    clip-path="url(#cp${uid})" filter="url(#glow${uid})"/>`;
+}
+
+function openChart(sym, name, price, pct){
+  modalSym  = sym;
+  const cls = pctClass(pct);
+  modalIsUp = cls==='up';
+  document.getElementById('m-sym').textContent   = sym;
+  document.getElementById('m-name').textContent  = name;
+  document.getElementById('m-price').textContent = fmtPrice(price);
+  document.getElementById('m-price').style.color = cls==='up'?'var(--up)':cls==='down'?'var(--down)':'var(--text-primary)';
+  document.getElementById('m-pct').textContent   = fmtPct(pct);
+  document.getElementById('m-pct').className     = 'modal-pct '+cls;
+  // Reset tabs
+  document.querySelectorAll('.chart-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.chart-tab')[0].classList.add('active');
+  document.getElementById('chartModal').classList.add('open');
+  loadChartRange(sym,'1d');
+}
+
+function switchRange(btn, range){
+  document.querySelectorAll('.chart-tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  loadChartRange(modalSym, range);
+}
+
+function closeChart(){
+  document.getElementById('chartModal').classList.remove('open');
+}
+
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeChart(); });
+
+/* ═══════════════════════════════════════
+   BOOT
+═══════════════════════════════════════ */
+async function loadMarketData(){
+  // Crypto and sectors load independently
+  loadCrypto();
+  loadSectors();
+  // Stock rows are staggered with 800ms between each row start
+  // to avoid hammering the Finnhub rate limit with concurrent batches
+  await loadMarkets();
+  await new Promise(r=>setTimeout(r,800));
+  await loadFutures();
+  await new Promise(r=>setTimeout(r,800));
+  await loadMag7();
+  await new Promise(r=>setTimeout(r,800));
+  await loadTickers();
+  await new Promise(r=>setTimeout(r,800));
+  await loadMemes();
+  await new Promise(r=>setTimeout(r,800));
+  await loadMetals();
+}
+
+loadMarketData();
+
+/* ═══════════════════════════════════════
+   NAV INJECT
+═══════════════════════════════════════ */
+function injectNav(html){
+  const placeholder = document.getElementById('nav-placeholder');
+  if(!placeholder) return;
+  const tmp = document.createElement('div');
+  tmp.innerHTML = html;
+  Array.from(tmp.childNodes).forEach(node=>{
+    if(node.nodeName !== 'SCRIPT'){
+      placeholder.parentNode.insertBefore(node.cloneNode(true), placeholder);
+    }
+  });
+  tmp.querySelectorAll('script').forEach(oldScript=>{
+    const s = document.createElement('script');
+    if(oldScript.src) s.src = oldScript.src;
+    else s.textContent = oldScript.textContent;
+    document.head.appendChild(s);
+  });
+  placeholder.remove();
+}
+
+fetch('nav.html')
+  .then(r=>r.text())
+  .then(injectNav)
+  .catch(()=>console.warn('nav.html not found'));
+</script>
+</body>
+</html>

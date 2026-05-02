@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Chuck's AI — News</title>
+  <script src="theme.js"></script>
+  <link rel="stylesheet" href="styles.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    /* ── NEWS PAGE SPECIFIC ── */
+
+    /* News section headers (slightly different from .section-label — bolder, emoji support) */
+    .news-section-hdr {
+      font-family: 'Space Mono', monospace;
+      font-size: 10px; font-weight: 700;
+      color: var(--text-secondary);
+      text-transform: uppercase; letter-spacing: .14em;
+      display: flex; align-items: center; gap: 9px;
+      margin: 1.75rem 0 .85rem;
+    }
+    .news-section-hdr .bar {
+      display: block; width: 3px; height: 14px;
+      border-radius: 2px; flex-shrink: 0;
+    }
+    .news-section-hdr:first-of-type { margin-top: .25rem; }
+
+    /* News grid */
+    .news-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 11px;
+    }
+    @media(max-width:1000px) { .news-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media(max-width:600px)  { .news-grid { grid-template-columns: 1fr; } }
+
+    /* News card */
+    .news-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      padding: 14px 16px;
+      display: flex; flex-direction: column; gap: 7px;
+      transition: border-color .2s, background .2s, transform .15s;
+      backdrop-filter: blur(10px);
+      cursor: pointer;
+      position: relative; overflow: hidden;
+    }
+    .news-card::before {
+      content: ''; position: absolute; top: 0; left: 10%; right: 10%; height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,.1), transparent);
+    }
+    .news-card:hover {
+      border-color: var(--border-bright);
+      background: var(--bg-card-hover);
+      transform: translateY(-2px);
+    }
+    html.light .news-card { backdrop-filter: none; }
+
+    /* Tags */
+    .news-tag {
+      display: inline-block;
+      font-family: 'Space Mono', monospace;
+      font-size: 9px; font-weight: 700;
+      padding: 3px 10px; border-radius: 99px;
+      letter-spacing: .07em;
+    }
+    .tag-us     { background: rgba(91,200,245,.12);  color: var(--accent2);       border: 1px solid rgba(91,200,245,.22); }
+    .tag-world  { background: rgba(127,217,184,.12); color: var(--accent);        border: 1px solid rgba(127,217,184,.22); }
+    .tag-iran   { background: rgba(240,82,82,.12);   color: #f07070;              border: 1px solid rgba(240,82,82,.22); }
+    .tag-gov    { background: rgba(240,184,106,.12); color: var(--accent3);       border: 1px solid rgba(240,184,106,.22); }
+
+    /* Card content */
+    .news-headline {
+      font-size: 13px; font-weight: 500;
+      color: var(--text-primary); line-height: 1.47;
+    }
+    .news-sub {
+      font-size: 11.5px; color: var(--text-secondary);
+      line-height: 1.5; flex: 1;
+    }
+    .news-footer {
+      display: flex; align-items: center;
+      justify-content: space-between; margin-top: 2px;
+    }
+    .news-source {
+      font-family: 'Space Mono', monospace;
+      font-size: 9px; color: var(--text-muted);
+      padding: 2px 7px;
+      border: 1px solid var(--border); border-radius: 4px;
+    }
+    .news-time {
+      font-family: 'Space Mono', monospace;
+      font-size: 10px; color: var(--text-muted);
+    }
+
+    /* Loading placeholder */
+    .loading-text {
+      font-size: 12px; color: var(--text-secondary);
+      padding: .6rem 0;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .spinner {
+      display: inline-block; width: 12px; height: 12px;
+      flex-shrink: 0;
+      border: 1.5px solid rgba(255,255,255,.1);
+      border-top-color: var(--accent); border-radius: 50%;
+      animation: spin .7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .fade-in { animation: fadeUp .35s ease both; }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* Footer note */
+    .footer-note {
+      text-align: center;
+      font-family: 'Space Mono', monospace;
+      font-size: 9px; color: var(--text-muted);
+      letter-spacing: .1em; text-transform: uppercase;
+      margin-top: 3rem; padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+    }
+  </style>
+</head>
+<body>
+
+<div class="bg-canvas">
+  <div class="orb orb1"></div>
+  <div class="orb orb2"></div>
+  <div class="orb orb3"></div>
+  <div class="orb orb4"></div>
+</div>
+
+<div id="nav-placeholder"></div>
+
+<div class="container">
+
+  <!-- Page header -->
+  <div class="page-header">
+    <div>
+      <div class="page-title">Live <span style="color:var(--accent2)">News Feed</span></div>
+      <div class="page-sub">US · World · Conflict · AI — pulled live via TheNewsAPI</div>
+    </div>
+    <div class="header-right">
+      <span class="live-dot"></span>
+      <div class="countdown-badge" id="news-countdown">AUTO ⟳ 5:00</div>
+      <button class="refresh-btn" onclick="loadAllNews()">⟳ REFRESH</button>
+    </div>
+  </div>
+
+  <!-- US News -->
+  <div class="news-section-hdr">
+    <span class="bar" style="background:#5bc8f5;box-shadow:0 0 8px rgba(91,200,245,.7)"></span>
+    🇺🇸 US News
+  </div>
+  <div class="news-grid" id="us-grid">
+    <div class="loading-text" style="grid-column:1/-1"><span class="spinner"></span> Loading…</div>
+  </div>
+
+  <!-- US Government -->
+  <div class="news-section-hdr">
+    <span class="bar" style="background:#f0b86a;box-shadow:0 0 8px rgba(240,184,106,.7)"></span>
+    🏛️ US Government
+  </div>
+  <div class="news-grid" id="gov-grid">
+    <div class="loading-text" style="grid-column:1/-1"><span class="spinner"></span> Loading…</div>
+  </div>
+
+  <!-- World News -->
+  <div class="news-section-hdr">
+    <span class="bar" style="background:#7fd9b8;box-shadow:0 0 8px rgba(127,217,184,.7)"></span>
+    🌍 World News
+  </div>
+  <div class="news-grid" id="world-grid">
+    <div class="loading-text" style="grid-column:1/-1"><span class="spinner"></span> Loading…</div>
+  </div>
+
+  <!-- Iran / Conflict -->
+  <div class="news-section-hdr">
+    <span class="bar" style="background:#f05252;box-shadow:0 0 8px rgba(240,82,82,.7)"></span>
+    ⚔️ Iran Conflict
+  </div>
+  <div class="news-grid" id="iran-grid">
+    <div class="loading-text" style="grid-column:1/-1"><span class="spinner"></span> Loading…</div>
+  </div>
+
+  <!-- AI News -->
+  <div class="news-section-hdr">
+    <span class="bar" style="background:#a78bfa;box-shadow:0 0 8px rgba(167,139,250,.7)"></span>
+    🤖 AI News
+  </div>
+  <div class="news-grid" id="ai-grid">
+    <div class="loading-text" style="grid-column:1/-1"><span class="spinner"></span> Loading…</div>
+  </div>
+
+  <!-- AI Advancements -->
+  <div class="news-section-hdr">
+    <span class="bar" style="background:#a78bfa;box-shadow:0 0 8px rgba(167,139,250,.7)"></span>
+    🚀 AI Advancements
+  </div>
+  <div class="news-grid" id="ai-adv-grid">
+    <div class="loading-text" style="grid-column:1/-1"><span class="spinner"></span> Loading…</div>
+  </div>
+
+  <p class="footer-note">NEWS · THENEWSAPI.COM · AUTO-REFRESH 5 MIN</p>
+
+</div><!-- /.container -->
+
+<script>
+/* ═══════════════════════════════════════
+   NEWS PAGE — Chuck's AI v7
+═══════════════════════════════════════ */
+
+const NEWS_API_KEY = 'EaYs0yWgGLNEmYbHfDp47HwYeaCMaG8HxgOSHHsg';
+
+/* ── Auto-refresh countdown ── */
+let newsSecsLeft = 300;
+const cdEl = document.getElementById('news-countdown');
+setInterval(() => {
+  newsSecsLeft--;
+  const m = Math.floor(newsSecsLeft / 60);
+  const s = newsSecsLeft % 60;
+  if (cdEl) cdEl.textContent = `AUTO ⟳ ${m}:${s.toString().padStart(2, '0')}`;
+  if (newsSecsLeft <= 0) { newsSecsLeft = 300; loadAllNews(); }
+}, 1000);
+
+/* ── Helpers ── */
+function timeAgo(iso) {
+  if (!iso) return '';
+  const m = Math.floor((Date.now() - new Date(iso)) / 60000);
+  return m < 60 ? `${m}m ago` : m < 1440 ? `${Math.floor(m / 60)}h ago` : `${Math.floor(m / 1440)}d ago`;
+}
+
+/* ── News card builder ── */
+function newsCard(a, tag, i) {
+  const tClass = { us: 'tag-us', world: 'tag-world', iran: 'tag-iran', ai: 'tag-ai', 'ai-adv': 'tag-ai', gov: 'tag-gov' };
+  const tLabel = { us: '🇺🇸 US', world: '🌍 World', iran: '⚔️ Iran', ai: '🤖 AI', 'ai-adv': '🚀 AI Advances', gov: '🏛️ Gov' };
+  const url    = (a.url || '#').replace(/'/g, '%27');
+  const desc   = (a.description || a.snippet || '').slice(0, 130);
+  return `<div class="news-card fade-in" style="animation-delay:${i * .04}s" onclick="window.open('${url}','_blank')">
+    <span class="news-tag ${tClass[tag]}">${tLabel[tag]}</span>
+    <div class="news-headline">${a.title || '—'}</div>
+    ${desc ? `<div class="news-sub">${desc}</div>` : ''}
+    <div class="news-footer">
+      ${a.source ? `<span class="news-source">${a.source}</span>` : '<span></span>'}
+      <span class="news-time">${timeAgo(a.published_at)}</span>
+    </div>
+  </div>`;
+}
+
+/* ── Fetch one section ── */
+async function fetchSection(extra, limit) {
+  const p = new URLSearchParams({ api_token: NEWS_API_KEY, language: 'en', limit, ...extra });
+  const r = await fetch(`https://api.thenewsapi.com/v1/news/top?${p}`);
+  const d = await r.json();
+  return d.data || [];
+}
+
+/* ── Populate a grid ── */
+function setGrid(id, items, tag) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.innerHTML = items.length
+    ? items.map((a, i) => newsCard(a, tag, i)).join('')
+    : `<div class="loading-text" style="grid-column:1/-1">No articles found.</div>`;
+}
+
+/* ── Show loading spinners ── */
+function showLoading() {
+  ['us-grid', 'gov-grid', 'world-grid', 'iran-grid', 'ai-grid', 'ai-adv-grid'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = '<div class="loading-text" style="grid-column:1/-1"><span class="spinner"></span> Loading…</div>';
+  });
+}
+
+/* ── Main load ── */
+async function loadAllNews() {
+  showLoading();
+  try {
+    const seen = new Set();
+    const dedup = arr => arr.filter(a => {
+      if (!a.url || seen.has(a.url)) return false;
+      seen.add(a.url); return true;
+    });
+
+    const [us1, us2, us3, gov, world, iran, ai, aiAdv] = await Promise.all([
+      fetchSection({ locale: 'us', categories: 'general' },  3),
+      fetchSection({ locale: 'us', categories: 'politics' }, 3),
+      fetchSection({ locale: 'us', categories: 'business' }, 3),
+      fetchSection({ search: 'US Congress Senate White House federal government legislation' }, 6),
+      fetchSection({ search: 'global world international' }, 3),
+      fetchSection({ search: 'Iran war military conflict' }, 3),
+      fetchSection({ search: 'artificial intelligence OpenAI Anthropic Google DeepMind' }, 5),
+      fetchSection({ search: 'AI advancement breakthrough model release AGI research' }, 3),
+    ]);
+
+    setGrid('us-grid',     dedup([...us1, ...us2, ...us3]).slice(0, 9), 'us');
+    setGrid('gov-grid',    dedup(gov).slice(0, 6),    'gov');
+    setGrid('world-grid',  dedup(world).slice(0, 3),  'world');
+    setGrid('iran-grid',   dedup(iran).slice(0, 3),   'iran');
+    setGrid('ai-grid',     dedup(ai).slice(0, 5),     'ai');
+    setGrid('ai-adv-grid', dedup(aiAdv).slice(0, 3),  'ai-adv');
+
+  } catch (e) {
+    console.error('News load error:', e);
+    ['us-grid', 'gov-grid', 'world-grid', 'iran-grid', 'ai-grid', 'ai-adv-grid'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = `<div class="loading-text" style="grid-column:1/-1;color:var(--text-secondary)">
+        Could not load headlines. Check your TheNewsAPI key or try refreshing.
+        Free key at <a href="https://www.thenewsapi.com" target="_blank" style="color:var(--accent2)">thenewsapi.com</a>
+      </div>`;
+    });
+  }
+}
+
+loadAllNews();
+
+/* ═══════════════════════════════════════
+   NAV INJECT
+═══════════════════════════════════════ */
+function injectNav(html) {
+  const placeholder = document.getElementById('nav-placeholder');
+  if (!placeholder) return;
+  const tmp = document.createElement('div');
+  tmp.innerHTML = html;
+  Array.from(tmp.childNodes).forEach(node => {
+    if (node.nodeName !== 'SCRIPT')
+      placeholder.parentNode.insertBefore(node.cloneNode(true), placeholder);
+  });
+  tmp.querySelectorAll('script').forEach(oldScript => {
+    const s = document.createElement('script');
+    if (oldScript.src) s.src = oldScript.src;
+    else s.textContent = oldScript.textContent;
+    document.head.appendChild(s);
+  });
+  placeholder.remove();
+}
+
+fetch('nav.html')
+  .then(r => r.text())
+  .then(injectNav)
+  .catch(() => console.warn('nav.html not found'));
+</script>
+</body>
+</html>
