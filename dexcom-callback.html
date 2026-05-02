@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Chuck's AI — Connecting Dexcom…</title>
+  <script src="theme.js"></script>
+  <link rel="stylesheet" href="styles.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    /* ── DEXCOM CALLBACK PAGE ── */
+    .callback-wrap {
+      min-height: 80vh;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    .callback-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--r-xl);
+      padding: 3rem 2.5rem;
+      max-width: 460px; width: 100%;
+      text-align: center;
+    }
+
+    .cb-icon {
+      font-size: 3rem;
+      margin-bottom: 1.25rem;
+      display: block;
+    }
+
+    .cb-title {
+      font-family: 'Space Mono', monospace;
+      font-size: 14px; font-weight: 700;
+      letter-spacing: .08em; text-transform: uppercase;
+      color: var(--text-primary);
+      margin-bottom: .5rem;
+    }
+
+    .cb-sub {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px; color: var(--text-secondary);
+      line-height: 1.6;
+      margin-bottom: 1.5rem;
+    }
+
+    .cb-status {
+      font-family: 'Space Mono', monospace;
+      font-size: 11px; color: var(--text-muted);
+      background: rgba(255,255,255,.04);
+      border: 1px solid var(--border);
+      border-radius: var(--r-md);
+      padding: .75rem 1rem;
+      margin-bottom: 1.5rem;
+      min-height: 2.5rem;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    html.light .cb-status { background: #f8fafc; }
+
+    .cb-status.success {
+      border-color: rgba(61,220,132,.3);
+      color: var(--up);
+      background: rgba(61,220,132,.06);
+    }
+
+    .cb-status.error {
+      border-color: rgba(240,82,82,.3);
+      color: var(--down);
+      background: rgba(240,82,82,.06);
+    }
+
+    /* Spinner */
+    .spinner {
+      width: 14px; height: 14px;
+      border: 2px solid var(--border-bright);
+      border-top-color: var(--accent2);
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      flex-shrink: 0;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .cb-btn {
+      display: inline-block;
+      font-family: 'Space Mono', monospace;
+      font-size: 11px; font-weight: 700;
+      letter-spacing: .08em; text-transform: uppercase;
+      padding: .65rem 1.5rem;
+      background: rgba(127,217,184,.12);
+      border: 1px solid rgba(127,217,184,.3);
+      color: var(--accent);
+      border-radius: var(--r-md);
+      text-decoration: none;
+      transition: all .18s;
+      cursor: pointer;
+    }
+    .cb-btn:hover {
+      background: rgba(127,217,184,.22);
+      border-color: rgba(127,217,184,.5);
+    }
+    .cb-btn.hidden { display: none; }
+  </style>
+</head>
+<body data-page="dexcom" data-mob="dexcom">
+
+<div id="nav-placeholder"></div>
+
+<div class="container">
+  <div class="callback-wrap">
+    <div class="callback-card">
+
+      <span class="cb-icon" id="cbIcon">🔗</span>
+
+      <div class="cb-title" id="cbTitle">Connecting Dexcom…</div>
+      <div class="cb-sub" id="cbSub">
+        Exchanging authorization code with Dexcom. This only takes a moment.
+      </div>
+
+      <div class="cb-status" id="cbStatus">
+        <div class="spinner" id="cbSpinner"></div>
+        <span id="cbStatusText">Authenticating…</span>
+      </div>
+
+      <a href="dexcom.html" class="cb-btn hidden" id="cbBtn">
+        Go to Glucose Dashboard →
+      </a>
+
+    </div>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════
+   DEXCOM CALLBACK — Chuck's AI v7
+   Handles OAuth redirect from Dexcom.
+   Sends auth code to Cloudflare Worker,
+   which exchanges it for tokens stored in KV.
+═══════════════════════════════════════ */
+
+const WORKER = 'https://dexcom-proxy.infiniti306.workers.dev';
+
+async function handleCallback() {
+  const params = new URLSearchParams(window.location.search);
+  const code   = params.get('code');
+  const error  = params.get('error');
+
+  // ── Error from Dexcom ──
+  if (error) {
+    setError('Dexcom authorization was denied or failed.', error);
+    return;
+  }
+
+  // ── No code in URL ──
+  if (!code) {
+    setError('No authorization code found in URL.', 'Try logging in again from the dashboard.');
+    return;
+  }
+
+  // ── Exchange code for token ──
+  setStatus('Exchanging authorization code…');
+
+  try {
+    const res = await fetch(`${WORKER}/token`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ code }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok || !data.ok) {
+      const msg = typeof data.error === 'object'
+        ? JSON.stringify(data.error)
+        : (data.error || 'Token exchange failed.');
+      setError('Authentication failed.', msg);
+      return;
+    }
+
+    // ── Success ──
+    setSuccess();
+
+  } catch (err) {
+    setError('Network error.', 'Could not reach the authentication server. Check your connection.');
+  }
+}
+
+/* ── UI helpers ── */
+function setStatus(msg) {
+  document.getElementById('cbStatusText').textContent = msg;
+}
+
+function setSuccess() {
+  document.getElementById('cbIcon').textContent    = '✅';
+  document.getElementById('cbTitle').textContent   = 'Connected!';
+  document.getElementById('cbSub').textContent     = 'Your Dexcom account is now linked to Chuck\'s AI. Redirecting to the glucose dashboard…';
+  document.getElementById('cbSpinner').style.display = 'none';
+
+  const statusEl = document.getElementById('cbStatus');
+  statusEl.classList.add('success');
+  document.getElementById('cbStatusText').textContent = 'Authorization successful — tokens saved.';
+
+  document.getElementById('cbBtn').classList.remove('hidden');
+
+  // Auto-redirect after 2.5 seconds
+  setTimeout(() => { window.location.href = 'dexcom.html'; }, 2500);
+}
+
+function setError(title, detail) {
+  document.getElementById('cbIcon').textContent    = '❌';
+  document.getElementById('cbTitle').textContent   = title;
+  document.getElementById('cbSub').textContent     = detail || '';
+  document.getElementById('cbSpinner').style.display = 'none';
+
+  const statusEl = document.getElementById('cbStatus');
+  statusEl.classList.add('error');
+  document.getElementById('cbStatusText').textContent = 'Authentication failed. Please try again.';
+
+  // Show a "go back" button on error
+  const btn = document.getElementById('cbBtn');
+  btn.textContent = '← Back to Dashboard';
+  btn.href = 'dexcom.html';
+  btn.classList.remove('hidden');
+}
+
+/* ── NAV INJECT ── */
+function injectNav(html) {
+  const placeholder = document.getElementById('nav-placeholder');
+  if (!placeholder) return;
+  const tmp = document.createElement('div');
+  tmp.innerHTML = html;
+  Array.from(tmp.childNodes).forEach(node => {
+    if (node.nodeName !== 'SCRIPT')
+      placeholder.parentNode.insertBefore(node.cloneNode(true), placeholder);
+  });
+  tmp.querySelectorAll('script').forEach(oldScript => {
+    const s = document.createElement('script');
+    if (oldScript.src) s.src = oldScript.src;
+    else s.textContent = oldScript.textContent;
+    document.head.appendChild(s);
+  });
+  placeholder.remove();
+}
+
+fetch('nav.html').then(r => r.text()).then(injectNav).catch(() => {});
+
+// Run on load
+handleCallback();
+</script>
+</body>
+</html>
