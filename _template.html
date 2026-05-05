@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Chuck's AI — TODO: PAGE TITLE</title>
+
+  <!-- ① theme.js MUST be first — prevents flash -->
+  <script src="theme.js"></script>
+
+  <!-- ② Global design system -->
+  <link rel="stylesheet" href="styles.css"/>
+
+  <!-- ③ Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+
+  <!-- ④ Page-specific styles ONLY below — never edit styles.css -->
+  <style>
+    /* ── TODO: PAGE NAME PAGE SPECIFIC STYLES ── */
+
+  </style>
+</head>
+
+<!--
+  data-page  = matches desktop nav link
+  data-mob   = matches mobile nav link
+  TODO: set both to this page's nav key (e.g. "crypto", "news", "earnings")
+-->
+<body data-page="TODO" data-mob="TODO">
+
+<!-- Ambient background orbs (standard on all pages) -->
+<div class="bg-canvas">
+  <div class="orb orb1"></div>
+  <div class="orb orb2"></div>
+  <div class="orb orb3"></div>
+  <div class="orb orb4"></div>
+</div>
+
+<!-- Nav injected here -->
+<div id="nav-placeholder"></div>
+
+<div class="container">
+
+  <!-- ── PAGE HEADER ── -->
+  <div class="page-header">
+    <div>
+      <div class="page-title">TODO: <span style="color:var(--accent)">Page Title</span></div>
+      <div class="page-sub">TODO: subtitle / data source description</div>
+    </div>
+    <div class="header-right">
+      <div class="countdown-badge" id="countdown">AUTO ⟳ 60s</div>
+      <button class="refresh-btn" onclick="manualRefresh()">⟳ REFRESH</button>
+    </div>
+  </div>
+
+  <!-- ── TODO: PAGE CONTENT GOES HERE ── -->
+
+
+</div><!-- /container -->
+
+<footer>TODO: PAGE NAME · DATA SOURCE · AUTO-REFRESH 60s</footer>
+
+<script>
+/* ═══════════════════════════════════════════════════════════
+   HELPERS  (standard on all pages — do not remove)
+═══════════════════════════════════════════════════════════ */
+function fmtPrice(n, dec=2){
+  if(n==null||isNaN(n)) return '—';
+  return '$'+Number(n).toLocaleString('en-US',{minimumFractionDigits:dec,maximumFractionDigits:dec});
+}
+function fmtPct(n){ return n==null||isNaN(n)?'—':(n>=0?'+':'')+n.toFixed(2)+'%'; }
+function pctClass(n){ return n>0.05?'up':n<-0.05?'down':'flat'; }
+
+/* ═══════════════════════════════════════════════════════════
+   AUTO-REFRESH  (standard 60s pattern — adjust fn name below)
+═══════════════════════════════════════════════════════════ */
+let secsLeft = 60;
+const cdEl = document.getElementById('countdown');
+
+setInterval(()=>{
+  secsLeft--;
+  if(cdEl) cdEl.textContent = `AUTO ⟳ ${secsLeft}s`;
+  if(secsLeft <= 0){ secsLeft = 60; loadData(); }   // TODO: replace loadData with your fn name
+}, 1000);
+
+function manualRefresh(){
+  secsLeft = 60;
+  if(cdEl) cdEl.textContent = 'AUTO ⟳ 60s';
+  loadData();   // TODO: replace loadData with your fn name
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TODO: YOUR PAGE'S DATA FETCH FUNCTION
+   Rename loadData() to something descriptive e.g. loadCrypto()
+═══════════════════════════════════════════════════════════ */
+async function loadData(){
+  try{
+
+    // TODO: fetch your API data here
+
+  }catch(e){
+    console.error('Load error:', e);
+    // TODO: show error state in your content area
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   BOOT
+═══════════════════════════════════════════════════════════ */
+loadData();
+
+/* ═══════════════════════════════════════════════════════════
+   NAV INJECT  (standard on all pages — do not modify)
+═══════════════════════════════════════════════════════════ */
+function injectNav(html){
+  const placeholder = document.getElementById('nav-placeholder');
+  if(!placeholder) return;
+  const tmp = document.createElement('div');
+  tmp.innerHTML = html;
+  Array.from(tmp.childNodes).forEach(node=>{
+    if(node.nodeName !== 'SCRIPT'){
+      placeholder.parentNode.insertBefore(node.cloneNode(true), placeholder);
+    }
+  });
+  tmp.querySelectorAll('script').forEach(oldScript=>{
+    const s = document.createElement('script');
+    if(oldScript.src) s.src = oldScript.src;
+    else s.textContent = oldScript.textContent;
+    document.head.appendChild(s);
+  });
+  placeholder.remove();
+}
+
+fetch('nav.html')
+  .then(r => r.text())
+  .then(injectNav)
+  .catch(() => console.warn('nav.html not found'));
+</script>
+</body>
+</html>
