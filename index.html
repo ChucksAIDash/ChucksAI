@@ -804,14 +804,21 @@ document.getElementById('wlInput').addEventListener('keydown',e=>{ if(e.key==='E
 
 /* ── BOOT ── */
 (async function boot(){
+  // Non-Finnhub calls fire immediately — no rate limit concerns
   loadWeather();
   loadGlucose();
   loadFearGreedEquity();
   loadFearGreedCrypto();
   loadCrypto();
-  Promise.all([renderWatchlist(), loadIndices()]);
-  loadStrip();
-  setTimeout(loadNewsAndAI,1200);
+  setTimeout(loadNewsAndAI, 1200);
+
+  // Finnhub calls staggered to stay under 30 req/min free tier:
+  // Strip: 13 calls × 250ms = ~3.25s
+  // Indices: 4 calls × 300ms = ~1.2s  — start after strip finishes
+  // Watchlist: 5 calls × 300ms = ~1.5s — start after indices finish
+  await loadStrip();
+  await loadIndices();
+  await renderWatchlist();
 })();
 
 /* ── NAV INJECT ── */
