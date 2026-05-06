@@ -3,232 +3,320 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-  <title>Chuck's AI — Home</title>
+  <title>Chuck's AI — Dashboard</title>
   <script src="theme.js"></script>
   <link rel="stylesheet" href="styles.css"/>
   <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
   <style>
-    /* ── INDEX-SPECIFIC ── */
-    .home-layout {
+    /* ── INDEX v8 WIDGET LAYOUT ── */
+
+    /* ── TOP BAR: Clock / Weather / Glucose ── */
+    .top-bar {
       display: grid;
-      grid-template-columns: 1fr 292px;
-      gap: 18px;
-      align-items: start;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 18px;
     }
-    @media(max-width:1080px){ .home-layout{ grid-template-columns:1fr; } .sidebar{ display:none; } }
+    @media(max-width: 700px) {
+      .top-bar { grid-template-columns: 1fr; }
+    }
 
-    /* ── BRIEFING HEADER ── */
-    .briefing-header { margin-bottom: 1.4rem; }
-    .briefing-date-label {
-      font-family:'Space Mono',monospace; font-size:9px; letter-spacing:.2em;
-      text-transform:uppercase; color:var(--text-muted); margin-bottom:5px;
+    .top-widget {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      padding: 16px 18px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      min-height: 76px;
     }
-    .briefing-title {
-      font-family:'Space Mono',monospace; font-size:1.6rem; font-weight:700;
-      letter-spacing:-.025em; color:var(--text-primary); margin-bottom:4px;
+    .tw-icon {
+      font-size: 1.6rem;
+      flex-shrink: 0;
+      line-height: 1;
     }
-    .briefing-sub { font-size:12px; color:var(--text-secondary); }
-
-    /* ── INDICES STRIP ── */
-    .indices-grid {
-      display:grid; grid-template-columns:repeat(4,1fr); gap:8px;
-      margin-bottom:18px;
-    }
-    @media(max-width:600px){ .indices-grid{ grid-template-columns:repeat(2,1fr); } }
-    .idx-card {
-      background:var(--bg-card); border:1px solid var(--border);
-      border-radius:var(--r-md); padding:11px 13px;
-      transition:border-color .2s;
-    }
-    .idx-card.is-up  { border-color:rgba(61,220,132,.2); }
-    .idx-card.is-down{ border-color:rgba(240,82,82,.18); }
-    .idx-sym   { font-family:'Space Mono',monospace; font-size:9px; color:var(--text-muted); letter-spacing:.1em; margin-bottom:5px; }
-    .idx-price { font-family:'Space Mono',monospace; font-size:16px; font-weight:700; color:var(--text-primary); margin-bottom:3px; }
-    .idx-chg   { font-family:'Space Mono',monospace; font-size:10px; font-weight:700; }
-    .idx-name  { font-size:9px; color:var(--text-muted); margin-top:3px; }
-
-    /* ── AI MARKET READ ── */
-    .ai-read-wrap { margin-bottom:18px; }
-    .ai-generating {
-      font-family:'Space Mono',monospace; font-size:10px;
-      color:var(--text-muted); display:flex; align-items:center; gap:8px;
-      padding:10px 0;
-    }
-    .spin {
-      width:12px; height:12px; border-radius:50%;
-      border:2px solid var(--border-bright);
-      border-top-color:var(--accent);
-      animation:spin .8s linear infinite; flex-shrink:0;
-    }
-    @keyframes spin{ to{transform:rotate(360deg)} }
-
-    /* ── NEWS LIST ── */
-    .news-list { display:flex; flex-direction:column; }
-    .news-item {
-      display:flex; gap:10px; align-items:flex-start;
-      padding:10px 0; border-bottom:1px solid var(--border);
-      text-decoration:none; color:inherit;
-      transition:background .15s;
-    }
-    .news-item:last-child { border-bottom:none; }
-    .news-item:hover .news-headline { color:var(--accent2); }
-    .news-time {
-      font-family:'Space Mono',monospace; font-size:9px;
-      color:var(--text-muted); white-space:nowrap;
-      padding-top:2px; min-width:40px; flex-shrink:0;
-    }
-    .news-body { flex:1; min-width:0; }
-    .news-headline { font-size:12px; color:var(--text-primary); line-height:1.5; margin-bottom:3px; transition:color .15s; }
-    .news-source { font-size:10px; color:var(--text-muted); }
-
-    /* ── AI ARTICLE SUMMARIES ── */
-    .ai-summaries-list { display:flex; flex-direction:column; gap:0; margin-bottom:18px; }
-    .ai-sum-item {
-      padding: 11px 0;
-      border-bottom: 1px solid var(--border);
-      display: flex; flex-direction: column; gap: 5px;
-    }
-    .ai-sum-item:last-child { border-bottom: none; }
-    .ai-sum-headline {
-      font-size: 11px; font-weight: 600;
-      color: var(--text-primary); line-height: 1.45;
-      text-decoration: none;
-      transition: color .15s;
-    }
-    .ai-sum-headline:hover { color: var(--accent2); }
-    .ai-sum-body {
-      font-size: 11.5px; color: var(--text-secondary);
-      line-height: 1.6;
-    }
-    .ai-sum-meta {
-      display: flex; align-items: center; gap: 8px;
-      margin-top: 1px;
-    }
-    .ai-sum-tag {
+    .tw-body { flex: 1; min-width: 0; }
+    .tw-label {
       font-family: 'Space Mono', monospace;
       font-size: 8px; font-weight: 700;
-      color: var(--accent-purple);
-      background: rgba(167,139,250,.1);
-      border: 1px solid rgba(167,139,250,.2);
-      padding: 2px 7px; border-radius: 99px;
-      letter-spacing: .07em;
+      letter-spacing: .18em; text-transform: uppercase;
+      color: var(--text-muted); margin-bottom: 4px;
     }
-    .ai-sum-source {
+    .tw-value {
       font-family: 'Space Mono', monospace;
-      font-size: 9px; color: var(--text-muted);
+      font-size: 1.4rem; font-weight: 700;
+      color: var(--text-primary); line-height: 1.1;
     }
-    /* shimmer skeletons while loading */
-    .sum-skel-wrap { display:flex; flex-direction:column; gap:10px; padding:8px 0; }
-    .sum-skel-block { display:flex; flex-direction:column; gap:5px; padding-bottom:10px; border-bottom:1px solid var(--border); }
-    .sum-skel-block:last-child { border-bottom:none; }
-    .sum-skel {
-      height:9px; border-radius:4px;
-      background: linear-gradient(90deg,
-        rgba(167,139,250,.07) 25%,
-        rgba(167,139,250,.16) 50%,
-        rgba(167,139,250,.07) 75%);
-      background-size:200% 100%;
-      animation: sum-shimmer 1.5s infinite;
+    .tw-sub {
+      font-size: 11px; color: var(--text-muted); margin-top: 3px;
     }
-    @keyframes sum-shimmer {
-      0%   { background-position:200% 0; }
-      100% { background-position:-200% 0; }
-    }
-    .ai-sum-dot {
-      display:inline-block; width:6px; height:6px; border-radius:50%;
-      background:var(--accent-purple);
-      box-shadow:0 0 7px rgba(167,139,250,.8);
-      animation:sum-pulse 2s ease-in-out infinite;
-      flex-shrink:0;
-    }
-    @keyframes sum-pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
 
-    /* ── SIDEBAR ── */
-    .sidebar { display:flex; flex-direction:column; gap:12px; }
+    /* Clock widget specifics */
+    #clockValue { font-size: 1.5rem; letter-spacing: -.02em; }
+    #clockDate  { font-size: 10px; color: var(--text-secondary); margin-top: 2px; }
 
-    /* Fear & Greed */
-    .fg-num  { font-family:'Space Mono',monospace; font-size:2.4rem; font-weight:700; color:var(--accent3); letter-spacing:-.04em; text-align:center; padding:6px 0 2px; }
-    .fg-word { font-family:'Space Mono',monospace; font-size:9px; letter-spacing:.2em; text-transform:uppercase; color:var(--accent3); text-align:center; margin-bottom:10px; }
-    .fg-bar  { height:5px; border-radius:3px; background:var(--border); margin:8px 0 4px; overflow:hidden; }
-    .fg-fill { height:100%; border-radius:3px; background:linear-gradient(90deg,var(--down),var(--accent3),var(--up)); transition:width .6s ease; }
-    .fg-labels { display:flex; justify-content:space-between; font-family:'Space Mono',monospace; font-size:8px; color:var(--text-muted); }
+    /* Weather specifics */
+    #wxIcon { font-size: 2rem; }
 
-    /* Top Movers */
-    .mover-row {
-      display:flex; justify-content:space-between; align-items:center;
-      padding:7px 0; border-bottom:1px solid var(--border);
+    /* Glucose specifics */
+    .gluc-widget { border-left: 3px solid rgba(240,82,82,.35); }
+    .gluc-widget.is-normal { border-left-color: rgba(61,220,132,.4); }
+    .gluc-widget.is-high   { border-left-color: rgba(240,184,106,.5); }
+    .gluc-widget.is-low    { border-left-color: rgba(240,82,82,.5); }
+    #glucVal {
+      font-family: 'Space Mono', monospace;
+      font-size: 1.6rem; font-weight: 700;
+      color: var(--up); line-height: 1;
+      display: flex; align-items: baseline; gap: 6px;
     }
-    .mover-row:last-child { border-bottom:none; }
-    .mv-sym  { font-family:'Space Mono',monospace; font-size:11px; font-weight:700; color:var(--text-primary); }
-    .mv-name { font-size:9px; color:var(--text-muted); margin-top:1px; }
-    .mv-chg  { font-family:'Space Mono',monospace; font-size:12px; font-weight:700; }
+    #glucArrow { font-size: 1.1rem; }
 
-    /* Watchlist */
+    /* ── SECTION DIVIDERS ── */
+    .dash-section { margin-bottom: 22px; }
+    .section-header {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 12px;
+    }
+    .section-title {
+      font-family: 'Space Mono', monospace;
+      font-size: 10px; font-weight: 700;
+      letter-spacing: .18em; text-transform: uppercase;
+      color: var(--text-muted);
+    }
+    .section-line {
+      flex: 1; height: 1px;
+      background: var(--border);
+    }
+    .section-pip {
+      width: 4px; height: 14px; border-radius: 2px;
+      background: var(--accent2);
+      box-shadow: 0 0 7px rgba(91,200,245,.5);
+      flex-shrink: 0;
+    }
+    .section-pip.pip-green  { background: var(--accent);   box-shadow: 0 0 7px rgba(127,217,184,.5); }
+    .section-pip.pip-yellow { background: var(--accent3);  box-shadow: 0 0 7px rgba(240,184,106,.5); }
+    .section-pip.pip-purple { background: var(--accent-purple); box-shadow: 0 0 7px rgba(167,139,250,.5); }
+    .section-pip.pip-red    { background: var(--down);     box-shadow: 0 0 7px rgba(240,82,82,.5); }
+
+    /* ── NEWS FEED ── */
+    .news-feed { display: flex; flex-direction: column; }
+    .news-item {
+      display: flex; gap: 10px; align-items: flex-start;
+      padding: 10px 0; border-bottom: 1px solid var(--border);
+      text-decoration: none; color: inherit; transition: background .15s;
+    }
+    .news-item:last-child { border-bottom: none; }
+    .news-item:hover .ni-headline { color: var(--accent2); }
+    .ni-num {
+      font-family: 'Space Mono', monospace; font-size: 9px;
+      color: var(--border-bright); font-weight: 700;
+      padding-top: 2px; min-width: 18px; flex-shrink: 0;
+    }
+    .ni-body { flex: 1; min-width: 0; }
+    .ni-headline {
+      font-size: 13px; color: var(--text-primary);
+      line-height: 1.5; margin-bottom: 3px; transition: color .15s;
+    }
+    .ni-meta {
+      display: flex; align-items: center; gap: 8px;
+    }
+    .ni-source { font-family: 'Space Mono', monospace; font-size: 9px; color: var(--text-muted); }
+    .ni-time   { font-family: 'Space Mono', monospace; font-size: 9px; color: var(--text-muted); }
+
+    /* AI summaries on news items */
+    .ni-summary {
+      font-size: 12px; color: var(--text-secondary);
+      line-height: 1.6; margin-top: 5px;
+      display: none;
+    }
+    .ni-summary.visible { display: block; }
+    .ni-ai-tag {
+      font-family: 'Space Mono', monospace; font-size: 8px; font-weight: 700;
+      color: var(--accent-purple);
+      background: rgba(167,139,250,.1); border: 1px solid rgba(167,139,250,.2);
+      padding: 1px 6px; border-radius: 99px; letter-spacing: .06em;
+    }
+
+    /* ── MARKET WIDGETS GRID ── */
+    .market-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    @media(max-width: 900px) { .market-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media(max-width: 480px) { .market-grid { grid-template-columns: repeat(2, 1fr); } }
+
+    .idx-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--r-md);
+      padding: 12px 14px;
+      transition: border-color .2s;
+    }
+    .idx-card.is-up   { border-color: rgba(61,220,132,.2); }
+    .idx-card.is-down { border-color: rgba(240,82,82,.18); }
+    .idx-label { font-family: 'Space Mono', monospace; font-size: 8px; color: var(--text-muted); letter-spacing: .1em; margin-bottom: 6px; }
+    .idx-price { font-family: 'Space Mono', monospace; font-size: 15px; font-weight: 700; color: var(--text-primary); margin-bottom: 3px; }
+    .idx-chg   { font-family: 'Space Mono', monospace; font-size: 10px; font-weight: 700; }
+    .idx-name  { font-size: 9px; color: var(--text-muted); margin-top: 3px; }
+
+    /* ── FEAR & GREED INLINE ── */
+    .fg-row {
+      display: flex; align-items: center; gap: 14px;
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--r-md); padding: 12px 16px;
+    }
+    .fg-num  {
+      font-family: 'Space Mono', monospace; font-size: 2rem; font-weight: 700;
+      color: var(--accent3); min-width: 52px;
+    }
+    .fg-right { flex: 1; }
+    .fg-word {
+      font-family: 'Space Mono', monospace; font-size: 10px; font-weight: 700;
+      letter-spacing: .1em; text-transform: uppercase; color: var(--accent3);
+      margin-bottom: 6px;
+    }
+    .fg-bar  { height: 5px; border-radius: 3px; background: var(--border); overflow: hidden; }
+    .fg-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg,var(--down),var(--accent3),var(--up)); transition: width .6s ease; }
+    .fg-labels { display: flex; justify-content: space-between; font-family: 'Space Mono', monospace; font-size: 8px; color: var(--text-muted); margin-top: 4px; }
+
+    /* ── CRYPTO GRID ── */
+    .crypto-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+    }
+    @media(max-width: 900px) { .crypto-grid { grid-template-columns: repeat(3, 1fr); } }
+    @media(max-width: 480px) { .crypto-grid { grid-template-columns: repeat(2, 1fr); } }
+
+    .crypto-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--r-md);
+      padding: 12px 14px;
+      transition: border-color .2s;
+    }
+    .crypto-card.is-up   { border-color: rgba(61,220,132,.2); }
+    .crypto-card.is-down { border-color: rgba(240,82,82,.18); }
+    .cc-sym   { font-family: 'Space Mono', monospace; font-size: 9px; font-weight: 700; color: var(--text-muted); letter-spacing: .1em; margin-bottom: 5px; }
+    .cc-name  { font-size: 9px; color: var(--text-muted); margin-bottom: 6px; }
+    .cc-price { font-family: 'Space Mono', monospace; font-size: 13px; font-weight: 700; color: var(--text-primary); margin-bottom: 3px; }
+    .cc-chg   { font-family: 'Space Mono', monospace; font-size: 10px; font-weight: 700; }
+
+    /* ── WATCHLIST ── */
+    .watchlist-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      padding: 14px 16px;
+    }
     .wl-row {
-      display:flex; justify-content:space-between; align-items:center;
-      padding:7px 0; border-bottom:1px solid var(--border);
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 6px 0; border-bottom: 1px solid var(--border);
     }
-    .wl-row:last-child{ border-bottom:none; }
-    .wl-sym  { font-family:'Space Mono',monospace; font-size:11px; font-weight:700; color:var(--text-primary); }
-    .wl-data { text-align:right; }
-    .wl-px   { font-family:'Space Mono',monospace; font-size:11px; color:var(--text-primary); }
-    .wl-chg  { font-family:'Space Mono',monospace; font-size:10px; }
-
-    /* Add to watchlist */
-    .wl-add  {
-      display:flex; gap:6px; margin-top:10px;
+    .wl-row:last-child { border-bottom: none; }
+    .wl-left  { display: flex; align-items: center; gap: 8px; }
+    .wl-sym   { font-family: 'Space Mono', monospace; font-size: 11px; font-weight: 700; color: var(--text-primary); }
+    .wl-right { display: flex; align-items: center; gap: 10px; }
+    .wl-px    { font-family: 'Space Mono', monospace; font-size: 11px; color: var(--text-primary); }
+    .wl-chg   { font-family: 'Space Mono', monospace; font-size: 10px; min-width: 52px; text-align: right; }
+    .wl-rm    {
+      font-family: 'Space Mono', monospace; font-size: 9px;
+      color: var(--text-muted); cursor: pointer; padding: 2px 5px;
+      border-radius: 3px; transition: all .15s; line-height: 1;
+      border: 1px solid transparent;
+    }
+    .wl-rm:hover { color: var(--down); border-color: rgba(240,82,82,.3); background: rgba(240,82,82,.06); }
+    .wl-add {
+      display: flex; gap: 6px; margin-top: 10px;
     }
     .wl-input {
-      flex:1; font-family:'Space Mono',monospace; font-size:11px;
-      background:var(--bg-card); border:1px solid var(--border-bright);
-      border-radius:var(--r-sm); padding:6px 10px; color:var(--text-primary);
-      text-transform:uppercase; letter-spacing:.06em; outline:none;
+      flex: 1; font-family: 'Space Mono', monospace; font-size: 11px;
+      background: var(--bg-card); border: 1px solid var(--border-bright);
+      border-radius: var(--r-sm); padding: 6px 10px; color: var(--text-primary);
+      text-transform: uppercase; letter-spacing: .06em; outline: none;
     }
-    .wl-input:focus { border-color:var(--accent2); }
+    .wl-input:focus { border-color: var(--accent2); }
     .wl-btn {
-      font-family:'Space Mono',monospace; font-size:10px; font-weight:700;
-      background:rgba(91,200,245,.1); border:1px solid rgba(91,200,245,.25);
-      border-radius:var(--r-sm); padding:6px 12px; color:var(--accent2);
-      cursor:pointer; transition:all .15s; letter-spacing:.06em;
+      font-family: 'Space Mono', monospace; font-size: 10px; font-weight: 700;
+      background: rgba(91,200,245,.1); border: 1px solid rgba(91,200,245,.25);
+      border-radius: var(--r-sm); padding: 6px 12px; color: var(--accent2);
+      cursor: pointer; transition: all .15s; letter-spacing: .06em;
     }
-    .wl-btn:hover { background:rgba(91,200,245,.18); }
+    .wl-btn:hover { background: rgba(91,200,245,.18); }
 
-    /* Sidebar label */
-    .sb-label {
-      font-family:'Space Mono',monospace; font-size:9px; font-weight:700;
-      letter-spacing:.18em; text-transform:uppercase; color:var(--text-muted);
-      margin-bottom:10px; padding-bottom:7px; border-bottom:1px solid var(--border);
-      display:flex; align-items:center; gap:7px;
+    /* ── AI MARKET READ ── */
+    .ai-block {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      padding: 14px 16px;
+      position: relative; overflow: hidden;
     }
-    .sb-label::before {
-      content:''; width:3px; height:10px; border-radius:2px;
-      background:var(--accent2); box-shadow:0 0 6px rgba(91,200,245,.6);
-      flex-shrink:0;
+    .ai-block::before {
+      content: ''; position: absolute; top: 0; left: 10%; right: 10%; height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(127,217,184,.25), transparent);
     }
-    .sb-label.lbl-g::before  { background:var(--accent); box-shadow:0 0 6px rgba(127,217,184,.6); }
-    .sb-label.lbl-a::before  { background:var(--accent3); box-shadow:0 0 6px rgba(240,184,106,.6); }
+    .ai-label {
+      font-family: 'Space Mono', monospace; font-size: 9px; font-weight: 700;
+      letter-spacing: .12em; text-transform: uppercase; color: var(--text-muted);
+      margin-bottom: 10px; display: flex; align-items: center; gap: 7px;
+    }
+    .ai-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--accent); box-shadow: 0 0 7px rgba(127,217,184,.8);
+      animation: aiPulse 2s ease-in-out infinite; flex-shrink: 0;
+    }
+    @keyframes aiPulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+    .ai-text { font-size: 13px; color: var(--text-secondary); line-height: 1.7; }
+    .ai-text strong { color: var(--text-primary); }
+    .ai-spin {
+      width: 12px; height: 12px; border-radius: 50%;
+      border: 2px solid var(--border-bright); border-top-color: var(--accent);
+      animation: spin .8s linear infinite; flex-shrink: 0;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .ai-loading {
+      font-family: 'Space Mono', monospace; font-size: 10px; color: var(--text-muted);
+      display: flex; align-items: center; gap: 8px; padding: 4px 0;
+    }
 
-    /* Skeleton loader */
+    /* ── SKELETON ── */
     .skel {
-      background:linear-gradient(90deg,var(--bg-card) 25%,var(--bg-card-hover) 50%,var(--bg-card) 75%);
-      background-size:200% 100%; border-radius:4px;
-      animation:skelShim 1.4s ease-in-out infinite;
+      background: linear-gradient(90deg,var(--bg-card) 25%,var(--bg-card-hover) 50%,var(--bg-card) 75%);
+      background-size: 200% 100%; border-radius: 4px;
+      animation: skelShim 1.4s ease-in-out infinite;
     }
-    @keyframes skelShim{ 0%{background-position:200% 0} 100%{background-position:-200% 0} }
-    .skel-line { height:11px; margin:5px 0; }
-    .skel-lg   { height:16px; }
+    @keyframes skelShim { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+    .skel-line { height: 10px; margin: 5px 0; }
+    .skel-sm   { height: 14px; }
+
+    /* ── TWO-COL MARKET+WATCHLIST LAYOUT ── */
+    .market-watchlist {
+      display: grid;
+      grid-template-columns: 1fr 260px;
+      gap: 14px;
+      align-items: start;
+    }
+    @media(max-width: 900px) { .market-watchlist { grid-template-columns: 1fr; } }
+
   </style>
 </head>
-<body>
+
+<body data-page="home" data-mob="home">
 
 <div class="bg-canvas">
-  <div class="orb orb1"></div><div class="orb orb2"></div>
-  <div class="orb orb3"></div><div class="orb orb4"></div>
+  <div class="orb orb1"></div>
+  <div class="orb orb2"></div>
+  <div class="orb orb3"></div>
+  <div class="orb orb4"></div>
 </div>
 
 <div id="nav-placeholder"></div>
 
-<!-- Live ticker strip -->
+<!-- Ticker strip -->
 <div class="ticker-strip" id="tickerStrip">
   <div class="ticker-track" id="tickerTrack">
     <span class="ticker-item"><span class="ti-sym">SPY</span><span class="ti-px" id="t-SPY">—</span><span class="ti-chg" id="tc-SPY">—</span></span>
@@ -250,163 +338,149 @@
 </div>
 
 <div class="container">
-  <div class="home-layout">
 
-    <!-- ── MAIN COLUMN ── -->
-    <div class="main-col">
+  <!-- ═══ TOP BAR: Clock / Weather / Glucose ═══ -->
+  <div class="top-bar">
 
-      <!-- Briefing header -->
-      <div class="briefing-header">
-        <div class="briefing-date-label" id="briefingDateLabel">Loading…</div>
-        <div class="briefing-title">Morning Briefing</div>
-        <div class="briefing-sub" id="briefingSub">Fetching live market data…</div>
+    <!-- Clock -->
+    <div class="top-widget">
+      <div class="tw-icon">🕐</div>
+      <div class="tw-body">
+        <div class="tw-label">Central Time</div>
+        <div class="tw-value" id="clockValue">--:-- --</div>
+        <div id="clockDate" style="font-size:10px;color:var(--text-secondary);margin-top:2px;font-family:'Space Mono',monospace;font-size:9px;"></div>
       </div>
+    </div>
 
-      <!-- Indices -->
-      <div class="section-label">Indices</div>
-      <div class="indices-grid" id="indicesGrid">
-        <div class="idx-card"><div class="idx-sym">S&amp;P 500</div><div class="idx-price skel skel-lg" style="width:80px">&nbsp;</div><div class="idx-name">SPY</div></div>
-        <div class="idx-card"><div class="idx-sym">NASDAQ</div><div class="idx-price skel skel-lg" style="width:80px">&nbsp;</div><div class="idx-name">QQQ</div></div>
-        <div class="idx-card"><div class="idx-sym">DOW</div><div class="idx-price skel skel-lg" style="width:80px">&nbsp;</div><div class="idx-name">DIA</div></div>
-        <div class="idx-card"><div class="idx-sym">RUSSELL</div><div class="idx-price skel skel-lg" style="width:80px">&nbsp;</div><div class="idx-name">IWM</div></div>
+    <!-- Weather -->
+    <div class="top-widget">
+      <div id="wxIcon" class="tw-icon">⛅</div>
+      <div class="tw-body">
+        <div class="tw-label">Lombard, IL</div>
+        <div class="tw-value" id="wxTemp">--°F</div>
+        <div class="tw-sub" id="wxDesc">Loading…</div>
       </div>
+    </div>
 
-      <!-- AI Market Read -->
-      <div class="section-label lbl-green" style="margin-top:18px;">AI Market Read</div>
-      <div class="ai-read-wrap">
-        <div class="ai-block" id="aiBlock">
-          <div class="ai-label"><div class="ai-dot"></div>Chuck's AI · Analyzing today's headlines…</div>
-          <div class="ai-generating" id="aiGenerating">
-            <div class="spin"></div>Fetching news and generating market summary…
+    <!-- Glucose -->
+    <div class="top-widget gluc-widget" id="glucWidget">
+      <div class="tw-icon">🩸</div>
+      <div class="tw-body">
+        <div class="tw-label">Glucose · 24h Avg</div>
+        <div id="glucVal">
+          <span id="glucCurrent">--</span>
+          <span id="glucArrow" style="font-size:1rem;color:var(--text-muted)">—</span>
+        </div>
+        <div class="tw-sub" id="glucSub">Avg: — · Loading…</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ═══ NEWS FEED ═══ -->
+  <div class="dash-section">
+    <div class="section-header">
+      <div class="section-pip pip-purple"></div>
+      <div class="section-title">Top Stories</div>
+      <div class="section-line"></div>
+      <div id="aiNewsStatus" style="font-family:'Space Mono',monospace;font-size:8px;color:var(--text-muted);white-space:nowrap;"></div>
+    </div>
+    <div class="news-feed" id="newsFeed">
+      <div style="padding:12px 0">
+        <div class="skel skel-sm" style="width:88%;margin-bottom:8px"></div>
+        <div class="skel skel-line" style="width:72%"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ MARKET ═══ -->
+  <div class="dash-section">
+    <div class="section-header">
+      <div class="section-pip"></div>
+      <div class="section-title">Market</div>
+      <div class="section-line"></div>
+    </div>
+
+    <div class="market-watchlist">
+      <div>
+        <!-- Indices -->
+        <div class="market-grid" id="indicesGrid">
+          <div class="idx-card"><div class="idx-label">S&amp;P 500</div><div class="idx-price skel skel-sm" style="width:70px">&nbsp;</div></div>
+          <div class="idx-card"><div class="idx-label">NASDAQ</div><div class="idx-price skel skel-sm" style="width:70px">&nbsp;</div></div>
+          <div class="idx-card"><div class="idx-label">DOW</div><div class="idx-price skel skel-sm" style="width:70px">&nbsp;</div></div>
+          <div class="idx-card"><div class="idx-label">RUSSELL</div><div class="idx-price skel skel-sm" style="width:70px">&nbsp;</div></div>
+        </div>
+
+        <!-- Fear & Greed -->
+        <div class="fg-row" style="margin-bottom:10px">
+          <div class="fg-num" id="fgNum">—</div>
+          <div class="fg-right">
+            <div class="fg-word" id="fgWord">Fear &amp; Greed</div>
+            <div class="fg-bar"><div class="fg-fill" id="fgFill" style="width:50%"></div></div>
+            <div class="fg-labels"><span>Extreme Fear</span><span>Extreme Greed</span></div>
           </div>
-          <div class="ai-text" id="aiText" style="display:none"></div>
         </div>
-      </div>
 
-      <!-- Top Stories -->
-      <div class="section-label" style="margin-top:4px;">Top Stories</div>
-      <div class="news-list" id="newsList">
-        <div style="padding:16px 0">
-          <div class="skel skel-line" style="width:90%"></div>
-          <div class="skel skel-line" style="width:75%;margin-top:8px"></div>
-          <div class="skel skel-line" style="width:85%;margin-top:8px"></div>
+        <!-- AI Market Read -->
+        <div class="ai-block">
+          <div class="ai-label">
+            <div class="ai-dot"></div>
+            <span id="aiLabel">Chuck's AI · Analyzing…</span>
+          </div>
+          <div id="aiLoading" class="ai-loading">
+            <div class="ai-spin"></div>Generating market summary…
+          </div>
+          <div id="aiText" class="ai-text" style="display:none"></div>
         </div>
-      </div>
-
-      <!-- AI Article Summaries -->
-      <div class="section-label lbl-purple" style="margin-top:18px; display:flex; align-items:center; gap:8px;">
-        <span class="ai-sum-dot"></span> AI Article Summaries
-      </div>
-      <div class="ai-summaries-list" id="aiSummariesList">
-        <div class="sum-skel-wrap">
-          ${[90,78,85,70,88].map(w=>`
-          <div class="sum-skel-block">
-            <div class="sum-skel" style="width:${w}%"></div>
-            <div class="sum-skel" style="width:96%"></div>
-            <div class="sum-skel" style="width:82%"></div>
-          </div>`).join('')}
-        </div>
-      </div>
-
-    </div><!-- /main-col -->
-
-    <!-- ── SIDEBAR ── -->
-    <div class="sidebar">
-
-      <!-- Fear & Greed -->
-      <div class="sidebar-card">
-        <div class="sb-label lbl-a">Fear &amp; Greed</div>
-        <div class="fg-num" id="fgNum">—</div>
-        <div class="fg-word" id="fgWord">Loading…</div>
-        <div class="fg-bar"><div class="fg-fill" id="fgFill" style="width:50%"></div></div>
-        <div class="fg-labels"><span>Fear</span><span>Greed</span></div>
-      </div>
-
-      <!-- Top Movers -->
-      <div class="sidebar-card">
-        <div class="sb-label">Top Movers</div>
-        <div id="moversWrap">
-          <div class="skel skel-line"></div>
-          <div class="skel skel-line"></div>
-          <div class="skel skel-line"></div>
-          <div class="skel skel-line"></div>
-        </div>
-      </div>
-
-      <!-- Glucose -->
-      <div class="sidebar-card">
-        <div class="sb-label" style="color:var(--down)">🩸 Glucose</div>
-        <div id="glucoseSnap">
-          <div class="skel skel-lg" style="width:80px;height:36px;border-radius:6px;margin-bottom:6px">&nbsp;</div>
-          <div class="skel skel-line" style="width:60%"></div>
-        </div>
-        <a href="dexcom.html" style="
-          display:block; margin-top:10px; text-align:center;
-          font-family:'Space Mono',monospace; font-size:9px; font-weight:700;
-          letter-spacing:.08em; text-transform:uppercase; text-decoration:none;
-          padding:6px 0; border-radius:var(--r-sm);
-          background:rgba(240,82,82,.08); border:1px solid rgba(240,82,82,.2);
-          color:var(--down); transition:all .18s;"
-          onmouseover="this.style.background='rgba(240,82,82,.16)'"
-          onmouseout="this.style.background='rgba(240,82,82,.08)'">
-          View Dashboard →
-        </a>
       </div>
 
       <!-- Watchlist -->
-      <div class="sidebar-card">
-        <div class="sb-label lbl-g">Watchlist</div>
+      <div class="watchlist-card">
+        <div style="font-family:'Space Mono',monospace;font-size:9px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--text-muted);margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:7px;">
+          <span style="width:3px;height:10px;border-radius:2px;background:var(--accent);box-shadow:0 0 6px rgba(127,217,184,.6);display:inline-block;flex-shrink:0;"></span>
+          Watchlist
+        </div>
         <div id="watchlistWrap"></div>
         <div class="wl-add">
           <input class="wl-input" id="wlInput" placeholder="ADD TICKER" maxlength="8"/>
           <button class="wl-btn" onclick="addToWatchlist()">+ ADD</button>
         </div>
       </div>
+    </div>
+  </div>
 
-    </div><!-- /sidebar -->
-  </div><!-- /home-layout -->
+  <!-- ═══ CRYPTO ═══ -->
+  <div class="dash-section">
+    <div class="section-header">
+      <div class="section-pip pip-yellow"></div>
+      <div class="section-title">Crypto</div>
+      <div class="section-line"></div>
+    </div>
+    <div class="crypto-grid" id="cryptoGrid">
+      <div class="crypto-card"><div class="cc-sym">BTC</div><div class="cc-price skel skel-sm" style="width:80px">&nbsp;</div></div>
+      <div class="crypto-card"><div class="cc-sym">ETH</div><div class="cc-price skel skel-sm" style="width:70px">&nbsp;</div></div>
+      <div class="crypto-card"><div class="cc-sym">LTC</div><div class="cc-price skel skel-sm" style="width:60px">&nbsp;</div></div>
+      <div class="crypto-card"><div class="cc-sym">DOGE</div><div class="cc-price skel skel-sm" style="width:60px">&nbsp;</div></div>
+      <div class="crypto-card"><div class="cc-sym">XLM</div><div class="cc-price skel skel-sm" style="width:60px">&nbsp;</div></div>
+    </div>
+  </div>
+
 </div><!-- /container -->
 
-<footer>CHUCKSAI.COM &nbsp;·&nbsp; CLAUDE AI · FINNHUB · COINBASE · THENEWSAPI · OPEN-METEO</footer>
+<footer>CHUCKSAI.COM &nbsp;·&nbsp; CLAUDE AI · FINNHUB · COINBASE · THENEWSAPI · OPEN-METEO · DEXCOM</footer>
 
 <script>
 /* ═══════════════════════════════════════
-   GLUCOSE SNAPSHOT (sidebar)
+   API KEYS
 ═══════════════════════════════════════ */
-async function loadGlucoseSnap() {
-  const el = document.getElementById('glucoseSnap');
-  if (!el) return;
-  try {
-    const res  = await fetch('https://dexcom-proxy.infiniti306.workers.dev/latest');
-    const data = await res.json();
-    const r    = data.reading;
-    if (!r || !r.value) {
-      el.innerHTML = '<div style="font-family:Space Mono,monospace;font-size:11px;color:var(--text-muted)">Not connected</div>';
-      return;
-    }
-    const val   = r.value;
-    const trend = { doubleUp:'⬆⬆', singleUp:'⬆', fortyFiveUp:'↗', flat:'→', fortyFiveDown:'↘', singleDown:'⬇', doubleDown:'⬇⬇' };
-    const arrow = trend[r.trend] || '—';
-    const cls   = val < 70 ? 'var(--down)' : val > 180 ? 'var(--accent3)' : 'var(--up)';
-    const time  = new Date(r.systemTime);
-    const minsAgo = Math.round((Date.now() - time) / 60000);
-    el.innerHTML = `
-      <div style="font-family:'Space Mono',monospace;font-size:32px;font-weight:700;color:${cls};line-height:1">
-        ${val} <span style="font-size:20px">${arrow}</span>
-      </div>
-      <div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--text-muted);margin-top:4px">
-        mg/dL · ${minsAgo <= 1 ? 'Just now' : minsAgo + 'm ago'}
-      </div>`;
-  } catch {
-    const el2 = document.getElementById('glucoseSnap');
-    if (el2) el2.innerHTML = '<div style="font-family:Space Mono,monospace;font-size:11px;color:var(--text-muted)">Unavailable</div>';
-  }
-}
-
-loadGlucoseSnap();
 const FH_KEY   = 'd7kohmpr01qiqbcv6f8gd7kohmpr01qiqbcv6f90';
 const NEWS_KEY = 'EaYs0yWgGLNEmYbHfDp47HwYeaCMaG8HxgOSHHsg';
+const AI_PROXY = 'https://anthropic.infiniti306.workers.dev';
+const DEXCOM   = 'https://dexcom-proxy.infiniti306.workers.dev';
 
+/* ═══════════════════════════════════════
+   HELPERS
+═══════════════════════════════════════ */
 function fmtPrice(n, dec=2){
   if(n==null||isNaN(n)||n===0) return '—';
   if(n>=1000) return '$'+n.toLocaleString('en-US',{minimumFractionDigits:dec,maximumFractionDigits:dec});
@@ -414,12 +488,6 @@ function fmtPrice(n, dec=2){
 }
 function fmtPct(n){ return n==null||isNaN(n)?'—':(n>=0?'+':'')+n.toFixed(2)+'%'; }
 function pctClass(n){ return n>0.05?'up':n<-0.05?'down':'flat'; }
-
-function fmtTime(iso){
-  if(!iso) return '';
-  const d = new Date(iso);
-  return d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true,timeZone:'America/Chicago'});
-}
 
 async function fhQuote(sym){
   const r = await fetch(`https://finnhub.io/api/v1/quote?symbol=${encodeURIComponent(sym)}&token=${FH_KEY}`);
@@ -429,47 +497,158 @@ async function fhQuote(sym){
 }
 
 /* ═══════════════════════════════════════
-   DATE / HEADER
+   CLOCK
 ═══════════════════════════════════════ */
-(function(){
+function tickClock(){
   const now = new Date();
-  document.getElementById('briefingDateLabel').textContent =
-    now.toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
-})();
+  const ct  = new Date(now.toLocaleString('en-US',{timeZone:'America/Chicago'}));
+  const h   = ct.getHours(), m = ct.getMinutes(), s = ct.getSeconds();
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const hh   = h % 12 || 12;
+  const mm   = String(m).padStart(2,'0');
+  document.getElementById('clockValue').textContent = `${hh}:${mm} ${ampm}`;
+  document.getElementById('clockDate').textContent  =
+    ct.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+  // update clock icon to match hour
+  const icons = ['🕛','🕐','🕑','🕒','🕓','🕔','🕔','🕔','🕗','🕘','🕙','🕙'];
+  const hi = Math.floor(h % 12);
+  document.querySelector('.top-widget:first-child .tw-icon').textContent = icons[hi] || '🕐';
+}
+tickClock();
+setInterval(tickClock, 1000);
+
+/* ═══════════════════════════════════════
+   WEATHER (Open-Meteo · Lombard IL)
+═══════════════════════════════════════ */
+const WX_ICONS = {
+  0:'☀️', 1:'🌤️', 2:'⛅', 3:'☁️',
+  45:'🌫️', 48:'🌫️',
+  51:'🌦️', 53:'🌦️', 55:'🌧️',
+  61:'🌧️', 63:'🌧️', 65:'🌧️',
+  71:'🌨️', 73:'🌨️', 75:'❄️',
+  80:'🌦️', 81:'🌧️', 82:'⛈️',
+  95:'⛈️', 96:'⛈️', 99:'⛈️'
+};
+const WX_DESC = {
+  0:'Clear sky', 1:'Mainly clear', 2:'Partly cloudy', 3:'Overcast',
+  45:'Foggy', 48:'Icy fog',
+  51:'Light drizzle', 53:'Drizzle', 55:'Heavy drizzle',
+  61:'Light rain', 63:'Rain', 65:'Heavy rain',
+  71:'Light snow', 73:'Snow', 75:'Heavy snow',
+  80:'Rain showers', 81:'Heavy showers', 82:'Violent showers',
+  95:'Thunderstorm', 96:'Thunderstorm', 99:'Severe storm'
+};
+
+async function loadWeather(){
+  try{
+    const r = await fetch(
+      'https://api.open-meteo.com/v1/forecast?latitude=41.88&longitude=-88.01&current_weather=true&temperature_unit=fahrenheit&wind_speed_unit=mph'
+    );
+    const d = await r.json();
+    const cw   = d.current_weather;
+    const temp = Math.round(cw.temperature);
+    const code = cw.weathercode;
+    document.getElementById('wxTemp').textContent = `${temp}°F`;
+    document.getElementById('wxDesc').textContent = WX_DESC[code] || 'Clear';
+    document.getElementById('wxIcon').textContent = WX_ICONS[code] || '🌡️';
+  }catch{
+    document.getElementById('wxDesc').textContent = 'Unavailable';
+  }
+}
+
+/* ═══════════════════════════════════════
+   GLUCOSE (Dexcom proxy)
+   Shows current reading + 24h average
+═══════════════════════════════════════ */
+const TREND_MAP = {
+  doubleUp:'⬆⬆', singleUp:'⬆', fortyFiveUp:'↗',
+  flat:'→',
+  fortyFiveDown:'↘', singleDown:'⬇', doubleDown:'⬇⬇'
+};
+
+async function loadGlucose(){
+  const widget = document.getElementById('glucWidget');
+  const valEl  = document.getElementById('glucCurrent');
+  const arrEl  = document.getElementById('glucArrow');
+  const subEl  = document.getElementById('glucSub');
+  try{
+    // Fetch latest + 24h history in parallel
+    const [latestRes, histRes] = await Promise.allSettled([
+      fetch(`${DEXCOM}/latest`),
+      fetch(`${DEXCOM}/egvs?minutes=1440`)
+    ]);
+
+    // Current reading
+    let currentVal = null, trendArrow = '—', minsAgo = '—', glucColor = 'var(--up)';
+    if(latestRes.status === 'fulfilled'){
+      const ld = await latestRes.value.json();
+      const r  = ld.reading;
+      if(r && r.value){
+        currentVal = r.value;
+        trendArrow = TREND_MAP[r.trend] || '—';
+        const t    = new Date(r.systemTime);
+        minsAgo    = Math.round((Date.now()-t)/60000);
+        glucColor  = currentVal < 70 ? 'var(--down)' : currentVal > 180 ? 'var(--accent3)' : 'var(--up)';
+        const cls  = currentVal < 70 ? 'is-low' : currentVal > 180 ? 'is-high' : 'is-normal';
+        widget.classList.remove('is-low','is-high','is-normal');
+        widget.classList.add(cls);
+        valEl.textContent = currentVal;
+        valEl.style.color = glucColor;
+        arrEl.textContent = trendArrow;
+        arrEl.style.color = glucColor;
+      }
+    }
+
+    // 24h average
+    let avgText = '—';
+    if(histRes.status === 'fulfilled'){
+      const hd = await histRes.value.json();
+      const records = hd.records || [];
+      const vals = records.map(r=>r.value).filter(v=>v>0);
+      if(vals.length){
+        const avg = Math.round(vals.reduce((a,b)=>a+b,0)/vals.length);
+        avgText = avg;
+      }
+    }
+
+    const agoStr = typeof minsAgo === 'number'
+      ? (minsAgo <= 1 ? 'Just now' : `${minsAgo}m ago`)
+      : '—';
+    subEl.textContent = `Avg 24h: ${avgText} mg/dL · ${agoStr}`;
+
+    if(!currentVal){
+      valEl.textContent = '—';
+      subEl.textContent = 'Not connected';
+    }
+  }catch{
+    document.getElementById('glucCurrent').textContent = '—';
+    document.getElementById('glucSub').textContent = 'Unavailable';
+  }
+}
 
 /* ═══════════════════════════════════════
    TICKER STRIP
 ═══════════════════════════════════════ */
-// sym, display label, finnhub symbol (may differ), format fn
 const STRIP_TICKERS = [
-  ['SPY', 'SPY',  'SPY',  'price'],
-  ['QQQ', 'QQQ',  'QQQ',  'price'],
-  ['DIA', 'DIA',  'DIA',  'price'],
-  ['IWM', 'IWM',  'IWM',  'price'],
-  ['VIX', 'VIX',  'VIX',  'plain'],  // no $ sign
-  ['AAPL','AAPL', 'AAPL', 'price'],
-  ['NVDA','NVDA', 'NVDA', 'price'],
-  ['MSFT','MSFT', 'MSFT', 'price'],
-  ['TSLA','TSLA', 'TSLA', 'price'],
-  ['META','META', 'META', 'price'],
-  ['AMZN','AMZN', 'AMZN', 'price'],
-  ['GOLD','GLD',  'GLD',  'price'],  // GLD ETF — reliable on Finnhub
-  ['OIL', 'USO',  'USO',  'price'],  // USO ETF — reliable on Finnhub
+  ['SPY','SPY','price'],['QQQ','QQQ','price'],['DIA','DIA','price'],
+  ['IWM','IWM','price'],['VIX','VIX','plain'],
+  ['AAPL','AAPL','price'],['NVDA','NVDA','price'],['MSFT','MSFT','price'],
+  ['TSLA','TSLA','price'],['META','META','price'],['AMZN','AMZN','price'],
+  ['GOLD','GLD','price'],['OIL','USO','price'],
 ];
 const CRYPTO_STRIP = [['BTC','BTC'],['ETH','ETH']];
 
 async function loadStrip(){
-  for(const [id, , fhSym, fmt] of STRIP_TICKERS){
+  for(const [id,fhSym,fmt] of STRIP_TICKERS){
     try{
       const q = await fhQuote(fhSym);
       const px  = document.getElementById('t-'+id);
       const chg = document.getElementById('tc-'+id);
       if(px)  px.textContent  = fmt==='plain' ? q.price.toFixed(2) : fmtPrice(q.price);
-      if(chg){ chg.textContent = fmtPct(q.pct); chg.className='ti-chg '+pctClass(q.pct); }
+      if(chg){ chg.textContent=fmtPct(q.pct); chg.className='ti-chg '+pctClass(q.pct); }
     }catch{}
     await new Promise(r=>setTimeout(r,250));
   }
-  // crypto via Coinbase
   for(const [sym] of CRYPTO_STRIP){
     try{
       const r = await fetch(`https://api.coinbase.com/v2/prices/${sym}-USD/spot`);
@@ -477,11 +656,10 @@ async function loadStrip(){
       const price = parseFloat(d.data?.amount);
       const px  = document.getElementById('t-'+sym);
       const chg = document.getElementById('tc-'+sym);
-      if(px)  px.textContent  = '$'+price.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});
-      if(chg){ chg.textContent = ''; chg.className='ti-chg flat'; }
+      if(px)  px.textContent = '$'+price.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});
+      if(chg){ chg.textContent=''; chg.className='ti-chg flat'; }
     }catch{}
   }
-  // Duplicate track NOW — after all prices are filled in — for seamless infinite scroll
   const track = document.getElementById('tickerTrack');
   if(track) track.innerHTML += track.innerHTML;
 }
@@ -493,7 +671,7 @@ const INDICES = [
   ['SPY','S&P 500','SPY'],
   ['QQQ','NASDAQ','QQQ'],
   ['DIA','DOW','DIA'],
-  ['IWM','RUSSELL 2000','IWM']
+  ['IWM','RUSSELL','IWM']
 ];
 
 async function loadIndices(){
@@ -501,274 +679,25 @@ async function loadIndices(){
   const cards = [];
   for(const [sym,name,label] of INDICES){
     try{
-      const q = await fhQuote(sym);
+      const q   = await fhQuote(sym);
       const cls = pctClass(q.pct);
       const state = cls==='up'?'is-up':cls==='down'?'is-down':'';
       cards.push(`<div class="idx-card ${state}">
-        <div class="idx-sym">${name}</div>
+        <div class="idx-label">${name}</div>
         <div class="idx-price ${cls}">${fmtPrice(q.price)}</div>
         <div class="idx-chg ${cls}">${fmtPct(q.pct)}</div>
         <div class="idx-name">${label}</div>
       </div>`);
     }catch{
       cards.push(`<div class="idx-card">
-        <div class="idx-sym">${name}</div>
+        <div class="idx-label">${name}</div>
         <div class="idx-price" style="color:var(--text-muted)">—</div>
         <div class="idx-name">${label}</div>
       </div>`);
     }
-    await new Promise(r=>setTimeout(r,350));
+    await new Promise(r=>setTimeout(r,300));
   }
   grid.innerHTML = cards.join('');
-
-  // Update briefing sub with market status
-  const now = new Date();
-  const et = new Date(now.toLocaleString('en-US',{timeZone:'America/New_York'}));
-  const h=et.getHours(), m=et.getMinutes(), day=et.getDay();
-  const hhmm=h*60+m;
-  const isOpen = day>0&&day<6&&hhmm>=570&&hhmm<960;
-  document.getElementById('briefingSub').textContent =
-    isOpen ? 'Market is open · Data updating live' : 'Market is closed · Showing last close';
-}
-
-/* ═══════════════════════════════════════
-   NEWS + AI READ  ·  Smart Cache v2
-   Schedule (CT):
-     9am–4pm  → refresh every 4 hours
-     4pm–6am  → frozen; refresh fires at 6am
-   Cache key: cai_ai_news_v2
-═══════════════════════════════════════ */
-const AI_CACHE_KEY = 'cai_ai_news_v2';
-
-/* Return the CT hour (0-23) right now */
-function ctHour(){
-  return parseInt(new Date().toLocaleString('en-US',{hour:'numeric',hour12:false,timeZone:'America/Chicago'}));
-}
-
-/* Given the cached timestamp, decide if we need a fresh AI call.
-   Returns true  → run AI now
-   Returns false → use cache                                     */
-function aiCacheStale(cachedAt){
-  if(!cachedAt) return true;
-  const now   = Date.now();
-  const ageMs = now - cachedAt;
-  const h     = ctHour();                 // current CT hour
-
-  // ── Market hours 9–16 (9am–4pm CT): refresh every 4 hours ──
-  if(h >= 9 && h < 16){
-    return ageMs > 4 * 60 * 60 * 1000;   // 4-hour window
-  }
-
-  // ── Overnight 16–24 / 0–6: freeze until 6am, then refresh once ──
-  if(h >= 6 && h < 9){
-    // Pre-open 6am–9am: refresh if cache is from before 6am today
-    const sixAM = new Date();
-    sixAM.setHours(0,0,0,0);             // midnight local
-    const sixAmCT = new Date(
-      new Date().toLocaleDateString('en-US',{timeZone:'America/Chicago'})
-      + ' 06:00:00 CDT'
-    );
-    return cachedAt < sixAmCT.getTime();
-  }
-
-  // 4pm–midnight: frozen — only refresh if >12 hours old (safety net)
-  return ageMs > 12 * 60 * 60 * 1000;
-}
-
-/* Render cached AI data into the DOM without any API calls */
-function renderFromCache(cache, articles){
-  // Market read
-  try{
-    document.getElementById('aiGenerating').style.display = 'none';
-    const aiText = document.getElementById('aiText');
-    aiText.style.display = 'block';
-    aiText.innerHTML = cache.marketRead
-      .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
-      .replace(/\n/g,'<br>');
-    const cachedTime = new Date(cache.cachedAt)
-      .toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true,timeZone:'America/Chicago'});
-    document.querySelector('.ai-label').innerHTML =
-      `<div class="ai-dot"></div>Chuck's AI · Cached ${cachedTime}`;
-  }catch(e){ console.warn('Cache render (market read) failed',e); }
-
-  // Article summaries
-  const sumList = document.getElementById('aiSummariesList');
-  try{
-    const summaryArticles = articles.slice(0,8);
-    sumList.innerHTML = cache.summaries.map(r => {
-      const a = summaryArticles[r.id];
-      if(!a) return '';
-      const url = (a.url||'#').replace(/"/g,'%22');
-      return `<div class="ai-sum-item">
-        <a class="ai-sum-headline" href="${url}" target="_blank" rel="noopener">${a.title}</a>
-        <div class="ai-sum-body">${r.summary}</div>
-        <div class="ai-sum-meta">
-          <span class="ai-sum-tag">✦ Chuck's AI</span>
-          ${a.source ? `<span class="ai-sum-source">${a.source}</span>` : ''}
-        </div>
-      </div>`;
-    }).join('');
-  }catch(e){ console.warn('Cache render (summaries) failed',e); }
-}
-
-async function loadNewsAndAI(){
-  // ── 1. Fetch News ──────────────────────────────────────────────
-  let articles = [];
-  try{
-    // Top US business/finance/tech/politics — up to 10 for better coverage
-    const url = `https://api.thenewsapi.com/v1/news/top?api_token=${NEWS_KEY}&locale=us&limit=10&categories=business,tech,politics`;
-    const r = await fetch(url);
-    const d = await r.json();
-    articles = d.data || [];
-  }catch(e){ console.warn('News fetch failed',e); }
-
-  // Render news list (top 8 shown)
-  const newsList = document.getElementById('newsList');
-  if(articles.length){
-    newsList.innerHTML = articles.slice(0,8).map(a=>`
-      <a class="news-item" href="${a.url}" target="_blank" rel="noopener">
-        <span class="news-time">${fmtTime(a.published_at)}</span>
-        <div class="news-body">
-          <div class="news-headline">${a.title}</div>
-          <div class="news-source">${a.source || ''}</div>
-        </div>
-      </a>`).join('');
-  } else {
-    newsList.innerHTML = '<div style="padding:16px 0;font-size:12px;color:var(--text-muted)">Unable to load news at this time.</div>';
-  }
-
-  if(!articles.length){
-    document.getElementById('aiGenerating').textContent = 'No headlines available for summary.';
-    document.getElementById('aiSummariesList').innerHTML =
-      '<div style="font-size:12px;color:var(--text-muted);padding:8px 0">No articles to summarize.</div>';
-    return;
-  }
-
-  // ── 2. Check Cache ─────────────────────────────────────────────
-  let cached = null;
-  try{ cached = JSON.parse(localStorage.getItem(AI_CACHE_KEY)); }catch{}
-
-  // Fingerprint: top-5 article URLs joined — detects major news rotation
-  const summaryArticles = articles.slice(0, 8);
-  const fingerprint = summaryArticles.slice(0,5).map(a=>a.url).join('|');
-
-  const newsChanged = cached && cached.fingerprint !== fingerprint;
-  const cacheValid  = cached && !aiCacheStale(cached.cachedAt) && !newsChanged;
-
-  if(cacheValid){
-    console.log('[AI Cache] HIT — rendering from cache, age',
-      Math.round((Date.now()-cached.cachedAt)/60000)+'min');
-    renderFromCache(cached, summaryArticles);
-    return;
-  }
-
-  console.log('[AI Cache] MISS —', newsChanged ? 'news changed' : 'cache stale', '— calling Claude');
-
-  // ── 3. Run AI Calls ────────────────────────────────────────────
-  const h = ctHour();
-  const isOvernight = h < 6 || h >= 16;   // 4pm–6am
-  const periodLabel = isOvernight ? 'overnight' : 'today';
-
-  const headlines = summaryArticles
-    .map((a,i)=>`${i+1}. [${a.source||'Unknown'}] ${a.title}`)
-    .join('\n');
-
-  const articlePayload = JSON.stringify(
-    summaryArticles.map((a,i)=>({
-      id:i,
-      title:a.title,
-      source:a.source||'',
-      desc:(a.description||a.snippet||'').slice(0,500)
-    }))
-  );
-
-  const [marketReadRes, articleSumRes] = await Promise.allSettled([
-
-    // 1) Market read — richer, ~4 sentences, mentions top movers
-    fetch('https://anthropic.infiniti306.workers.dev',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        model:'claude-sonnet-4-20250514',
-        max_tokens:320,
-        system:`You are a sharp US market analyst writing a concise ${periodLabel} briefing for retail investors. Structure: (1) 1-2 sentences on the dominant macro theme or market mover from the headlines. (2) 1 sentence on sector or asset implications — be specific about stocks, sectors, or rates if mentioned. (3) 1 sentence on the key risk or opportunity to watch. Bold 2-3 key tickers or terms with **bold**. No fluff, no caveats, no "it's important to note". Write like you're talking to a trader.`,
-        messages:[{role:'user',content:`${isOvernight?'Overnight':'Today\'s'} top US headlines:\n${headlines}\n\nWrite the briefing now.`}]
-      })
-    }),
-
-    // 2) Per-article summaries — deeper, 3-4 sentences each
-    fetch('https://anthropic.infiniti306.workers.dev',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        model:'claude-sonnet-4-20250514',
-        max_tokens:1800,
-        system:`You are a senior financial news analyst writing for US retail investors. For each article, write a 3-4 sentence summary covering: (1) What specifically happened — include names, numbers, companies. (2) Why this matters to US markets, consumers, or the economy. (3) What to watch next — expected outcomes, affected tickers, or risks. Be direct, specific, and factual. Avoid vague phrases like "could impact" — say who and how. Return ONLY a valid JSON array, no markdown, no backticks, no preamble. Format exactly: [{"id":0,"summary":"..."},{"id":1,"summary":"..."},...]`,
-        messages:[{role:'user',content:`Summarize these ${summaryArticles.length} US news articles:\n${articlePayload}`}]
-      })
-    })
-  ]);
-
-  // ── 4. Render Market Read ──────────────────────────────────────
-  let marketReadText = '';
-  try{
-    const data = await marketReadRes.value.json();
-    marketReadText = data.content?.[0]?.text || '';
-    if(marketReadText){
-      document.getElementById('aiGenerating').style.display = 'none';
-      const aiText = document.getElementById('aiText');
-      aiText.style.display = 'block';
-      aiText.innerHTML = marketReadText
-        .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
-        .replace(/\n/g,'<br>');
-      const timeStr = new Date()
-        .toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true,timeZone:'America/Chicago'});
-      document.querySelector('.ai-label').innerHTML =
-        `<div class="ai-dot"></div>Chuck's AI · Generated ${timeStr}`;
-    }
-  }catch(e){
-    document.getElementById('aiGenerating').textContent = 'AI summary unavailable.';
-  }
-
-  // ── 5. Render Article Summaries ────────────────────────────────
-  const sumList = document.getElementById('aiSummariesList');
-  let summariesArr = [];
-  try{
-    const data2 = await articleSumRes.value.json();
-    const raw   = data2.content?.[0]?.text || '[]';
-    const clean = raw.replace(/```json[\s\S]*?```|```/g,'').trim();
-    summariesArr = JSON.parse(clean);
-
-    sumList.innerHTML = summariesArr.map(r => {
-      const a = summaryArticles[r.id];
-      if(!a) return '';
-      const url = (a.url||'#').replace(/"/g,'%22');
-      return `<div class="ai-sum-item">
-        <a class="ai-sum-headline" href="${url}" target="_blank" rel="noopener">${a.title}</a>
-        <div class="ai-sum-body">${r.summary}</div>
-        <div class="ai-sum-meta">
-          <span class="ai-sum-tag">✦ Chuck's AI</span>
-          ${a.source ? `<span class="ai-sum-source">${a.source}</span>` : ''}
-        </div>
-      </div>`;
-    }).join('');
-  }catch(e){
-    sumList.innerHTML = '<div style="font-size:12px;color:var(--text-muted);padding:8px 0">Article summaries unavailable.</div>';
-    console.warn('Article summaries failed', e);
-  }
-
-  // ── 6. Write Cache ─────────────────────────────────────────────
-  if(marketReadText && summariesArr.length){
-    try{
-      localStorage.setItem(AI_CACHE_KEY, JSON.stringify({
-        cachedAt    : Date.now(),
-        fingerprint : fingerprint,
-        marketRead  : marketReadText,
-        summaries   : summariesArr
-      }));
-      console.log('[AI Cache] Written at', new Date().toLocaleTimeString());
-    }catch(e){ console.warn('Cache write failed',e); }
-  }
 }
 
 /* ═══════════════════════════════════════
@@ -778,49 +707,212 @@ async function loadFearGreed(){
   try{
     const r = await fetch('https://api.alternative.me/fng/?limit=1');
     const d = await r.json();
-    const val = parseInt(d.data?.[0]?.value||50);
+    const val   = parseInt(d.data?.[0]?.value||50);
     const label = d.data?.[0]?.value_classification||'Neutral';
-    document.getElementById('fgNum').textContent = val;
+    const color = val>=60?'var(--up)':val<=40?'var(--down)':'var(--accent3)';
+    document.getElementById('fgNum').textContent  = val;
     document.getElementById('fgWord').textContent = label;
     document.getElementById('fgFill').style.width = val+'%';
-    const fgNum = document.getElementById('fgNum');
-    const fgWord = document.getElementById('fgWord');
-    const color = val>=60?'var(--up)':val<=40?'var(--down)':'var(--accent3)';
-    fgNum.style.color = color; fgWord.style.color = color;
+    document.getElementById('fgNum').style.color  = color;
+    document.getElementById('fgWord').style.color = color;
   }catch{}
 }
 
 /* ═══════════════════════════════════════
-   TOP MOVERS (Finnhub market movers)
+   CRYPTO WIDGETS (CoinGecko)
+   BTC ETH LTC DOGE XLM
 ═══════════════════════════════════════ */
-const MOVER_SYMS = [
-  ['NVDA','NVDA'],['TSLA','TSLA'],['AAPL','AAPL'],
-  ['META','META'],['AMZN','AMZN'],['MSFT','MSFT'],
-  ['GME','GME'],['AMC','AMC']
+const CRYPTO_COINS = [
+  { id:'bitcoin',       sym:'BTC',  name:'Bitcoin'  },
+  { id:'ethereum',      sym:'ETH',  name:'Ethereum' },
+  { id:'litecoin',      sym:'LTC',  name:'Litecoin' },
+  { id:'dogecoin',      sym:'DOGE', name:'Dogecoin' },
+  { id:'stellar',       sym:'XLM',  name:'Stellar'  }
 ];
 
-async function loadMovers(){
-  const results = [];
-  for(let i=0;i<MOVER_SYMS.length;i+=4){
-    const batch = MOVER_SYMS.slice(i,i+4);
-    const res = await Promise.allSettled(batch.map(async([sym,name])=>{
-      const q = await fhQuote(sym);
-      return {sym,name,price:q.price,pct:q.pct};
-    }));
-    res.forEach(r=>{ if(r.status==='fulfilled') results.push(r.value); });
-    if(i+4<MOVER_SYMS.length) await new Promise(r=>setTimeout(r,800));
+async function loadCrypto(){
+  try{
+    const ids = CRYPTO_COINS.map(c=>c.id).join(',');
+    const r   = await fetch(
+      `https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd&include_24hr_change=true`
+    );
+    const d = await r.json();
+    const grid = document.getElementById('cryptoGrid');
+    grid.innerHTML = CRYPTO_COINS.map(coin=>{
+      const data = d[coin.id];
+      if(!data) return `<div class="crypto-card">
+        <div class="cc-sym">${coin.sym}</div>
+        <div class="cc-name">${coin.name}</div>
+        <div class="cc-price">—</div>
+      </div>`;
+      const price = data.usd;
+      const chg   = data.usd_24h_change || 0;
+      const cls   = pctClass(chg);
+      const state = cls==='up'?'is-up':cls==='down'?'is-down':'';
+      const priceFmt = price >= 1000
+        ? '$'+price.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})
+        : price >= 1
+          ? '$'+price.toFixed(2)
+          : '$'+price.toFixed(4);
+      return `<div class="crypto-card ${state}">
+        <div class="cc-sym">${coin.sym}</div>
+        <div class="cc-name">${coin.name}</div>
+        <div class="cc-price ${cls}">${priceFmt}</div>
+        <div class="cc-chg ${cls}">${fmtPct(chg)}</div>
+      </div>`;
+    }).join('');
+  }catch(e){
+    console.warn('Crypto load failed',e);
   }
-  results.sort((a,b)=>Math.abs(b.pct)-Math.abs(a.pct));
-  const top = results.slice(0,5);
-  document.getElementById('moversWrap').innerHTML = top.map(m=>`
-    <div class="mover-row">
-      <div><div class="mv-sym">${m.sym}</div><div class="mv-name">${fmtPrice(m.price)}</div></div>
-      <div class="mv-chg ${pctClass(m.pct)}">${fmtPct(m.pct)}</div>
-    </div>`).join('');
 }
 
 /* ═══════════════════════════════════════
-   WATCHLIST (localStorage)
+   NEWS + AI SUMMARY
+   Cache: 30 min keyed to headline fingerprint
+═══════════════════════════════════════ */
+const AI_CACHE_KEY = 'cai_home_ai_v8';
+
+async function loadNewsAndAI(){
+  const feedEl    = document.getElementById('newsFeed');
+  const aiLoadEl  = document.getElementById('aiLoading');
+  const aiTextEl  = document.getElementById('aiText');
+  const aiLabelEl = document.getElementById('aiLabel');
+  const aiStatus  = document.getElementById('aiNewsStatus');
+
+  // 1. Fetch news
+  let articles = [];
+  try{
+    const r = await fetch(
+      `https://api.thenewsapi.com/v1/news/top?api_token=${NEWS_KEY}&locale=us&language=en&limit=8&categories=business,tech,general`
+    );
+    const d = await r.json();
+    articles = d.data || [];
+  }catch{
+    feedEl.innerHTML = '<div style="font-size:12px;color:var(--text-muted);padding:10px 0">News unavailable.</div>';
+    return;
+  }
+
+  if(!articles.length){
+    feedEl.innerHTML = '<div style="font-size:12px;color:var(--text-muted);padding:10px 0">No articles found.</div>';
+    return;
+  }
+
+  // 2. Render headlines immediately
+  feedEl.innerHTML = articles.map((a,i)=>`
+    <a class="news-item" href="${(a.url||'#').replace(/"/g,'%22')}" target="_blank" rel="noopener" id="ni-${i}">
+      <div class="ni-num">${String(i+1).padStart(2,'0')}</div>
+      <div class="ni-body">
+        <div class="ni-headline">${a.title}</div>
+        <div class="ni-meta">
+          ${a.source ? `<span class="ni-source">${a.source}</span>` : ''}
+          ${a.published_at ? `<span class="ni-time">${new Date(a.published_at).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true,timeZone:'America/Chicago'})}</span>` : ''}
+        </div>
+        <div class="ni-summary" id="ns-${i}"></div>
+      </div>
+    </a>`).join('');
+
+  // 3. Check AI cache
+  const fingerprint = articles.slice(0,3).map(a=>a.title).join('|');
+  let cached = null;
+  try{
+    const raw = localStorage.getItem(AI_CACHE_KEY);
+    if(raw){
+      const c = JSON.parse(raw);
+      if(c.fingerprint===fingerprint && Date.now()-c.cachedAt < 30*60*1000){
+        cached = c;
+      }
+    }
+  }catch{}
+
+  if(cached){
+    // Render from cache
+    renderAIRead(cached.marketRead, aiTextEl, aiLoadEl, aiLabelEl);
+    renderSummaries(cached.summaries, articles);
+    aiStatus.textContent = 'CACHED';
+    return;
+  }
+
+  // 4. Generate AI content
+  aiStatus.textContent = 'GENERATING…';
+  const headlines = articles.map((a,i)=>`${i+1}. [${a.source||'?'}] ${a.title}`).join('\n');
+  const payload   = JSON.stringify(articles.map((a,i)=>({
+    id:i, title:a.title, source:a.source||'',
+    desc:(a.description||'').slice(0,400)
+  })));
+
+  const [readRes, sumRes] = await Promise.allSettled([
+    fetch(AI_PROXY,{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514', max_tokens:280,
+        system:`You are a sharp US market analyst. Write a 3-sentence market briefing: (1) dominant macro theme from headlines. (2) sector/asset implications — be specific. (3) key risk or opportunity. Bold 2-3 tickers/terms with **bold**. No fluff.`,
+        messages:[{role:'user',content:`Today's top headlines:\n${headlines}\n\nWrite the briefing.`}]
+      })
+    }),
+    fetch(AI_PROXY,{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514', max_tokens:1600,
+        system:`You are a financial news analyst. For each article write 2-3 sentences: what happened (specifics), why it matters to US markets, what to watch. Be direct. Return ONLY valid JSON array, no markdown: [{"id":0,"summary":"..."},...]`,
+        messages:[{role:'user',content:`Summarize ${articles.length} articles:\n${payload}`}]
+      })
+    })
+  ]);
+
+  // 5. Render market read
+  let marketRead = '';
+  try{
+    const data = await readRes.value.json();
+    marketRead = data.content?.[0]?.text || '';
+    renderAIRead(marketRead, aiTextEl, aiLoadEl, aiLabelEl);
+    aiStatus.textContent = 'LIVE';
+  }catch{
+    aiLoadEl.textContent = 'AI summary unavailable.';
+  }
+
+  // 6. Render per-article summaries
+  let summaries = [];
+  try{
+    const data2 = await sumRes.value.json();
+    const raw   = (data2.content?.[0]?.text||'[]').replace(/```json[\s\S]*?```|```/g,'').trim();
+    summaries = JSON.parse(raw);
+    renderSummaries(summaries, articles);
+  }catch{}
+
+  // 7. Cache
+  if(marketRead && summaries.length){
+    try{
+      localStorage.setItem(AI_CACHE_KEY, JSON.stringify({
+        cachedAt:Date.now(), fingerprint, marketRead, summaries
+      }));
+    }catch{}
+  }
+}
+
+function renderAIRead(text, textEl, loadEl, labelEl){
+  if(!text) return;
+  loadEl.style.display = 'none';
+  textEl.style.display = 'block';
+  // bold **text** → <strong>
+  textEl.innerHTML = text.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
+  const timeStr = new Date().toLocaleTimeString('en-US',{
+    hour:'numeric',minute:'2-digit',hour12:true,timeZone:'America/Chicago'
+  });
+  labelEl.innerHTML = `<div class="ai-dot"></div>Chuck's AI · ${timeStr}`;
+}
+
+function renderSummaries(summaries, articles){
+  summaries.forEach(s=>{
+    const el = document.getElementById('ns-'+s.id);
+    if(!el) return;
+    el.innerHTML = `<div style="margin-top:4px;font-size:11.5px;color:var(--text-secondary);line-height:1.6">${s.summary}</div>
+      <div style="margin-top:4px"><span class="ni-ai-tag">✦ Chuck's AI</span></div>`;
+    el.classList.add('visible');
+  });
+}
+
+/* ═══════════════════════════════════════
+   WATCHLIST (localStorage) — with remove
 ═══════════════════════════════════════ */
 const WL_KEY = 'cai_watchlist_v7';
 function getWatchlist(){ return JSON.parse(localStorage.getItem(WL_KEY)||'["AAPL","NVDA","TSLA","MSFT","SPY"]'); }
@@ -831,20 +923,23 @@ async function renderWatchlist(){
   const wrap = document.getElementById('watchlistWrap');
   wrap.innerHTML = list.map(sym=>`
     <div class="wl-row" id="wl-${sym}">
-      <span class="wl-sym">${sym}</span>
-      <div class="wl-data">
+      <div class="wl-left">
+        <span class="wl-sym">${sym}</span>
+      </div>
+      <div class="wl-right">
         <div class="wl-px" id="wlpx-${sym}">…</div>
         <div class="wl-chg flat" id="wlchg-${sym}">—</div>
+        <span class="wl-rm" onclick="removeFromWatchlist('${sym}')" title="Remove">✕</span>
       </div>
     </div>`).join('');
 
   for(let i=0;i<list.length;i++){
     const sym=list[i];
     try{
-      const q = await fhQuote(sym);
-      const px=document.getElementById('wlpx-'+sym);
-      const chg=document.getElementById('wlchg-'+sym);
-      if(px) px.textContent=fmtPrice(q.price);
+      const q   = await fhQuote(sym);
+      const px  = document.getElementById('wlpx-'+sym);
+      const chg = document.getElementById('wlchg-'+sym);
+      if(px)  px.textContent  = fmtPrice(q.price);
       if(chg){ chg.textContent=fmtPct(q.pct); chg.className='wl-chg '+pctClass(q.pct); }
     }catch{
       const px=document.getElementById('wlpx-'+sym);
@@ -856,14 +951,21 @@ async function renderWatchlist(){
 
 function addToWatchlist(){
   const input = document.getElementById('wlInput');
-  const sym = input.value.trim().toUpperCase();
+  const sym   = input.value.trim().toUpperCase();
   if(!sym||sym.length>8) return;
-  const list = getWatchlist();
+  const list  = getWatchlist();
   if(list.includes(sym)){ input.value=''; return; }
   list.push(sym);
   saveWatchlist(list);
-  input.value='';
+  input.value = '';
   renderWatchlist();
+}
+
+function removeFromWatchlist(sym){
+  const list = getWatchlist().filter(s=>s!==sym);
+  saveWatchlist(list);
+  const row = document.getElementById('wl-'+sym);
+  if(row){ row.style.opacity='0'; row.style.transition='opacity .2s'; setTimeout(()=>renderWatchlist(),200); }
 }
 
 document.getElementById('wlInput').addEventListener('keydown',e=>{
@@ -872,38 +974,29 @@ document.getElementById('wlInput').addEventListener('keydown',e=>{
 
 /* ═══════════════════════════════════════
    BOOT
-   - Sidebar (F&G, movers, watchlist) runs in parallel — low Finnhub cost
-   - Indices runs in parallel
-   - Ticker strip runs in parallel (has its own 250ms delay per tick)
-   - News + AI runs LAST — after a 1.5s head start — so Finnhub
-     rate limits aren't hit before indices and sidebar finish
 ═══════════════════════════════════════ */
 (async function boot(){
-  // Fire everything except AI simultaneously
-  Promise.all([loadFearGreed(), loadMovers(), renderWatchlist()]);
+  loadWeather();
+  loadGlucose();
+  Promise.all([loadFearGreed(), renderWatchlist()]);
   loadIndices();
   loadStrip();
-  // Give Finnhub calls a head start before the Anthropic call adds load
-  setTimeout(loadNewsAndAI, 1500);
+  loadCrypto();
+  setTimeout(loadNewsAndAI, 1200);
 })();
 
 /* ═══════════════════════════════════════
    NAV INJECT
-   outerHTML won't execute injected <script> tags in modern browsers.
-   We manually re-create each script element so the browser runs it.
 ═══════════════════════════════════════ */
 function injectNav(html){
   const placeholder = document.getElementById('nav-placeholder');
   if(!placeholder) return;
   const tmp = document.createElement('div');
   tmp.innerHTML = html;
-  // Insert all non-script nodes
   Array.from(tmp.childNodes).forEach(node=>{
-    if(node.nodeName !== 'SCRIPT'){
+    if(node.nodeName !== 'SCRIPT')
       placeholder.parentNode.insertBefore(node.cloneNode(true), placeholder);
-    }
   });
-  // Re-create each script so it actually executes
   tmp.querySelectorAll('script').forEach(oldScript=>{
     const s = document.createElement('script');
     if(oldScript.src) s.src = oldScript.src;
@@ -912,11 +1005,7 @@ function injectNav(html){
   });
   placeholder.remove();
 }
-
-fetch('nav.html')
-  .then(r=>r.text())
-  .then(injectNav)
-  .catch(()=>console.warn('nav.html not found'));
+fetch('nav.html').then(r=>r.text()).then(injectNav).catch(()=>{});
 </script>
 </body>
 </html>
