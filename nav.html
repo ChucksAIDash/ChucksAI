@@ -507,27 +507,29 @@
 
   /* ── NAV TICKER STRIP ── */
   (function initNavTicker() {
-    const FH  = 'd7kohmpr01qiqbcv6f8gd7kohmpr01qiqbcv6f90';
-    const TTL = 5 * 60 * 1000; // 5 minutes
+    const WORKER    = 'https://yahoo-ticker.infiniti306.workers.dev';
+    const TTL       = 5 * 60 * 1000; // 5 minutes
     const CACHE_KEY = 'cai_nav_ticker_cache';
 
-    // Symbols: [finnhubSymbol, displayLabel]
-    // VIX: Finnhub uses "^VIX" for the index — fallback to "VIX" if needed
-    // ES:  Finnhub futures use "ES1!" (front-month continuous)
+    // [Yahoo Finance symbol, display label]
+    // ES=F  → E-Mini S&P 500 front-month futures
+    // ^GSPC → S&P 500 cash index (SPX)
+    // ^VIX  → CBOE Volatility Index
     const SYMS = [
-      ['ES1!',  'ES'],
-      ['SPX',   'SPX'],
-      ['SPY',   'SPY'],
-      ['QQQ',   'QQQ'],
-      ['^VIX',  'VIX'],
-      ['BINANCE:BTCUSDT', 'BTC'],
-      ['BINANCE:ETHUSDT', 'ETH'],
+      ['ES=F',    'ES'],
+      ['^GSPC',   'SPX'],
+      ['SPY',     'SPY'],
+      ['QQQ',     'QQQ'],
+      ['^VIX',    'VIX'],
+      ['BTC-USD', 'BTC'],
+      ['ETH-USD', 'ETH'],
     ];
 
     function fmtPx(n) {
       if (n == null || isNaN(n)) return '—';
-      if (n >= 1000) return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-      if (n >= 10)   return '$' + n.toFixed(2);
+      if (n >= 10000) return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+      if (n >= 1000)  return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      if (n >= 10)    return '$' + n.toFixed(2);
       return '$' + n.toFixed(4);
     }
     function fmtChg(n) {
@@ -537,7 +539,6 @@
     function pctCls(n) { return n > 0.01 ? 'up' : n < -0.01 ? 'down' : 'flat'; }
 
     function buildItems(data) {
-      // data: array of { label, price, pct } — doubled for seamless loop
       const half = data.map(d =>
         `<span class="nav-ti">
           <span class="nav-ti-sym">${d.label}</span>
@@ -553,63 +554,40 @@
       if (track) track.innerHTML = buildItems(data);
     }
 
-    async function fetchOne(fhSym) {
-      const url = `https://finnhub.io/api/v1/quote?symbol=${encodeURIComponent(fhSym)}&token=${FH}`;
-      const r = await fetch(url);
-      const d = await r.json();
-      if (!d || !d.c || d.c === 0) throw new Error('no data');
-      return { price: d.c, pct: d.dp ?? ((d.c - d.pc) / d.pc * 100) };
-    }
-
     async function loadTicker() {
-      // Try cache first
+      // Serve from cache if fresh
       try {
         const raw = localStorage.getItem(CACHE_KEY);
         if (raw) {
           const cached = JSON.parse(raw);
           if (Date.now() - cached.ts < TTL && Array.isArray(cached.data) && cached.data.length) {
             render(cached.data);
-            return; // cache is fresh — skip API
+            return;
           }
         }
-      } catch(e) { /* bad cache, ignore */ }
+      } catch(e) { /* bad cache */ }
 
-      // Fetch fresh — sequential with small delay to avoid rate limit
-      const results = [];
-      for (const [fhSym, label] of SYMS) {
-        try {
-          const q = await fetchOne(fhSym);
-          results.push({ label, price: q.price, pct: q.pct });
-        } catch(e) {
-          // VIX fallback: try plain "VIX" if "^VIX" fails
-          if (fhSym === '^VIX') {
-            try {
-              const q = await fetchOne('VIX');
-              results.push({ label, price: q.price, pct: q.pct });
-            } catch { results.push({ label, price: null, pct: null }); }
-          }
-          // ES fallback: try "ESM4" if "ES1!" fails
-          else if (fhSym === 'ES1!') {
-            try {
-              const q = await fetchOne('ESM5');
-              results.push({ label, price: q.price, pct: q.pct });
-            } catch { results.push({ label, price: null, pct: null }); }
-          }
-          else { results.push({ label, price: null, pct: null }); }
-        }
-        // Small delay between calls to stay under free-tier rate limit
-        await new Promise(res => setTimeout(res, 220));
-      }
-
-      render(results);
-
-      // Persist to cache (only cache rows with real prices)
+      // Fetch all symbols in one worker call
       try {
-        const cacheable = results.filter(r => r.price != null);
-        if (cacheable.length) {
-          localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data: results }));
+        const yahooSyms = SYMS.map(([s]) => s).join(',');
+        const resp = await fetch(`${WORKER}/?symbols=${encodeURIComponent(yahooSyms)}`);
+        if (!resp.ok) throw new Error(`Worker ${resp.status}`);
+        const raw = await resp.json();
+
+        const results = SYMS.map(([ySym, label]) => {
+          const q = raw[ySym];
+          return { label, price: q?.price ?? null, pct: q?.pct ?? null };
+        });
+
+        render(results);
+
+        // Cache if we got at least some data
+        if (results.some(r => r.price != null)) {
+          try { localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data: results })); } catch(e) {}
         }
-      } catch(e) { /* storage full or private mode */ }
+      } catch(e) {
+        console.warn('Nav ticker fetch failed:', e);
+      }
     }
 
     loadTicker();
