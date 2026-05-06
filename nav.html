@@ -205,6 +205,43 @@
     #site-nav { padding: .6rem 1rem; }
     .nav-weather .wloc { display: none; }
   }
+
+  /* ── NAV TICKER STRIP ── */
+  #nav-ticker {
+    position: sticky; top: 53px; z-index: 490;
+    background: rgba(3,5,8,.92);
+    border-bottom: 1px solid var(--border);
+    backdrop-filter: blur(20px);
+    overflow: hidden; height: 30px;
+    display: flex; align-items: center;
+  }
+  html.light #nav-ticker {
+    background: rgba(248,250,252,.95);
+    border-bottom-color: rgba(0,0,0,.08);
+  }
+  #nav-ticker-track {
+    display: flex; align-items: center;
+    animation: navTickerScroll 45s linear infinite;
+    white-space: nowrap; will-change: transform;
+    gap: 0;
+  }
+  #nav-ticker-track:hover { animation-play-state: paused; }
+  @keyframes navTickerScroll {
+    0%   { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+  .nav-ti {
+    display: inline-flex; align-items: baseline; gap: 5px;
+    padding: 0 16px; border-right: 1px solid var(--border);
+    font-family: 'Space Mono', monospace; font-size: 10px;
+    white-space: nowrap; line-height: 30px;
+  }
+  .nav-ti-sym  { color: var(--text-muted); letter-spacing: .07em; font-size: 9px; }
+  .nav-ti-px   { color: var(--text-primary); font-weight: 700; }
+  .nav-ti-chg  { font-size: 9px; }
+  .nav-ti-chg.up   { color: var(--up); }
+  .nav-ti-chg.down { color: var(--down); }
+  .nav-ti-chg.flat { color: var(--text-secondary); }
 </style>
 
 <nav id="site-nav">
@@ -283,7 +320,12 @@
   </div>
 </nav>
 
-<!-- Mobile overlay + menu -->
+<!-- ── NAV TICKER STRIP ── -->
+<div id="nav-ticker">
+  <div id="nav-ticker-track">
+    <!-- items injected by JS -->
+  </div>
+</div>
 <div class="mob-overlay" id="mobOverlay"></div>
 <div class="mob-menu" id="mobMenu">
   <button class="mob-close" id="mobClose">✕ CLOSE</button>
@@ -462,6 +504,116 @@
   const wxWidget = document.getElementById('navWeather');
   wxWidget?.addEventListener('click', e => { e.stopPropagation(); wxWidget.classList.toggle('wx-open'); });
   document.addEventListener('click', () => wxWidget?.classList.remove('wx-open'));
+
+  /* ── NAV TICKER STRIP ── */
+  (function initNavTicker() {
+    const FH  = 'd7kohmpr01qiqbcv6f8gd7kohmpr01qiqbcv6f90';
+    const TTL = 5 * 60 * 1000; // 5 minutes
+    const CACHE_KEY = 'cai_nav_ticker_cache';
+
+    // Symbols: [finnhubSymbol, displayLabel]
+    // VIX: Finnhub uses "^VIX" for the index — fallback to "VIX" if needed
+    // ES:  Finnhub futures use "ES1!" (front-month continuous)
+    const SYMS = [
+      ['ES1!',  'ES'],
+      ['SPX',   'SPX'],
+      ['SPY',   'SPY'],
+      ['QQQ',   'QQQ'],
+      ['^VIX',  'VIX'],
+      ['BINANCE:BTCUSDT', 'BTC'],
+      ['BINANCE:ETHUSDT', 'ETH'],
+    ];
+
+    function fmtPx(n) {
+      if (n == null || isNaN(n)) return '—';
+      if (n >= 1000) return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      if (n >= 10)   return '$' + n.toFixed(2);
+      return '$' + n.toFixed(4);
+    }
+    function fmtChg(n) {
+      if (n == null || isNaN(n)) return '';
+      return (n >= 0 ? '+' : '') + n.toFixed(2) + '%';
+    }
+    function pctCls(n) { return n > 0.01 ? 'up' : n < -0.01 ? 'down' : 'flat'; }
+
+    function buildItems(data) {
+      // data: array of { label, price, pct } — doubled for seamless loop
+      const half = data.map(d =>
+        `<span class="nav-ti">
+          <span class="nav-ti-sym">${d.label}</span>
+          <span class="nav-ti-px">${fmtPx(d.price)}</span>
+          <span class="nav-ti-chg ${pctCls(d.pct)}">${fmtChg(d.pct)}</span>
+        </span>`
+      ).join('');
+      return half + half; // duplicate for seamless infinite scroll
+    }
+
+    function render(data) {
+      const track = document.getElementById('nav-ticker-track');
+      if (track) track.innerHTML = buildItems(data);
+    }
+
+    async function fetchOne(fhSym) {
+      const url = `https://finnhub.io/api/v1/quote?symbol=${encodeURIComponent(fhSym)}&token=${FH}`;
+      const r = await fetch(url);
+      const d = await r.json();
+      if (!d || !d.c || d.c === 0) throw new Error('no data');
+      return { price: d.c, pct: d.dp ?? ((d.c - d.pc) / d.pc * 100) };
+    }
+
+    async function loadTicker() {
+      // Try cache first
+      try {
+        const raw = localStorage.getItem(CACHE_KEY);
+        if (raw) {
+          const cached = JSON.parse(raw);
+          if (Date.now() - cached.ts < TTL && Array.isArray(cached.data) && cached.data.length) {
+            render(cached.data);
+            return; // cache is fresh — skip API
+          }
+        }
+      } catch(e) { /* bad cache, ignore */ }
+
+      // Fetch fresh — sequential with small delay to avoid rate limit
+      const results = [];
+      for (const [fhSym, label] of SYMS) {
+        try {
+          const q = await fetchOne(fhSym);
+          results.push({ label, price: q.price, pct: q.pct });
+        } catch(e) {
+          // VIX fallback: try plain "VIX" if "^VIX" fails
+          if (fhSym === '^VIX') {
+            try {
+              const q = await fetchOne('VIX');
+              results.push({ label, price: q.price, pct: q.pct });
+            } catch { results.push({ label, price: null, pct: null }); }
+          }
+          // ES fallback: try "ESM4" if "ES1!" fails
+          else if (fhSym === 'ES1!') {
+            try {
+              const q = await fetchOne('ESM5');
+              results.push({ label, price: q.price, pct: q.pct });
+            } catch { results.push({ label, price: null, pct: null }); }
+          }
+          else { results.push({ label, price: null, pct: null }); }
+        }
+        // Small delay between calls to stay under free-tier rate limit
+        await new Promise(res => setTimeout(res, 220));
+      }
+
+      render(results);
+
+      // Persist to cache (only cache rows with real prices)
+      try {
+        const cacheable = results.filter(r => r.price != null);
+        if (cacheable.length) {
+          localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data: results }));
+        }
+      } catch(e) { /* storage full or private mode */ }
+    }
+
+    loadTicker();
+  })();
 
 })();
 </script>
