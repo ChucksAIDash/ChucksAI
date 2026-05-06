@@ -260,27 +260,6 @@
 
 <div id="nav-placeholder"></div>
 
-<!-- Ticker strip -->
-<div class="ticker-strip" id="tickerStrip">
-  <div class="ticker-track" id="tickerTrack">
-    <span class="ticker-item"><span class="ti-sym">SPY</span><span class="ti-px" id="t-SPY">—</span><span class="ti-chg" id="tc-SPY">—</span></span>
-    <span class="ticker-item"><span class="ti-sym">QQQ</span><span class="ti-px" id="t-QQQ">—</span><span class="ti-chg" id="tc-QQQ">—</span></span>
-    <span class="ticker-item"><span class="ti-sym">DIA</span><span class="ti-px" id="t-DIA">—</span><span class="ti-chg" id="tc-DIA">—</span></span>
-    <span class="ticker-item"><span class="ti-sym">IWM</span><span class="ti-px" id="t-IWM">—</span><span class="ti-chg" id="tc-IWM">—</span></span>
-    <span class="ticker-item"><span class="ti-sym">VIX</span><span class="ti-px" id="t-VIX">—</span><span class="ti-chg" id="tc-VIX">—</span></span>
-    <span class="ticker-item"><span class="ti-sym">AAPL</span><span class="ti-px" id="t-AAPL">—</span><span class="ti-chg" id="tc-AAPL">—</span></span>
-    <span class="ticker-item"><span class="ti-sym">NVDA</span><span class="ti-px" id="t-NVDA">—</span><span class="ti-chg" id="tc-NVDA">—</span></span>
-    <span class="ticker-item"><span class="ti-sym">MSFT</span><span class="ti-px" id="t-MSFT">—</span><span class="ti-chg" id="tc-MSFT">—</span></span>
-    <span class="ticker-item"><span class="ti-sym">TSLA</span><span class="ti-px" id="t-TSLA">—</span><span class="ti-chg" id="tc-TSLA">—</span></span>
-    <span class="ticker-item"><span class="ti-sym">META</span><span class="ti-px" id="t-META">—</span><span class="ti-chg" id="tc-META">—</span></span>
-    <span class="ticker-item"><span class="ti-sym">AMZN</span><span class="ti-px" id="t-AMZN">—</span><span class="ti-chg" id="tc-AMZN">—</span></span>
-    <span class="ticker-item"><span class="ti-sym">BTC</span><span class="ti-px" id="t-BTC">—</span><span class="ti-chg" id="tc-BTC">—</span></span>
-    <span class="ticker-item"><span class="ti-sym">ETH</span><span class="ti-px" id="t-ETH">—</span><span class="ti-chg" id="tc-ETH">—</span></span>
-    <span class="ticker-item"><span class="ti-sym">GLD</span><span class="ti-px" id="t-GOLD">—</span><span class="ti-chg" id="tc-GOLD">—</span></span>
-    <span class="ticker-item"><span class="ti-sym">USO</span><span class="ti-px" id="t-OIL">—</span><span class="ti-chg" id="tc-OIL">—</span></span>
-  </div>
-</div>
-
 <div class="container">
 
   <!-- ═══ TOP BAR ═══ -->
@@ -516,38 +495,6 @@ async function loadGlucose(){
     document.getElementById('glucCurrent').textContent='—';
     document.getElementById('glucSub').textContent='Unavailable';
   }
-}
-
-/* ── TICKER STRIP ── */
-const STRIP_TICKERS=[
-  ['SPY','SPY','price'],['QQQ','QQQ','price'],['DIA','DIA','price'],
-  ['IWM','IWM','price'],['VIX','VIX','plain'],
-  ['AAPL','AAPL','price'],['NVDA','NVDA','price'],['MSFT','MSFT','price'],
-  ['TSLA','TSLA','price'],['META','META','price'],['AMZN','AMZN','price'],
-  ['GOLD','GLD','price'],['OIL','USO','price'],
-];
-async function loadStrip(){
-  for(const [id,fhSym,fmt] of STRIP_TICKERS){
-    try{
-      const q=await fhQuote(fhSym);
-      const px=document.getElementById('t-'+id), ch=document.getElementById('tc-'+id);
-      if(px) px.textContent=fmt==='plain'?q.price.toFixed(2):fmtPrice(q.price);
-      if(ch){ ch.textContent=fmtPct(q.pct); ch.className='ti-chg '+pctClass(q.pct); }
-    }catch{}
-    await new Promise(r=>setTimeout(r,250));
-  }
-  for(const sym of ['BTC','ETH']){
-    try{
-      const r=await fetch(`https://api.coinbase.com/v2/prices/${sym}-USD/spot`);
-      const d=await r.json();
-      const price=parseFloat(d.data?.amount);
-      const px=document.getElementById('t-'+sym), ch=document.getElementById('tc-'+sym);
-      if(px) px.textContent='$'+price.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});
-      if(ch){ ch.textContent=''; ch.className='ti-chg flat'; }
-    }catch{}
-  }
-  const track=document.getElementById('tickerTrack');
-  if(track) track.innerHTML+=track.innerHTML;
 }
 
 /* ── INDICES ── */
@@ -813,10 +760,8 @@ document.getElementById('wlInput').addEventListener('keydown',e=>{ if(e.key==='E
   setTimeout(loadNewsAndAI, 1200);
 
   // Finnhub calls staggered to stay under 30 req/min free tier:
-  // Strip: 13 calls × 250ms = ~3.25s
-  // Indices: 4 calls × 300ms = ~1.2s  — start after strip finishes
+  // Indices: 4 calls × 300ms = ~1.2s
   // Watchlist: 5 calls × 300ms = ~1.5s — start after indices finish
-  await loadStrip();
   await loadIndices();
   await renderWatchlist();
 })();
