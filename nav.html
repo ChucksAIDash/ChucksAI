@@ -206,42 +206,6 @@
     .nav-weather .wloc { display: none; }
   }
 
-  /* ── NAV TICKER STRIP ── */
-  #nav-ticker {
-    position: sticky; top: 53px; z-index: 490;
-    background: rgba(3,5,8,.92);
-    border-bottom: 1px solid var(--border);
-    backdrop-filter: blur(20px);
-    overflow: hidden; height: 30px;
-    display: flex; align-items: center;
-  }
-  html.light #nav-ticker {
-    background: rgba(248,250,252,.95);
-    border-bottom-color: rgba(0,0,0,.08);
-  }
-  #nav-ticker-track {
-    display: flex; align-items: center;
-    animation: navTickerScroll 45s linear infinite;
-    white-space: nowrap; will-change: transform;
-    gap: 0;
-  }
-  #nav-ticker-track:hover { animation-play-state: paused; }
-  @keyframes navTickerScroll {
-    0%   { transform: translateX(0); }
-    100% { transform: translateX(-50%); }
-  }
-  .nav-ti {
-    display: inline-flex; align-items: baseline; gap: 5px;
-    padding: 0 16px; border-right: 1px solid var(--border);
-    font-family: 'Space Mono', monospace; font-size: 10px;
-    white-space: nowrap; line-height: 30px;
-  }
-  .nav-ti-sym  { color: var(--text-muted); letter-spacing: .07em; font-size: 9px; }
-  .nav-ti-px   { color: var(--text-primary); font-weight: 700; }
-  .nav-ti-chg  { font-size: 9px; }
-  .nav-ti-chg.up   { color: var(--up); }
-  .nav-ti-chg.down { color: var(--down); }
-  .nav-ti-chg.flat { color: var(--text-secondary); }
 </style>
 
 <nav id="site-nav">
@@ -320,12 +284,6 @@
   </div>
 </nav>
 
-<!-- ── NAV TICKER STRIP ── -->
-<div id="nav-ticker">
-  <div id="nav-ticker-track">
-    <!-- items injected by JS -->
-  </div>
-</div>
 <div class="mob-overlay" id="mobOverlay"></div>
 <div class="mob-menu" id="mobMenu">
   <button class="mob-close" id="mobClose">✕ CLOSE</button>
@@ -504,74 +462,6 @@
   const wxWidget = document.getElementById('navWeather');
   wxWidget?.addEventListener('click', e => { e.stopPropagation(); wxWidget.classList.toggle('wx-open'); });
   document.addEventListener('click', () => wxWidget?.classList.remove('wx-open'));
-
-  /* ── NAV TICKER STRIP ── */
-  (function initNavTicker() {
-    const WORKER    = 'https://yahoo-ticker.infiniti306.workers.dev';
-    const TTL       = 5 * 60 * 1000;
-    const CACHE_KEY = 'cai_nav_ticker_cache';
-
-    function fmtPx(n) {
-      if (n == null || isNaN(n)) return '—';
-      if (n >= 10000) return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
-      if (n >= 1000)  return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-      if (n >= 10)    return '$' + n.toFixed(2);
-      return '$' + n.toFixed(4);
-    }
-    function fmtChg(n) {
-      if (n == null || isNaN(n)) return '';
-      return (n >= 0 ? '+' : '') + n.toFixed(2) + '%';
-    }
-    function pctCls(n) { return n > 0.01 ? 'up' : n < -0.01 ? 'down' : 'flat'; }
-
-    function buildItems(data) {
-      const half = data.map(d =>
-        `<span class="nav-ti">
-          <span class="nav-ti-sym">${d.label}</span>
-          <span class="nav-ti-px">${fmtPx(d.price)}</span>
-          <span class="nav-ti-chg ${pctCls(d.pct)}">${fmtChg(d.pct)}</span>
-        </span>`
-      ).join('');
-      return half + half;
-    }
-
-    function render(data) {
-      const track = document.getElementById('nav-ticker-track');
-      if (track) track.innerHTML = buildItems(data);
-    }
-
-    async function loadTicker() {
-      // Serve from cache if fresh
-      try {
-        const raw = localStorage.getItem(CACHE_KEY);
-        if (raw) {
-          const cached = JSON.parse(raw);
-          if (Date.now() - cached.ts < TTL && Array.isArray(cached.data) && cached.data.length) {
-            render(cached.data);
-            return;
-          }
-        }
-      } catch(e) { /* bad cache */ }
-
-      // Fetch from worker — returns array of { label, price, pct }
-      try {
-        const resp = await fetch(`${WORKER}/`);
-        if (!resp.ok) throw new Error(`Worker ${resp.status}`);
-        const results = await resp.json();
-        if (!Array.isArray(results)) throw new Error('Bad response format');
-
-        render(results);
-
-        if (results.some(r => r.price != null)) {
-          try { localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data: results })); } catch(e) {}
-        }
-      } catch(e) {
-        console.warn('Nav ticker fetch failed:', e);
-      }
-    }
-
-    loadTicker();
-  })();
 
 })();
 </script>
