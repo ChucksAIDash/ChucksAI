@@ -326,7 +326,7 @@ async function sendMessage() {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-5-20250929',
         max_tokens: 1024,
         system: `You are a knowledgeable financial and markets assistant on chucksai.com — a personal AI dashboard built for Chuck. Help with stocks, crypto, ETFs, market data, economic indicators, trading concepts, and financial news. Be concise, clear, and conversational. Format responses with markdown when helpful (**bold** for key terms, bullet points for lists). Always note you are not a financial advisor when giving specific advice.`,
         messages: conversationHistory

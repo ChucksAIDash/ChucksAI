@@ -645,7 +645,7 @@ async function loadNewsAndAI(){
     fetch(AI_PROXY,{
       method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
-        model:'claude-sonnet-4-20250514',max_tokens:280,
+        model:'claude-sonnet-4-5-20250929',max_tokens:280,
         system:`You are a sharp US market analyst. Write a 3-sentence market briefing: (1) dominant macro theme. (2) sector/asset implications — be specific. (3) key risk or opportunity. Bold 2-3 tickers/terms with **bold**. No fluff.`,
         messages:[{role:'user',content:`Today's headlines:\n${headlines}\n\nWrite the briefing.`}]
       })
@@ -653,7 +653,7 @@ async function loadNewsAndAI(){
     fetch(AI_PROXY,{
       method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
-        model:'claude-sonnet-4-20250514',max_tokens:1600,
+        model:'claude-sonnet-4-5-20250929',max_tokens:1600,
         system:`You are a financial news analyst. For each article write 2-3 sentences: what happened (specifics), why it matters to US markets, what to watch. Be direct. Return ONLY valid JSON array, no markdown: [{"id":0,"summary":"..."},...]`,
         messages:[{role:'user',content:`Summarize ${articles.length} articles:\n${payload}`}]
       })
