@@ -10,48 +10,6 @@
   <style>
     /* ── MORNING BRIEFING PAGE SPECIFIC ── */
 
-    /* API key setup bar */
-    .api-setup {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: var(--r-lg);
-      padding: 1rem 1.25rem;
-      margin-bottom: 1.5rem;
-      display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
-    }
-    html.light .api-setup { background: rgba(255,255,255,.9); }
-
-    .api-label {
-      font-family: 'Space Mono', monospace;
-      font-size: 10px; color: var(--text-muted);
-      text-transform: uppercase; letter-spacing: .1em; white-space: nowrap;
-    }
-    .api-input {
-      flex: 1; min-width: 200px;
-      font-family: 'Space Mono', monospace; font-size: 11px;
-      background: rgba(255,255,255,.04);
-      border: 1px solid var(--border-bright);
-      color: var(--text-primary);
-      border-radius: var(--r-sm); padding: 7px 12px;
-      outline: none; transition: border-color .15s;
-    }
-    html.light .api-input { background: #f8fafc; }
-    .api-input:focus { border-color: var(--accent2); box-shadow: 0 0 0 3px rgba(91,200,245,.08); }
-
-    .api-save {
-      font-family: 'Space Mono', monospace; font-size: 11px; font-weight: 700;
-      padding: 7px 16px;
-      background: rgba(91,200,245,.12); border: 1px solid rgba(91,200,245,.3);
-      color: var(--accent2); border-radius: var(--r-sm);
-      cursor: pointer; transition: all .15s;
-    }
-    .api-save:hover { background: rgba(91,200,245,.22); }
-
-    .key-saved {
-      font-family: 'Space Mono', monospace; font-size: 10px;
-      color: var(--up); display: none;
-    }
-
     /* Date row */
     .date-row {
       display: flex; align-items: center; gap: 12px;
@@ -212,17 +170,6 @@
     </div>
   </div>
 
-  <!-- API key setup -->
-  <div class="api-setup">
-    <div class="api-label">Anthropic Key:</div>
-    <input class="api-input" type="password" id="api-key-input" placeholder="sk-ant-…" autocomplete="off"/>
-    <button class="api-save" onclick="saveKey()">SAVE</button>
-    <span class="key-saved" id="key-status">✓ Saved</span>
-    <span style="font-size:11px;color:var(--text-muted)">
-      Free at <a href="https://console.anthropic.com" target="_blank" style="color:var(--accent2)">console.anthropic.com</a>
-    </span>
-  </div>
-
   <!-- Date selector + generate button -->
   <div class="date-row">
     <div class="date-label">Briefing for:</div>
@@ -235,7 +182,7 @@
     <div class="empty-state">
       <div class="empty-icon">☀️</div>
       <div class="empty-title">Ready to generate</div>
-      <div class="empty-sub">Add your Anthropic key above and click Generate</div>
+      <div class="empty-sub">Select a date and click Generate</div>
     </div>
   </div>
 
@@ -254,31 +201,14 @@
    MORNING BRIEFING — Chuck's AI v7
 ═══════════════════════════════════════ */
 
-/* ── API key ── */
-let apiKey = localStorage.getItem('cai_anthropic_key') || '';
+const AI_PROXY = 'https://anthropic.infiniti306.workers.dev';
 
 (function init() {
-  /* Pre-fill key if saved */
-  if (apiKey) {
-    const inp = document.getElementById('api-key-input');
-    if (inp) inp.value = apiKey;
-    const st = document.getElementById('key-status');
-    if (st) st.style.display = 'inline';
-  }
   /* Set today's date */
   document.getElementById('briefing-date').value = new Date().toISOString().split('T')[0];
   /* Load history */
   renderHistory();
 })();
-
-function saveKey() {
-  const k = document.getElementById('api-key-input').value.trim();
-  if (!k) return;
-  apiKey = k;
-  localStorage.setItem('cai_anthropic_key', k);
-  const st = document.getElementById('key-status');
-  if (st) { st.style.display = 'inline'; setTimeout(() => st.style.display = 'none', 2500); }
-}
 
 /* ── History helpers ── */
 function getHistory() {
@@ -330,7 +260,6 @@ function displayBriefing(date, rawContent) {
 
 /* ── Generate briefing via Claude ── */
 async function generateBriefing() {
-  if (!apiKey) { alert('Please enter and save your Anthropic API key first.'); return; }
   const date = document.getElementById('briefing-date').value;
   if (!date) { alert('Please select a date.'); return; }
 
@@ -368,13 +297,10 @@ ${isWeekend ? 'Note: Weekend — markets closed. Write a week-ahead prep briefin
 Direct, professional, conversational tone. Use specific numbers where possible. Use +(X%) for gains and -(X%) for losses.`;
 
   try {
-    const r = await fetch('https://api.anthropic.com/v1/messages', {
+    const r = await fetch(`${AI_PROXY}/v1/messages`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
