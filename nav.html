@@ -508,22 +508,8 @@
   /* ── NAV TICKER STRIP ── */
   (function initNavTicker() {
     const WORKER    = 'https://yahoo-ticker.infiniti306.workers.dev';
-    const TTL       = 5 * 60 * 1000; // 5 minutes
+    const TTL       = 5 * 60 * 1000;
     const CACHE_KEY = 'cai_nav_ticker_cache';
-
-    // [Yahoo Finance symbol, display label]
-    // ES=F  → E-Mini S&P 500 front-month futures
-    // ^GSPC → S&P 500 cash index (SPX)
-    // ^VIX  → CBOE Volatility Index
-    const SYMS = [
-      ['ES=F',    'ES'],
-      ['^GSPC',   'SPX'],
-      ['SPY',     'SPY'],
-      ['QQQ',     'QQQ'],
-      ['^VIX',    'VIX'],
-      ['BTC-USD', 'BTC'],
-      ['ETH-USD', 'ETH'],
-    ];
 
     function fmtPx(n) {
       if (n == null || isNaN(n)) return '—';
@@ -546,7 +532,7 @@
           <span class="nav-ti-chg ${pctCls(d.pct)}">${fmtChg(d.pct)}</span>
         </span>`
       ).join('');
-      return half + half; // duplicate for seamless infinite scroll
+      return half + half;
     }
 
     function render(data) {
@@ -567,21 +553,15 @@
         }
       } catch(e) { /* bad cache */ }
 
-      // Fetch all symbols in one worker call
+      // Fetch from worker — returns array of { label, price, pct }
       try {
-        const yahooSyms = SYMS.map(([s]) => s).join(',');
-        const resp = await fetch(`${WORKER}/?symbols=${encodeURIComponent(yahooSyms)}`);
+        const resp = await fetch(`${WORKER}/`);
         if (!resp.ok) throw new Error(`Worker ${resp.status}`);
-        const raw = await resp.json();
-
-        const results = SYMS.map(([ySym, label]) => {
-          const q = raw[ySym];
-          return { label, price: q?.price ?? null, pct: q?.pct ?? null };
-        });
+        const results = await resp.json();
+        if (!Array.isArray(results)) throw new Error('Bad response format');
 
         render(results);
 
-        // Cache if we got at least some data
         if (results.some(r => r.price != null)) {
           try { localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data: results })); } catch(e) {}
         }
