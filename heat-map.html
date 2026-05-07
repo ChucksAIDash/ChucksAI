@@ -391,11 +391,28 @@
   // rawData[tf] = array of { name, val, meta }
   const rawData = {};
 
-  // ── NAV FETCH ──────────────────────────────────────────────────────────────
+  // ── NAV INJECT ─────────────────────────────────────────────────────────────
+  function injectNav(html) {
+    const placeholder = document.getElementById('nav-placeholder');
+    if (!placeholder) return;
+    const tmp = document.createElement('div');
+    tmp.innerHTML = html;
+    Array.from(tmp.childNodes).forEach(node => {
+      if (node.nodeName !== 'SCRIPT')
+        placeholder.parentNode.insertBefore(node.cloneNode(true), placeholder);
+    });
+    tmp.querySelectorAll('script').forEach(oldScript => {
+      const s = document.createElement('script');
+      if (oldScript.src) s.src = oldScript.src;
+      else s.textContent = oldScript.textContent;
+      document.head.appendChild(s);
+    });
+    placeholder.remove();
+  }
   fetch('nav.html')
     .then(r => r.text())
-    .then(html => { document.getElementById('nav-placeholder').innerHTML = html; })
-    .catch(() => {});
+    .then(injectNav)
+    .catch(() => console.warn('nav.html not found'));
 
   // ── MARKET STATUS ─────────────────────────────────────────────────────────
   function updateMarketStatus() {
