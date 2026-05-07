@@ -272,13 +272,6 @@
 
   <div id="nav-placeholder"></div>
 
-  <!-- Ticker strip -->
-  <div class="ticker-strip">
-    <div class="ticker-track" id="tickerTrack">
-      <!-- populated by JS -->
-    </div>
-  </div>
-
   <div class="container">
 
     <!-- Page header -->
@@ -403,54 +396,6 @@
     .then(r => r.text())
     .then(html => { document.getElementById('nav-placeholder').innerHTML = html; })
     .catch(() => {});
-
-  // ── TICKER STRIP ──────────────────────────────────────────────────────────
-  const TICKER_SYMS = ['SPY','QQQ','DIA','IWM','VIX'];
-  async function loadTicker() {
-    const track = document.getElementById('tickerTrack');
-    const url = `https://finnhub.io/api/v1/quote?symbol=SPY&token=d7kohmpr01qiqbcv6f8gd7kohmpr01qiqbcv6f90`;
-    // Build static strip with ETF labels — real prices via Finnhub not in scope, show placeholders
-    const items = [
-      { sym:'SPY', name:'S&P 500 ETF' },
-      { sym:'QQQ', name:'Nasdaq ETF' },
-      { sym:'DIA', name:'Dow ETF' },
-      { sym:'IWM', name:'Russell 2000' },
-      { sym:'SECTOR', name:'Heatmap' },
-    ];
-    let html = items.map(i =>
-      `<div class="ticker-item">
-        <span class="ti-sym">${i.sym}</span>
-        <span class="ti-px">—</span>
-        <span class="ti-chg flat">Loading</span>
-       </div>`
-    ).join('') + items.map(i =>
-      `<div class="ticker-item">
-        <span class="ti-sym">${i.sym}</span>
-        <span class="ti-px">—</span>
-        <span class="ti-chg flat">Loading</span>
-       </div>`
-    ).join('');
-    track.innerHTML = html;
-
-    // Fetch SPY for scale
-    try {
-      const r = await fetch(`https://finnhub.io/api/v1/quote?symbol=SPY&token=d7kohmpr01qiqbcv6f8gd7kohmpr01qiqbcv6f90`);
-      const d = await r.json();
-      if (d && d.c) {
-        const chg = d.dp || 0;
-        const cls = chg >= 0 ? 'up' : 'down';
-        const sign = chg >= 0 ? '+' : '';
-        track.innerHTML = `
-          <div class="ticker-item"><span class="ti-sym">SPY</span><span class="ti-px">$${d.c.toFixed(2)}</span><span class="ti-chg ${cls}">${sign}${chg.toFixed(2)}%</span></div>
-          <div class="ticker-item"><span class="ti-sym">SECTOR</span><span class="ti-px">HEATMAP</span><span class="ti-chg flat">live</span></div>
-          <div class="ticker-item"><span class="ti-sym">S&P 500</span><span class="ti-px">11 Sectors</span><span class="ti-chg flat">alpha vantage</span></div>
-          <div class="ticker-item"><span class="ti-sym">SPY</span><span class="ti-px">$${d.c.toFixed(2)}</span><span class="ti-chg ${cls}">${sign}${chg.toFixed(2)}%</span></div>
-          <div class="ticker-item"><span class="ti-sym">SECTOR</span><span class="ti-px">HEATMAP</span><span class="ti-chg flat">live</span></div>
-          <div class="ticker-item"><span class="ti-sym">S&P 500</span><span class="ti-px">11 Sectors</span><span class="ti-chg flat">alpha vantage</span></div>
-        `;
-      }
-    } catch(e) {}
-  }
 
   // ── MARKET STATUS ─────────────────────────────────────────────────────────
   function updateMarketStatus() {
@@ -672,7 +617,6 @@
   // ── INIT ──────────────────────────────────────────────────────────────────
   updateMarketStatus();
   setInterval(updateMarketStatus, 60000);
-  loadTicker();
   loadData();
   </script>
 </body>
