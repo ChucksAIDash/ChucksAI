@@ -354,7 +354,7 @@
   <div class="page-header">
     <div>
       <div class="page-title">📋 Options <span style="color:var(--accent-purple)">Flow</span></div>
-      <div class="page-sub" id="page-sub">Options chain, Greeks &amp; unusual activity via Tradier</div>
+      <div class="page-sub" id="page-sub">Options chain, Greeks &amp; unusual activity via Tradier · <span style="color:var(--accent3)">15 min delay</span></div>
     </div>
     <div class="header-right">
       <span id="last-updated" style="font-family:'Space Mono',monospace;font-size:9px;color:var(--text-muted);"></span>
@@ -494,7 +494,7 @@
     </div>
   </div>
 
-  <p class="footer-note" id="footer-note">Options Data · Tradier · Greeks &amp; IV via ORATS</p>
+  <p class="footer-note" id="footer-note">Options Data · Tradier (Free Tier — 15 min delay) · Greeks &amp; IV via ORATS</p>
 
 </div><!-- /.container -->
 
@@ -827,18 +827,20 @@ Give a 3-4 sentence read on what the options market is signaling. Be specific ab
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-5-20250929',
         max_tokens: 180,
         messages: [{ role: 'user', content: prompt }]
       })
     });
     const data = await res.json();
-    const text = data?.content?.[0]?.text || 'No analysis available.';
+    if (data?.error) throw new Error(data.error.message || JSON.stringify(data.error));
+    const text = data?.content?.[0]?.text;
+    if (!text) throw new Error('Empty response from AI proxy.');
     body.className = 'ai-card-body fade-in';
     body.textContent = text;
   } catch(e) {
     body.className = 'ai-card-body';
-    body.textContent = 'AI read unavailable.';
+    body.textContent = `AI read unavailable: ${e.message}`;
   }
 }
 
