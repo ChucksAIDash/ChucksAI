@@ -893,13 +893,13 @@ function init() {
   loadChain();
 
   // Auto-refresh chain data every 60s — AI read is manual only
-  let secsLeft = 60;
+  let secsLeft = 180;
   setInterval(() => {
     secsLeft--;
     const badge = document.getElementById('countdown-badge');
     if (badge) badge.textContent = `AUTO ⟳ ${secsLeft}s`;
     if (secsLeft <= 0) {
-      secsLeft = 60;
+      secsLeft = 180;
       loadChain();
     }
   }, 1000);
