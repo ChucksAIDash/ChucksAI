@@ -107,39 +107,6 @@
     .idx-chg   { font-family: 'Space Mono', monospace; font-size: 10px; font-weight: 700; }
     .idx-name  { font-size: 9px; color: var(--text-muted); margin-top: 3px; }
 
-    /* AI block */
-    .ai-block {
-      background: var(--bg-card); border: 1px solid var(--border);
-      border-radius: var(--r-lg); padding: 14px 16px; position: relative; overflow: hidden;
-    }
-    .ai-block::before {
-      content: ''; position: absolute; top: 0; left: 10%; right: 10%; height: 1px;
-      background: linear-gradient(90deg,transparent,rgba(127,217,184,.25),transparent);
-    }
-    .ai-label {
-      font-family: 'Space Mono', monospace; font-size: 9px; font-weight: 700;
-      letter-spacing: .12em; text-transform: uppercase; color: var(--text-muted);
-      margin-bottom: 10px; display: flex; align-items: center; gap: 7px;
-    }
-    .ai-dot {
-      width: 6px; height: 6px; border-radius: 50%;
-      background: var(--accent); box-shadow: 0 0 7px rgba(127,217,184,.8);
-      animation: aiPulse 2s ease-in-out infinite; flex-shrink: 0;
-    }
-    @keyframes aiPulse{ 0%,100%{opacity:1} 50%{opacity:.3} }
-    .ai-text { font-size: 13px; color: var(--text-secondary); line-height: 1.7; }
-    .ai-text strong { color: var(--text-primary); }
-    .ai-spin {
-      width: 12px; height: 12px; border-radius: 50%;
-      border: 2px solid var(--border-bright); border-top-color: var(--accent);
-      animation: spin .8s linear infinite; flex-shrink: 0;
-    }
-    @keyframes spin{ to{ transform:rotate(360deg); } }
-    .ai-loading {
-      font-family: 'Space Mono', monospace; font-size: 10px; color: var(--text-muted);
-      display: flex; align-items: center; gap: 8px; padding: 4px 0;
-    }
-
     /* Watchlist */
     .watchlist-card {
       background: var(--bg-card); border: 1px solid var(--border);
@@ -473,15 +440,26 @@
           <div class="idx-card"><div class="idx-label">DOW</div><div class="idx-price skel skel-sm" style="width:70px">&nbsp;</div></div>
           <div class="idx-card"><div class="idx-label">RUSSELL</div><div class="idx-price skel skel-sm" style="width:70px">&nbsp;</div></div>
         </div>
-        <div class="ai-block">
-          <div class="ai-label">
-            <div class="ai-dot"></div>
-            <span id="aiLabel">Chuck's AI · Analyzing…</span>
+        <!-- Date + generate -->
+        <div class="date-row" style="margin-top:12px">
+          <div class="date-label">Briefing for:</div>
+          <input class="date-input" type="date" id="briefing-date"/>
+          <button class="gen-btn" id="gen-btn" onclick="generateBriefing()">GENERATE BRIEFING →</button>
+        </div>
+
+        <!-- Output -->
+        <div id="briefing-output">
+          <div class="empty-state">
+            <div class="empty-icon">☀️</div>
+            <div class="empty-title">Ready to generate</div>
+            <div class="empty-sub">Click Generate Briefing when you're ready</div>
           </div>
-          <div id="aiLoading" class="ai-loading">
-            <div class="ai-spin"></div>Generating market summary…
-          </div>
-          <div id="aiText" class="ai-text" style="display:none"></div>
+        </div>
+
+        <!-- History -->
+        <div class="history-section" id="history-section" style="display:none">
+          <div class="history-label">Past Briefings</div>
+          <div class="history-list" id="history-list"></div>
         </div>
       </div>
       <div class="watchlist-card">
@@ -551,48 +529,6 @@
     </div>
   </div>
 
-  <!-- ═══ MORNING BRIEFING ═══ -->
-  <div class="dash-section">
-    <div class="section-header">
-      <div class="section-pip pip-green"></div>
-      <div class="section-title">☀️ Morning Briefing</div>
-      <div class="section-line"></div>
-      <span class="snap-status loading" id="snap-status" style="margin-left:0">FETCHING…</span>
-    </div>
-
-    <!-- Live snapshot cards -->
-    <div class="snapshot-row" id="snapshot-row">
-      <div class="snap-card"><div class="snap-loading">Loading…</div></div>
-      <div class="snap-card"><div class="snap-loading">Loading…</div></div>
-      <div class="snap-card"><div class="snap-loading">Loading…</div></div>
-      <div class="snap-card"><div class="snap-loading">Loading…</div></div>
-      <div class="snap-card"><div class="snap-loading">Loading…</div></div>
-      <div class="snap-card"><div class="snap-loading">Loading…</div></div>
-      <div class="snap-card"><div class="snap-loading">Loading…</div></div>
-    </div>
-
-    <!-- Date + generate -->
-    <div class="date-row">
-      <div class="date-label">Briefing for:</div>
-      <input class="date-input" type="date" id="briefing-date"/>
-      <button class="gen-btn" id="gen-btn" onclick="generateBriefing()">GENERATE BRIEFING →</button>
-    </div>
-
-    <!-- Output -->
-    <div id="briefing-output">
-      <div class="empty-state">
-        <div class="empty-icon">☀️</div>
-        <div class="empty-title">Ready to generate</div>
-        <div class="empty-sub">Click Generate Briefing when you're ready</div>
-      </div>
-    </div>
-
-    <!-- History -->
-    <div class="history-section" id="history-section" style="display:none">
-      <div class="history-label">Past Briefings</div>
-      <div class="history-list" id="history-list"></div>
-    </div>
-  </div>
 
 </div>
 
@@ -781,13 +717,9 @@ async function loadCrypto(){
   }catch(e){ console.warn('Crypto failed',e); }
 }
 
-/* ── NEWS + AI ── */
-const AI_CACHE_KEY='cai_home_ai_v8';
+/* ── NEWS ── */
 async function loadNewsAndAI(){
   const feedEl=document.getElementById('newsFeed');
-  const loadEl=document.getElementById('aiLoading');
-  const textEl=document.getElementById('aiText');
-  const labelEl=document.getElementById('aiLabel');
   const statusEl=document.getElementById('aiNewsStatus');
 
   let articles=[];
@@ -797,7 +729,6 @@ async function loadNewsAndAI(){
     articles=d.data||[];
   }catch{
     feedEl.innerHTML='<div style="font-size:12px;color:var(--text-muted);padding:10px 0">News unavailable.</div>';
-    loadEl.innerHTML='<span style="font-size:11px;color:var(--text-muted)">News required for AI summary.</span>';
     return;
   }
   if(!articles.length){ feedEl.innerHTML='<div style="font-size:12px;color:var(--text-muted);padding:10px 0">No articles found.</div>'; return; }
@@ -811,85 +742,10 @@ async function loadNewsAndAI(){
           ${a.source?`<span class="ni-source">${a.source}</span>`:''}
           ${a.published_at?`<span class="ni-time">${new Date(a.published_at).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true,timeZone:'America/Chicago'})}</span>`:''}
         </div>
-        <div class="ni-summary" id="ns-${i}"></div>
       </div>
     </a>`).join('');
 
-  const fingerprint=articles.slice(0,3).map(a=>a.title).join('|');
-  let cached=null;
-  try{
-    const raw=localStorage.getItem(AI_CACHE_KEY);
-    if(raw){ const c=JSON.parse(raw); if(c.fingerprint===fingerprint&&Date.now()-c.cachedAt<30*60*1000) cached=c; }
-  }catch{}
-
-  if(cached){
-    renderAIRead(cached.marketRead,textEl,loadEl,labelEl);
-    renderSummaries(cached.summaries);
-    statusEl.textContent='CACHED';
-    return;
-  }
-
-  statusEl.textContent='GENERATING…';
-  const headlines=articles.map((a,i)=>`${i+1}. [${a.source||'?'}] ${a.title}`).join('\n');
-  const payload=JSON.stringify(articles.map((a,i)=>({id:i,title:a.title,source:a.source||'',desc:(a.description||'').slice(0,400)})));
-
-  const [readRes,sumRes]=await Promise.allSettled([
-    fetch(AI_PROXY,{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        model:'claude-sonnet-4-5-20250929',max_tokens:280,
-        system:`You are a sharp US market analyst. Write a 3-sentence market briefing: (1) dominant macro theme. (2) sector/asset implications — be specific. (3) key risk or opportunity. Bold 2-3 tickers/terms with **bold**. No fluff.`,
-        messages:[{role:'user',content:`Today's headlines:\n${headlines}\n\nWrite the briefing.`}]
-      })
-    }),
-    fetch(AI_PROXY,{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        model:'claude-sonnet-4-5-20250929',max_tokens:1600,
-        system:`You are a financial news analyst. For each article write 2-3 sentences: what happened (specifics), why it matters to US markets, what to watch. Be direct. Return ONLY valid JSON array, no markdown: [{"id":0,"summary":"..."},...]`,
-        messages:[{role:'user',content:`Summarize ${articles.length} articles:\n${payload}`}]
-      })
-    })
-  ]);
-
-  let marketRead='',summaries=[];
-  try{
-    const data=await readRes.value.json();
-    marketRead=data.content?.[0]?.text||'';
-    renderAIRead(marketRead,textEl,loadEl,labelEl);
-    statusEl.textContent='LIVE';
-  }catch{
-    loadEl.innerHTML='<span style="color:var(--text-muted);font-size:11px">AI summary unavailable.</span>';
-    loadEl.style.display='block';
-  }
-  try{
-    const data2=await sumRes.value.json();
-    const raw=(data2.content?.[0]?.text||'[]').replace(/```json[\s\S]*?```|```/g,'').trim();
-    summaries=JSON.parse(raw);
-    renderSummaries(summaries);
-  }catch{}
-
-  if(marketRead&&summaries.length){
-    try{ localStorage.setItem(AI_CACHE_KEY,JSON.stringify({cachedAt:Date.now(),fingerprint,marketRead,summaries})); }catch{}
-  }
-}
-
-function renderAIRead(text,textEl,loadEl,labelEl){
-  if(!text) return;
-  loadEl.style.display='none';
-  textEl.style.display='block';
-  textEl.innerHTML=text.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
-  const ts=new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true,timeZone:'America/Chicago'});
-  labelEl.innerHTML=`<div class="ai-dot"></div>Chuck's AI · ${ts}`;
-}
-
-function renderSummaries(summaries){
-  summaries.forEach(s=>{
-    const el=document.getElementById('ns-'+s.id);
-    if(!el) return;
-    el.innerHTML=`<div style="margin-top:4px;font-size:11.5px;color:var(--text-secondary);line-height:1.6">${s.summary}</div><div style="margin-top:4px"><span class="ni-ai-tag">✦ Chuck's AI</span></div>`;
-    el.classList.add('visible');
-  });
+  if(statusEl) statusEl.textContent='LIVE';
 }
 
 /* ── WATCHLIST ── */
