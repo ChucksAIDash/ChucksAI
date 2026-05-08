@@ -299,11 +299,13 @@
 <script>
 /* ═══════════════════════════════════════
    MORNING BRIEFING — Chuck's AI v7
-   Live data → real prompt → streaming
+   Live data → real prompt → Claude
 ═══════════════════════════════════════ */
 
 const AI_PROXY   = 'https://anthropic.infiniti306.workers.dev';
+const AI_MODEL   = 'claude-sonnet-4-5-20250929';
 const FH_KEY     = 'd7kohmpr01qiqbcv6f8gd7kohmpr01qiqbcv6f90';
+
 const NEWS_KEY   = 'EaYs0yWgGLNEmYbHfDp47HwYeaCMaG8HxgOSHHsg';
 const CG_KEY     = 'CG-eyrvXFR3o6ynR37XD95GjZMi';
 
@@ -585,31 +587,6 @@ function displayBriefing(date, rawContent) {
 }
 
 /* ════════════════════════════════════════
-   STREAMING DISPLAY
-════════════════════════════════════════ */
-function initStreamCard(date) {
-  const dateObj = new Date(date + 'T12:00:00');
-  const dateStr = dateObj.toLocaleDateString('en-US', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
-  document.getElementById('briefing-output').innerHTML = `
-    <div class="briefing-card fade-in" id="stream-card">
-      <div class="briefing-date">${dateStr}</div>
-      <div class="briefing-content" id="stream-content"></div>
-    </div>`;
-}
-
-function updateStreamContent(rawSoFar, done) {
-  const el = document.getElementById('stream-content');
-  if (!el) return;
-  let html = markdownToHtml(rawSoFar);
-  // Wrap in paragraphs
-  html = '<p>' + html + (done ? '' : '<span class="stream-cursor"></span>') + '</p>';
-  el.innerHTML = html;
-  // Scroll to bottom of card if near it
-  const card = document.getElementById('stream-card');
-  if (card) card.scrollIntoView({ behavior:'smooth', block:'nearest' });
-}
-
-/* ════════════════════════════════════════
    MAIN GENERATE
 ════════════════════════════════════════ */
 async function generateBriefing(isAuto) {
@@ -668,84 +645,47 @@ async function generateBriefing(isAuto) {
   /* ── Step 3: build prompt with real data ── */
   const prompt = buildPrompt(date, isWeekend, d);
 
-  /* ── Step 4: init stream card ── */
-  initStreamCard(date);
+  /* ── Step 4: update loading state for Claude call ── */
+  const claudeStep = document.getElementById('step-claude');
+  if (claudeStep) claudeStep.className = 'active';
 
-  /* ── Step 5: call Claude with streaming ── */
-  let fullText = '';
-
+  /* ── Step 5: call Claude ── */
   try {
     const resp = await fetch(`${AI_PROXY}/v1/messages`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model:      'claude-sonnet-4-20250514',
+        model:      AI_MODEL,
         max_tokens: 2500,
-        stream:     true,
         messages:   [{ role: 'user', content: prompt }]
       })
     });
 
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    if (!resp.body) throw new Error('No response body');
-
-    const reader  = resp.body.getReader();
-    const decoder = new TextDecoder();
-    let   buffer  = '';
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buffer += decoder.decode(value, { stream: true });
-
-      const lines = buffer.split('\n');
-      buffer = lines.pop(); // keep incomplete line
-
-      for (const line of lines) {
-        if (!line.startsWith('data: ')) continue;
-        const raw = line.slice(6).trim();
-        if (raw === '[DONE]') continue;
-        try {
-          const evt = JSON.parse(raw);
-          if (evt.type === 'content_block_delta' && evt.delta?.type === 'text_delta') {
-            fullText += evt.delta.text;
-            updateStreamContent(fullText, false);
-          }
-        } catch { /* skip malformed chunks */ }
-      }
+    let data;
+    try {
+      data = await resp.json();
+    } catch (parseErr) {
+      throw new Error(`Response parse failed (HTTP ${resp.status})`);
     }
 
-    /* Finalise — remove cursor, save */
-    updateStreamContent(fullText, true);
+    if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
+
+    const fullText = data.content?.[0]?.text || '';
+    if (!fullText) throw new Error('Empty response from Claude');
+
+    displayBriefing(date, fullText);
     saveHistory(date, fullText, fullText.slice(0, 140).replace(/[#*\n]/g, ' ').trim());
     renderHistory();
 
   } catch (e) {
-    /* Fallback: try non-streaming if worker doesn't support stream */
-    try {
-      const r = await fetch(`${AI_PROXY}/v1/messages`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model:      'claude-sonnet-4-20250514',
-          max_tokens: 2500,
-          messages:   [{ role: 'user', content: prompt }]
-        })
-      });
-      const data = await r.json();
-      if (data.error) throw new Error(data.error.message);
-      fullText = data.content?.[0]?.text || '';
-      updateStreamContent(fullText, true);
-      saveHistory(date, fullText, fullText.slice(0, 140).replace(/[#*\n]/g, ' ').trim());
-      renderHistory();
-    } catch (e2) {
-      document.getElementById('briefing-output').innerHTML = `
-        <div class="empty-state">
-          <div class="empty-icon">⚠️</div>
-          <div class="empty-title">Error</div>
-          <div class="empty-sub" style="color:var(--down)">${e2.message}</div>
-        </div>`;
-    }
+    document.getElementById('briefing-output').innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">⚠️</div>
+        <div class="empty-title">Generation Failed</div>
+        <div class="empty-sub" style="color:var(--down);font-family:'Space Mono',monospace;font-size:11px">${e.message}</div>
+        <div class="empty-sub" style="margin-top:.5rem;font-size:11px;color:var(--text-muted)">Check browser console for details</div>
+      </div>`;
+    console.error('[Morning Briefing] Claude error:', e);
   }
 
   btn.disabled = false;
