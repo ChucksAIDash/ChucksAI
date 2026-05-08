@@ -274,7 +274,6 @@
     <div class="date-label">Briefing for:</div>
     <input class="date-input" type="date" id="briefing-date"/>
     <button class="gen-btn" id="gen-btn" onclick="generateBriefing()">GENERATE BRIEFING →</button>
-    <span class="auto-badge" id="auto-badge" style="display:none">AUTO</span>
   </div>
 
   <!-- Briefing output -->
@@ -595,7 +594,6 @@ async function generateBriefing(isAuto) {
 
   const btn = document.getElementById('gen-btn');
   btn.disabled = true; btn.textContent = 'GENERATING…';
-  if (isAuto) document.getElementById('auto-badge').style.display = '';
 
   const dateObj   = new Date(date + 'T12:00:00');
   const isWeekend = dateObj.getDay() === 0 || dateObj.getDay() === 6;
@@ -690,7 +688,6 @@ async function generateBriefing(isAuto) {
 
   btn.disabled = false;
   btn.textContent = 'GENERATE BRIEFING →';
-  if (isAuto) document.getElementById('auto-badge').style.display = 'none';
 }
 
 /* ════════════════════════════════════════
@@ -699,12 +696,10 @@ async function generateBriefing(isAuto) {
 (async function init() {
   const today     = new Date();
   const todayStr  = today.toISOString().split('T')[0];
-  const isWeekday = today.getDay() >= 1 && today.getDay() <= 5;
-
   document.getElementById('briefing-date').value = todayStr;
   renderHistory();
 
-  /* Start fetching snapshot data immediately (background) */
+  /* Fetch snapshot cards in background — no Claude call, no cost */
   fetchLiveData(todayStr).then(d => {
     liveData = d;
     renderSnapshot(d);
@@ -712,18 +707,14 @@ async function generateBriefing(isAuto) {
     document.getElementById('snap-status').textContent = 'UNAVAILABLE';
   });
 
-  /* Auto-generate on weekdays */
-  if (isWeekday) {
-    /* Small delay so nav loads first */
-    setTimeout(() => generateBriefing(true), 800);
-  } else {
-    document.getElementById('briefing-output').innerHTML = `
-      <div class="empty-state">
-        <div class="empty-icon">📅</div>
-        <div class="empty-title">Markets closed today</div>
-        <div class="empty-sub">Click Generate for a week-ahead briefing, or select a past weekday from history.</div>
-      </div>`;
-  }
+  /* Show ready state — user clicks Generate when they want */
+  const isWeekend = today.getDay() === 0 || today.getDay() === 6;
+  document.getElementById('briefing-output').innerHTML =
+    '<div class="empty-state">' +
+    '<div class="empty-icon">☀️</div>' +
+    '<div class="empty-title">Ready to generate</div>' +
+    '<div class="empty-sub">' + (isWeekend ? 'Weekend — click Generate for a week-ahead prep briefing' : 'Click Generate Briefing when you\'re ready') + '</div>' +
+    '</div>';
 })();
 
 /* ════════════════════════════════════════
