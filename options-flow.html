@@ -232,7 +232,18 @@
     .badge-hot { background: rgba(255,200,0,.15); color: #ffc800; border: 1px solid rgba(255,200,0,.3); }
     .badge-itm { background: rgba(91,200,245,.12); color: var(--accent2); border: 1px solid rgba(91,200,245,.25); }
 
-    /* AI Read card */
+    .ai-gen-btn {
+      font-family: 'Space Mono', monospace; font-size: 9px; font-weight: 700;
+      letter-spacing: .08em; padding: 6px 14px;
+      background: rgba(167,139,250,.12);
+      border: 1px solid rgba(167,139,250,.3);
+      border-radius: var(--r-sm); color: var(--accent-purple);
+      cursor: pointer; transition: all .2s; margin-left: auto;
+    }
+    .ai-gen-btn:hover { background: rgba(167,139,250,.25); }
+    .ai-gen-btn:disabled { opacity: .4; cursor: not-allowed; }
+
+    /* AI card */
     .ai-card {
       background: var(--bg-card);
       border: 1px solid rgba(167,139,250,.2);
@@ -358,6 +369,7 @@
     </div>
     <div class="header-right">
       <span id="last-updated" style="font-family:'Space Mono',monospace;font-size:9px;color:var(--text-muted);"></span>
+      <span id="countdown-badge" style="display:none;font-family:'Space Mono',monospace;font-size:9px;color:var(--text-muted);background:var(--bg-ticker);border:1px solid var(--border);border-radius:var(--r-sm);padding:4px 10px;">AUTO ⟳ 60s</span>
       <button class="load-btn" id="refresh-btn" onclick="loadChain()" style="display:none">⟳ REFRESH</button>
     </div>
   </div>
@@ -456,8 +468,9 @@
     <div class="ai-card-header">
       <span class="ai-card-label">⚡ Chuck's AI Read</span>
       <span class="ai-card-sym" id="ai-sym-label"></span>
+      <button class="ai-gen-btn" id="ai-gen-btn" onclick="fetchAIRead(chainData)">Generate Read</button>
     </div>
-    <div class="ai-card-body loading" id="ai-body">Analyzing options flow…</div>
+    <div class="ai-card-body" id="ai-body" style="color:var(--text-muted);font-style:italic">Click Generate Read to analyze current flow.</div>
   </div>
 
   <!-- Calls / Puts panels -->
@@ -606,7 +619,6 @@ async function loadExpiration(exp) {
     renderChain(options);
     renderUnusual(options);
     renderSentiment(options);
-    fetchAIRead(options);
 
     setLoading(false);
     showResults();
@@ -794,8 +806,10 @@ async function fetchAIRead(options) {
   document.getElementById('ai-card').style.display = '';
   document.getElementById('ai-sym-label').textContent = `${currentSym} · ${formatExpDate(currentExp)}`;
   const body = document.getElementById('ai-body');
+  const btn  = document.getElementById('ai-gen-btn');
   body.className = 'ai-card-body loading';
   body.textContent = 'Analyzing options flow…';
+  if (btn) { btn.disabled = true; btn.textContent = 'Generating…'; }
 
   try {
     const calls = options.filter(o => o.option_type === 'call');
@@ -838,9 +852,11 @@ Give a 3-4 sentence read on what the options market is signaling. Be specific ab
     if (!text) throw new Error('Empty response from AI proxy.');
     body.className = 'ai-card-body fade-in';
     body.textContent = text;
+    if (btn) { btn.disabled = false; btn.textContent = 'Generate Read'; }
   } catch(e) {
     body.className = 'ai-card-body';
     body.textContent = `AI read unavailable: ${e.message}`;
+    if (btn) { btn.disabled = false; btn.textContent = 'Generate Read'; }
   }
 }
 
@@ -873,7 +889,20 @@ function showResults() {
 function init() {
   document.getElementById('toolbar').style.display = '';
   document.getElementById('refresh-btn').style.display = '';
+  document.getElementById('countdown-badge').style.display = '';
   loadChain();
+
+  // Auto-refresh chain data every 60s — AI read is manual only
+  let secsLeft = 60;
+  setInterval(() => {
+    secsLeft--;
+    const badge = document.getElementById('countdown-badge');
+    if (badge) badge.textContent = `AUTO ⟳ ${secsLeft}s`;
+    if (secsLeft <= 0) {
+      secsLeft = 60;
+      loadChain();
+    }
+  }, 1000);
 }
 
 /* ── Nav injection ── */
