@@ -303,17 +303,6 @@
     .fade-in { animation: fadeUp .35s ease both; }
     @keyframes fadeUp { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
 
-    /* ── SANDBOX BADGE ── */
-    .sandbox-badge {
-      display: inline-flex; align-items: center; gap: 5px;
-      font-family: 'Space Mono', monospace; font-size: 9px;
-      letter-spacing: .08em; text-transform: uppercase;
-      background: rgba(167,139,250,.1);
-      border: 1px solid rgba(167,139,250,.25);
-      color: var(--accent-purple);
-      padding: 3px 10px; border-radius: 99px;
-    }
-
     @media(max-width: 600px) {
       .gh-value { font-size: 52px; }
       .gh-trend { font-size: 40px; }
@@ -338,7 +327,6 @@
       <div class="page-title">Glucose <span style="color:var(--accent)">Dashboard</span></div>
       <div class="page-sub">
         Dexcom G7 · Clarity data
-        <span class="sandbox-badge" id="envBadge">⚗ Sandbox</span>
       </div>
     </div>
     <div class="header-right">
@@ -493,7 +481,7 @@
 
 </div><!-- /container -->
 
-<footer>DEXCOM G7 · CLARITY · SANDBOX MODE · AUTO-REFRESH 5m</footer>
+<footer>DEXCOM G7 · CLARITY · LIVE · AUTO-REFRESH 5m</footer>
 
 <script>
 /* ═══════════════════════════════════════
@@ -502,7 +490,7 @@
 ═══════════════════════════════════════ */
 
 const WORKER   = 'https://dexcom-proxy.infiniti306.workers.dev';
-const AUTH_URL = 'https://sandbox-api.dexcom.com/v2/oauth2/login';
+const AUTH_URL = 'https://api.dexcom.com/v2/oauth2/login';
 const CLIENT_ID    = 'iJ2Ne5xezTRjCgpI2tMijlnohvu0dE0k';
 const REDIRECT_URI = 'https://chucksai.com/dexcom-callback.html';
 const SCOPES       = 'offline_access egv calibrations devices dataRange';
