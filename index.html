@@ -89,6 +89,7 @@
     .market-watchlist {
       display: grid; grid-template-columns: 1fr 260px; gap: 14px; align-items: start;
     }
+    .market-watchlist > * { min-width: 0; overflow: hidden; }
     @media(max-width:900px){ .market-watchlist{ grid-template-columns:1fr; } }
 
     .market-grid {
@@ -310,10 +311,10 @@
     }
     .briefing-content h2:first-child { margin-top: 0; }
     .briefing-content h3 { font-family: 'Space Mono', monospace; font-size: 11px; font-weight: 700; color: var(--text-secondary); margin: 1rem 0 .4rem; }
-    .briefing-content p  { margin-bottom: .85rem; color: var(--text-secondary); font-size: 14px; line-height: 1.75; }
+    .briefing-content p  { margin-bottom: .85rem; color: var(--text-secondary); font-size: 14px; line-height: 1.75; overflow-wrap: break-word; word-break: break-word; }
     .briefing-content strong { color: var(--text-primary); font-weight: 600; }
     .briefing-content ul { padding-left: 1.2rem; margin-bottom: .85rem; }
-    .briefing-content li { color: var(--text-secondary); font-size: 14px; line-height: 1.7; margin-bottom: .3rem; }
+    .briefing-content li { color: var(--text-secondary); font-size: 14px; line-height: 1.7; margin-bottom: .3rem; overflow-wrap: break-word; word-break: break-word; }
     .up-text   { color: var(--up);   font-weight: 700; }
     .down-text { color: var(--down); font-weight: 700; }
 
