@@ -8,144 +8,37 @@
   <link rel="stylesheet" href="styles.css"/>
   <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
   <style>
-    /* ── CHAT PAGE SPECIFIC ── */
 
-    /*
-      Mobile fix: override styles.css `min-height: 100vh` which prevents
-      the body from being height-constrained. We need an exact height so
-      flex children can pin the input bar to the bottom of the viewport.
-      dvh = dynamic viewport height — accounts for mobile browser chrome.
-    */
-    html {
-      height: 100% !important;
-      min-height: unset !important;
-    }
-    body {
-      height: 100dvh !important;         /* modern mobile browsers */
-      height: -webkit-fill-available;    /* iOS Safari fallback */
-      min-height: unset !important;      /* kill the styles.css override */
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;                  /* prevent body scroll; .messages scrolls internally */
-    }
-
-    .chat-page {
-      position: relative; z-index: 1;
-      display: flex; flex-direction: column; flex: 1;
-      max-width: 900px; margin: 0 auto; width: 100%;
-      padding: 1.5rem 2rem 0;
-      /* Critical: min-height: 0 allows flex children to shrink below content size */
-      min-height: 0;
-    }
-    @media(max-width:600px) { .chat-page { padding: 1rem 1rem 0; } }
-
-    /* ── Page header ── */
-    .chat-header {
-      margin-bottom: 1.25rem; padding-bottom: 1.25rem;
-      border-bottom: 1px solid var(--border);
-      flex-shrink: 0;
-    }
-
-    /* ── Quick prompt chips ── */
-    .quick-prompts {
-      display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 1rem;
-      flex-shrink: 0;
-    }
-    .qp-btn {
-      font-size: 12px; color: var(--text-secondary);
-      background: var(--bg-card); border: 1px solid var(--border);
-      border-radius: var(--r-sm); padding: 6px 12px;
-      cursor: pointer; transition: all .15s; white-space: nowrap;
-    }
-    .qp-btn:hover {
-      border-color: var(--accent2); color: var(--accent2);
-      background: rgba(91,200,245,.06);
-    }
-    /* Hide quick prompts on small screens to maximize chat area */
-    @media(max-width:600px) { .quick-prompts { display: none; } }
-
-    /* ── Message thread ── */
-    .messages {
-      flex: 1;
-      overflow-y: auto;
-      padding-bottom: 1rem;
-      /* min-height: 0 is required for flex children to scroll properly */
-      min-height: 0;
-    }
-    .messages::-webkit-scrollbar { width: 4px; }
-    .messages::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 2px; }
-
-    .msg {
-      display: flex; gap: 12px;
-      margin-bottom: 1.25rem;
-      animation: fadeUp .3s ease both;
-    }
-    @keyframes fadeUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
-
-    .msg-avatar {
-      width: 32px; height: 32px; border-radius: var(--r-sm);
-      flex-shrink: 0; display: flex; align-items: center; justify-content: center;
-      font-family: 'Space Mono', monospace; font-size: 9px; font-weight: 700;
-    }
-    .msg.user .msg-avatar {
-      background: rgba(91,200,245,.15); border: 1px solid rgba(91,200,245,.3);
-      color: var(--accent2);
-    }
-    .msg.ai .msg-avatar {
-      background: rgba(127,217,184,.12); border: 1px solid rgba(127,217,184,.25);
-      color: var(--accent);
-    }
-
-    .msg-bubble { flex: 1; min-width: 0; }
-    .msg-name {
-      font-family: 'Space Mono', monospace; font-size: 10px; font-weight: 700;
-      color: var(--text-muted); margin-bottom: 5px;
-      letter-spacing: .06em; text-transform: uppercase;
-    }
-    .msg.user .msg-name { color: var(--accent2); }
-    .msg.ai   .msg-name { color: var(--accent); }
-
-    .msg-text {
-      background: var(--bg-ticker); border: 1px solid var(--border);
-      border-radius: var(--r-lg); padding: 12px 16px;
-      font-size: 14px; line-height: 1.65; color: var(--text-primary);
-    }
-    .msg.user .msg-text {
-      background: rgba(91,200,245,.07); border-color: rgba(91,200,245,.2);
-    }
-    html.light .msg-text       { background: rgba(255,255,255,.9); }
-    html.light .msg.user .msg-text { background: rgba(91,200,245,.08); }
-
-    .msg-text p         { margin-bottom: .6rem; }
-    .msg-text p:last-child { margin-bottom: 0; }
-    .msg-text strong    { color: var(--accent2); }
-    .msg-text code {
-      font-family: 'Space Mono', monospace; font-size: 12px;
-      background: rgba(255,255,255,.08); padding: 1px 6px; border-radius: 4px;
-    }
-    html.light .msg-text code { background: rgba(0,0,0,.06); }
-
-    /* ── Typing dots ── */
-    .typing-dots { display: flex; gap: 5px; padding: 4px 0; }
-    .typing-dots span {
-      width: 7px; height: 7px; background: var(--text-muted);
-      border-radius: 50%; animation: dot 1.4s ease-in-out infinite;
-    }
-    .typing-dots span:nth-child(2) { animation-delay: .2s; }
-    .typing-dots span:nth-child(3) { animation-delay: .4s; }
-    @keyframes dot { 0%,80%,100%{transform:scale(.8);opacity:.4} 40%{transform:scale(1);opacity:1} }
-
-    /* ── Input bar — pure flexbox, no sticky ── */
+    /* ── INPUT BAR: fixed to the bottom of the viewport ──────────────────
+       This is the only approach that survives:
+         1) dynamic nav injection (which changes page height after load)
+         2) new messages being appended (which grow the messages div)
+         3) mobile browser chrome resizing the viewport on scroll
+       The input bar never moves because it's taken entirely out of flow.
+    ──────────────────────────────────────────────────────────────────── */
     .chat-input-wrap {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      z-index: 200;
       display: flex; gap: 10px;
-      border-top: 1px solid var(--border);
       background: var(--bg-deep);
-      padding: 1.25rem 0;
-      flex-shrink: 0;
+      border-top: 1px solid var(--border);
+      padding: 1rem 1.5rem 1.25rem;
     }
-    @media(max-width:600px) {
-      .chat-input-wrap { padding: .875rem 0; }
+    @media(max-width: 480px) {
+      .chat-input-wrap { padding: .75rem 1rem 1rem; }
     }
+    @supports (padding-bottom: env(safe-area-inset-bottom)) {
+      .chat-input-wrap {
+        padding-bottom: calc(1.25rem + env(safe-area-inset-bottom));
+      }
+      @media(max-width: 480px) {
+        .chat-input-wrap {
+          padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+        }
+      }
+    }
+
     .chat-input {
       flex: 1;
       font-family: 'DM Sans', sans-serif; font-size: 14px;
@@ -153,8 +46,7 @@
       color: var(--text-primary); border-radius: var(--r-md);
       padding: 12px 16px; outline: none; resize: none;
       transition: border-color .15s;
-      min-height: 48px; max-height: 140px;
-      backdrop-filter: blur(10px);
+      min-height: 48px; max-height: 120px;
     }
     html.light .chat-input { background: rgba(255,255,255,.9); }
     .chat-input:focus { border-color: var(--accent2); box-shadow: 0 0 0 3px rgba(91,200,245,.08); }
@@ -164,24 +56,108 @@
       font-family: 'Space Mono', monospace; font-size: 11px; font-weight: 700;
       background: var(--accent2); color: var(--bg-deep);
       border: none; border-radius: var(--r-md);
-      padding: 0 22px; cursor: pointer; transition: all .15s;
-      white-space: nowrap;
+      padding: 0 20px; cursor: pointer; transition: all .15s;
+      white-space: nowrap; flex-shrink: 0;
       box-shadow: 0 0 18px rgba(91,200,245,.35);
     }
-    .send-btn:hover { background: #80d9ff; box-shadow: 0 0 28px rgba(91,200,245,.55); }
+    .send-btn:hover  { background: #80d9ff; }
     .send-btn:disabled { opacity: .4; cursor: not-allowed; }
 
-    /* ── Footer disclaimer — hidden on mobile to save space ── */
-    .chat-footer {
-      font-family: 'Space Mono', monospace; font-size: 9px;
-      color: var(--text-muted); text-align: center;
-      padding: 1rem 2rem 1.5rem;
-      letter-spacing: .05em; text-transform: uppercase;
-      flex-shrink: 0;
+    /* ── PAGE WRAPPER ── */
+    .chat-page {
+      position: relative; z-index: 1;
+      max-width: 900px; margin: 0 auto; width: 100%;
+      padding: 1.5rem 2rem 0;
     }
-    @media(max-width:600px) { .chat-footer { display: none; } }
+    @media(max-width: 600px) { .chat-page { padding: 1rem 1rem 0; } }
 
-    /* ── Clear button ── */
+    /* ── PAGE HEADER ── */
+    .chat-header {
+      margin-bottom: 1rem; padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* ── QUICK PROMPTS ── */
+    .quick-prompts {
+      display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 1rem;
+    }
+    .qp-btn {
+      font-size: 11px; color: var(--text-secondary);
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--r-sm); padding: 5px 11px;
+      cursor: pointer; transition: all .15s; white-space: nowrap;
+    }
+    .qp-btn:hover { border-color: var(--accent2); color: var(--accent2); background: rgba(91,200,245,.06); }
+    @media(max-width: 600px) { .quick-prompts { display: none; } }
+
+    /* ── MESSAGE THREAD ──────────────────────────────────────────────────
+       overflow-y: auto scrolls the messages.
+       padding-bottom is set dynamically by sizeChatArea() in JS to exactly
+       match the input bar height — ensures the last message is always
+       visible above the fixed input bar.
+    ──────────────────────────────────────────────────────────────────── */
+    .messages {
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding-bottom: 90px; /* default; overridden by sizeChatArea() */
+      -webkit-overflow-scrolling: touch;
+    }
+    .messages::-webkit-scrollbar { width: 4px; }
+    .messages::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 2px; }
+
+    /* ── MESSAGE BUBBLES ── */
+    .msg {
+      display: flex; gap: 12px; margin-bottom: 1.25rem;
+      animation: fadeUp .3s ease both;
+    }
+    @keyframes fadeUp { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+
+    .msg-avatar {
+      width: 32px; height: 32px; border-radius: var(--r-sm);
+      flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+      font-family: 'Space Mono', monospace; font-size: 9px; font-weight: 700;
+    }
+    .msg.user .msg-avatar { background: rgba(91,200,245,.15);  border: 1px solid rgba(91,200,245,.3);  color: var(--accent2); }
+    .msg.ai   .msg-avatar { background: rgba(127,217,184,.12); border: 1px solid rgba(127,217,184,.25); color: var(--accent); }
+
+    .msg-bubble { flex: 1; min-width: 0; }
+    .msg-name {
+      font-family: 'Space Mono', monospace; font-size: 10px; font-weight: 700;
+      letter-spacing: .06em; text-transform: uppercase; margin-bottom: 5px;
+    }
+    .msg.user .msg-name { color: var(--accent2); }
+    .msg.ai   .msg-name { color: var(--accent); }
+
+    .msg-text {
+      background: var(--bg-ticker); border: 1px solid var(--border);
+      border-radius: var(--r-lg); padding: 12px 16px;
+      font-size: 14px; line-height: 1.65; color: var(--text-primary);
+      word-break: break-word;
+    }
+    .msg.user .msg-text  { background: rgba(91,200,245,.07); border-color: rgba(91,200,245,.2); }
+    html.light .msg-text           { background: rgba(255,255,255,.9); }
+    html.light .msg.user .msg-text { background: rgba(91,200,245,.08); }
+
+    .msg-text p            { margin-bottom: .6rem; }
+    .msg-text p:last-child { margin-bottom: 0; }
+    .msg-text strong       { color: var(--accent2); }
+    .msg-text code {
+      font-family: 'Space Mono', monospace; font-size: 12px;
+      background: rgba(255,255,255,.08); padding: 1px 6px; border-radius: 4px;
+    }
+    html.light .msg-text code { background: rgba(0,0,0,.06); }
+
+    /* ── TYPING DOTS ── */
+    .typing-dots { display: flex; gap: 5px; padding: 4px 0; }
+    .typing-dots span {
+      width: 7px; height: 7px; background: var(--text-muted);
+      border-radius: 50%; animation: dot 1.4s ease-in-out infinite;
+    }
+    .typing-dots span:nth-child(2) { animation-delay: .2s; }
+    .typing-dots span:nth-child(3) { animation-delay: .4s; }
+    @keyframes dot { 0%,80%,100%{transform:scale(.8);opacity:.4} 40%{transform:scale(1);opacity:1} }
+
+    /* ── CLEAR BUTTON ── */
     .clear-btn {
       font-family: 'Space Mono', monospace; font-size: 10px;
       color: var(--text-muted); background: none;
@@ -189,6 +165,7 @@
       padding: 4px 10px; cursor: pointer; transition: all .15s;
     }
     .clear-btn:hover { color: var(--down); border-color: rgba(240,82,82,.4); }
+
   </style>
 </head>
 <body>
@@ -230,7 +207,6 @@
   <!-- Message thread -->
   <div class="messages" id="messages">
 
-    <!-- Welcome message -->
     <div class="msg ai">
       <div class="msg-avatar">AI</div>
       <div class="msg-bubble">
@@ -241,7 +217,6 @@
       </div>
     </div>
 
-    <!-- Typing indicator -->
     <div class="msg ai" id="typing-indicator" style="display:none">
       <div class="msg-avatar">AI</div>
       <div class="msg-bubble">
@@ -254,21 +229,19 @@
 
   </div><!-- /.messages -->
 
-  <!-- Input bar -->
-  <div class="chat-input-wrap">
-    <textarea
-      class="chat-input" id="chat-input"
-      placeholder="Ask about markets, crypto, economics…"
-      rows="1"
-      onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage();}"
-      oninput="autoResize(this)"
-    ></textarea>
-    <button class="send-btn" id="send-btn" onclick="sendMessage()">SEND →</button>
-  </div>
-
-  <div class="chat-footer">Powered by Claude Sonnet via Cloudflare Worker · chucksai.com</div>
-
 </div><!-- /.chat-page -->
+
+<!-- Fixed input bar — outside .chat-page, anchored to viewport bottom -->
+<div class="chat-input-wrap" id="chatInputWrap">
+  <textarea
+    class="chat-input" id="chat-input"
+    placeholder="Ask about markets, crypto, economics…"
+    rows="1"
+    onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage();}"
+    oninput="autoResize(this)"
+  ></textarea>
+  <button class="send-btn" id="send-btn" onclick="sendMessage()">SEND →</button>
+</div>
 
 <script>
 /* ═══════════════════════════════════════
@@ -278,10 +251,29 @@
 const AI_PROXY = 'https://anthropic.infiniti306.workers.dev';
 let conversationHistory = [];
 
+/* ── sizeChatArea ────────────────────────────────────────────────────
+   Sets messages padding-bottom to exactly the height of the fixed
+   input bar. This ensures the last message is never hidden under it.
+   Called on load, resize, nav inject, and textarea resize.
+──────────────────────────────────────────────────────────────────── */
+function sizeChatArea() {
+  const inputWrap = document.getElementById('chatInputWrap');
+  const messages  = document.getElementById('messages');
+  if (!inputWrap || !messages) return;
+  const barHeight = inputWrap.getBoundingClientRect().height;
+  messages.style.paddingBottom = (barHeight + 16) + 'px';
+}
+
+window.addEventListener('resize', sizeChatArea);
+sizeChatArea();
+setTimeout(sizeChatArea, 300);
+setTimeout(sizeChatArea, 800);
+
 /* ── Auto-resize textarea ── */
 function autoResize(el) {
   el.style.height = 'auto';
-  el.style.height = Math.min(el.scrollHeight, 140) + 'px';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+  sizeChatArea();
 }
 
 /* ── Quick prompt chips ── */
@@ -302,7 +294,7 @@ function clearChat() {
   messages.appendChild(typing);
 }
 
-/* ── Append a message bubble ── */
+/* ── Append message bubble ── */
 function appendMsg(role, text) {
   const messages = document.getElementById('messages');
   const typing   = document.getElementById('typing-indicator');
@@ -339,6 +331,7 @@ async function sendMessage() {
   conversationHistory.push({ role: 'user', content: text });
   input.value = '';
   input.style.height = 'auto';
+  sizeChatArea();
   sendBtn.disabled = true;
 
   const typing = document.getElementById('typing-indicator');
@@ -348,9 +341,7 @@ async function sendMessage() {
   try {
     const response = await fetch(`${AI_PROXY}/v1/messages`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model: 'claude-sonnet-4-5-20250929',
         max_tokens: 1024,
@@ -379,9 +370,7 @@ async function sendMessage() {
   input.focus();
 }
 
-/* ═══════════════════════════════════════
-   NAV INJECT
-═══════════════════════════════════════ */
+/* ── Nav inject ── */
 function injectNav(html) {
   const placeholder = document.getElementById('nav-placeholder');
   if (!placeholder) return;
@@ -398,6 +387,9 @@ function injectNav(html) {
     document.head.appendChild(s);
   });
   placeholder.remove();
+  // Re-run after nav reflows the page
+  setTimeout(sizeChatArea, 100);
+  setTimeout(sizeChatArea, 500);
 }
 
 fetch('nav.html')
