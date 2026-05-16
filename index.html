@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Chuck's AI — Dashboard</title>
+  <script src="theme.js"></script>
+  <link rel="stylesheet" href="styles.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    /* ── INDEX v8 WIDGET LAYOUT ── */
+
+    .top-bar {
+      display: grid; grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px; margin-bottom: 18px;
+    }
+    @media(max-width:700px){ .top-bar{ grid-template-columns:1fr; } }
+
+    .top-widget {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--r-lg); padding: 16px 18px;
+      display: flex; align-items: center; gap: 14px; min-height: 76px;
+    }
+    .tw-icon { font-size: 1.6rem; flex-shrink: 0; line-height: 1; }
+    .tw-body { flex: 1; min-width: 0; }
+    .tw-label {
+      font-family: 'Space Mono', monospace; font-size: 8px; font-weight: 700;
+      letter-spacing: .18em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px;
+    }
+    .tw-value {
+      font-family: 'Space Mono', monospace; font-size: 1.4rem; font-weight: 700;
+      color: var(--text-primary); line-height: 1.1;
+    }
+    .tw-sub { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
+
+    .gluc-widget { border-left: 3px solid rgba(240,82,82,.35); }
+    .gluc-widget.is-normal { border-left-color: rgba(61,220,132,.4); }
+    .gluc-widget.is-high   { border-left-color: rgba(240,184,106,.5); }
+    .gluc-widget.is-low    { border-left-color: rgba(240,82,82,.5); }
+    #glucVal {
+      font-family: 'Space Mono', monospace; font-size: 1.6rem; font-weight: 700;
+      color: var(--up); line-height: 1; display: flex; align-items: baseline; gap: 6px;
+    }
+
+    /* ── SECTIONS ── */
+    .dash-section { margin-bottom: 22px; }
+    .section-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+    .section-title {
+      font-family: 'Space Mono', monospace; font-size: 10px; font-weight: 700;
+      letter-spacing: .18em; text-transform: uppercase; color: var(--text-muted);
+    }
+    .section-line { flex: 1; height: 1px; background: var(--border); }
+    .section-pip {
+      width: 4px; height: 14px; border-radius: 2px; flex-shrink: 0;
+      background: var(--accent2); box-shadow: 0 0 7px rgba(91,200,245,.5);
+    }
+    .section-pip.pip-green  { background: var(--accent);        box-shadow: 0 0 7px rgba(127,217,184,.5); }
+    .section-pip.pip-yellow { background: var(--accent3);       box-shadow: 0 0 7px rgba(240,184,106,.5); }
+    .section-pip.pip-purple { background: var(--accent-purple); box-shadow: 0 0 7px rgba(167,139,250,.5); }
+    .section-pip.pip-red    { background: var(--down);          box-shadow: 0 0 7px rgba(240,82,82,.5); }
+
+    /* ── NEWS ── */
+    .news-feed { display: flex; flex-direction: column; }
+    .news-item {
+      display: flex; gap: 10px; align-items: flex-start;
+      padding: 10px 0; border-bottom: 1px solid var(--border);
+      text-decoration: none; color: inherit;
+    }
+    .news-item:last-child { border-bottom: none; }
+    .news-item:hover .ni-headline { color: var(--accent2); }
+    .ni-num {
+      font-family: 'Space Mono', monospace; font-size: 9px; font-weight: 700;
+      color: var(--border-bright); padding-top: 2px; min-width: 18px; flex-shrink: 0;
+    }
+    .ni-body { flex: 1; min-width: 0; }
+    .ni-headline { font-size: 13px; color: var(--text-primary); line-height: 1.5; margin-bottom: 3px; transition: color .15s; }
+    .ni-meta { display: flex; align-items: center; gap: 8px; }
+    .ni-source { font-family: 'Space Mono', monospace; font-size: 9px; color: var(--text-muted); }
+    .ni-time   { font-family: 'Space Mono', monospace; font-size: 9px; color: var(--text-muted); }
+    .ni-summary { font-size: 12px; color: var(--text-secondary); line-height: 1.6; margin-top: 5px; display: none; }
+    .ni-summary.visible { display: block; }
+    .ni-ai-tag {
+      font-family: 'Space Mono', monospace; font-size: 8px; font-weight: 700;
+      color: var(--accent-purple); background: rgba(167,139,250,.1);
+      border: 1px solid rgba(167,139,250,.2); padding: 1px 6px; border-radius: 99px; letter-spacing: .06em;
+    }
+
+    /* ── MARKET ── */
+    .market-watchlist {
+      display: grid; grid-template-columns: 1fr 260px; gap: 14px; align-items: start;
+    }
+    @media(max-width:900px){ .market-watchlist{ grid-template-columns:1fr; } }
+
+    .market-grid {
+      display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 12px;
+    }
+    @media(max-width:900px){ .market-grid{ grid-template-columns:repeat(2,1fr); } }
+
+    .idx-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--r-md); padding: 12px 14px; transition: border-color .2s;
+    }
+    .idx-card.is-up   { border-color: rgba(61,220,132,.2); }
+    .idx-card.is-down { border-color: rgba(240,82,82,.18); }
+    .idx-label { font-family: 'Space Mono', monospace; font-size: 8px; color: var(--text-muted); letter-spacing: .1em; margin-bottom: 6px; }
+    .idx-price { font-family: 'Space Mono', monospace; font-size: 15px; font-weight: 700; color: var(--text-primary); margin-bottom: 3px; }
+    .idx-chg   { font-family: 'Space Mono', monospace; font-size: 10px; font-weight: 700; }
+    .idx-name  { font-size: 9px; color: var(--text-muted); margin-top: 3px; }
+
+    /* AI block */
+    .ai-block {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--r-lg); padding: 14px 16px; position: relative; overflow: hidden; min-width: 0;
+    }
+    .ai-block::before {
+      content: ''; position: absolute; top: 0; left: 10%; right: 10%; height: 1px;
+      background: linear-gradient(90deg,transparent,rgba(127,217,184,.25),transparent);
+    }
+    .ai-label {
+      font-family: 'Space Mono', monospace; font-size: 9px; font-weight: 700;
+      letter-spacing: .12em; text-transform: uppercase; color: var(--text-muted);
+      margin-bottom: 10px; display: flex; align-items: center; gap: 7px;
+    }
+    .ai-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--accent); box-shadow: 0 0 7px rgba(127,217,184,.8);
+      animation: aiPulse 2s ease-in-out infinite; flex-shrink: 0;
+    }
+    @keyframes aiPulse{ 0%,100%{opacity:1} 50%{opacity:.3} }
+    .ai-text { font-size: 13px; color: var(--text-secondary); line-height: 1.7; word-break: break-word; overflow-wrap: break-word; min-width: 0; }
+    .ai-text strong { color: var(--text-primary); }
+    .ai-spin {
+      width: 12px; height: 12px; border-radius: 50%;
+      border: 2px solid var(--border-bright); border-top-color: var(--accent);
+      animation: spin .8s linear infinite; flex-shrink: 0;
+    }
+    @keyframes spin{ to{ transform:rotate(360deg); } }
+    .ai-loading {
+      font-family: 'Space Mono', monospace; font-size: 10px; color: var(--text-muted);
+      display: flex; align-items: center; gap: 8px; padding: 4px 0;
+    }
+
+    /* Watchlist */
+    .watchlist-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--r-lg); padding: 14px 16px;
+    }
+    .wl-card-label {
+      font-family: 'Space Mono', monospace; font-size: 9px; font-weight: 700;
+      letter-spacing: .18em; text-transform: uppercase; color: var(--text-muted);
+      margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 7px;
+    }
+    .wl-card-label::before {
+      content: ''; width: 3px; height: 10px; border-radius: 2px; display: inline-block; flex-shrink: 0;
+      background: var(--accent); box-shadow: 0 0 6px rgba(127,217,184,.6);
+    }
+    .wl-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 6px 0; border-bottom: 1px solid var(--border);
+    }
+    .wl-row:last-child{ border-bottom:none; }
+    .wl-sym  { font-family: 'Space Mono', monospace; font-size: 11px; font-weight: 700; color: var(--text-primary); }
+    .wl-right{ display: flex; align-items: center; gap: 10px; }
+    .wl-px   { font-family: 'Space Mono', monospace; font-size: 11px; color: var(--text-primary); }
+    .wl-chg  { font-family: 'Space Mono', monospace; font-size: 10px; min-width: 52px; text-align: right; }
+    .wl-rm   {
+      font-family: 'Space Mono', monospace; font-size: 9px; color: var(--text-muted);
+      cursor: pointer; padding: 2px 5px; border-radius: 3px;
+      transition: all .15s; border: 1px solid transparent;
+    }
+    .wl-rm:hover{ color:var(--down); border-color:rgba(240,82,82,.3); background:rgba(240,82,82,.06); }
+    .wl-add{ display:flex; gap:6px; margin-top:10px; }
+    .wl-input{
+      flex:1; font-family:'Space Mono',monospace; font-size:11px;
+      background:var(--bg-card); border:1px solid var(--border-bright);
+      border-radius:var(--r-sm); padding:6px 10px; color:var(--text-primary);
+      text-transform:uppercase; letter-spacing:.06em; outline:none;
+    }
+    .wl-input:focus{ border-color:var(--accent2); }
+    .wl-btn{
+      font-family:'Space Mono',monospace; font-size:10px; font-weight:700;
+      background:rgba(91,200,245,.1); border:1px solid rgba(91,200,245,.25);
+      border-radius:var(--r-sm); padding:6px 12px; color:var(--accent2);
+      cursor:pointer; transition:all .15s; letter-spacing:.06em;
+    }
+    .wl-btn:hover{ background:rgba(91,200,245,.18); }
+
+    /* ── FEAR & GREED DUAL ── */
+    .fg-dual{
+      display:grid; grid-template-columns:1fr 1fr; gap:12px;
+    }
+    @media(max-width:600px){ .fg-dual{ grid-template-columns:1fr; } }
+
+    .fg-card{
+      background:var(--bg-card); border:1px solid var(--border);
+      border-radius:var(--r-lg); padding:16px 18px;
+    }
+    .fg-card-label{
+      font-family:'Space Mono',monospace; font-size:8px; font-weight:700;
+      letter-spacing:.18em; text-transform:uppercase; color:var(--text-muted);
+      margin-bottom:12px; display:flex; align-items:center; gap:6px;
+    }
+    .fg-card-label::before{
+      content:''; width:3px; height:10px; border-radius:2px; flex-shrink:0; display:inline-block;
+    }
+    .fg-card.equity .fg-card-label::before{ background:var(--accent2); box-shadow:0 0 6px rgba(91,200,245,.5); }
+    .fg-card.crypto .fg-card-label::before{ background:var(--accent3); box-shadow:0 0 6px rgba(240,184,106,.5); }
+
+    .fg-score-row{ display:flex; align-items:flex-end; gap:12px; margin-bottom:12px; }
+    .fg-num{
+      font-family:'Space Mono',monospace; font-size:2.8rem; font-weight:700;
+      line-height:1; letter-spacing:-.04em;
+    }
+    .fg-word-stack{ display:flex; flex-direction:column; justify-content:flex-end; padding-bottom:4px; }
+    .fg-word{
+      font-family:'Space Mono',monospace; font-size:11px; font-weight:700;
+      letter-spacing:.08em; text-transform:uppercase;
+    }
+    .fg-source{ font-family:'Space Mono',monospace; font-size:8px; color:var(--text-muted); margin-top:3px; }
+    .fg-bar{ height:5px; border-radius:3px; background:var(--border); overflow:hidden; margin-bottom:5px; }
+    .fg-fill{ height:100%; border-radius:3px; background:linear-gradient(90deg,var(--down),var(--accent3),var(--up)); transition:width .7s ease; }
+    .fg-labels{ display:flex; justify-content:space-between; font-family:'Space Mono',monospace; font-size:8px; color:var(--text-muted); }
+
+    /* ── CRYPTO ── */
+    .crypto-grid{
+      display:grid; grid-template-columns:repeat(5,1fr); gap:10px;
+    }
+    @media(max-width:900px){ .crypto-grid{ grid-template-columns:repeat(3,1fr); } }
+    @media(max-width:480px){ .crypto-grid{ grid-template-columns:repeat(2,1fr); } }
+
+    .crypto-card{
+      background:var(--bg-card); border:1px solid var(--border);
+      border-radius:var(--r-md); padding:12px 14px; transition:border-color .2s;
+    }
+    .crypto-card.is-up  { border-color:rgba(61,220,132,.2); }
+    .crypto-card.is-down{ border-color:rgba(240,82,82,.18); }
+    .cc-sym  { font-family:'Space Mono',monospace; font-size:9px; font-weight:700; color:var(--text-muted); letter-spacing:.1em; margin-bottom:4px; }
+    .cc-name { font-size:9px; color:var(--text-muted); margin-bottom:6px; }
+    .cc-price{ font-family:'Space Mono',monospace; font-size:13px; font-weight:700; color:var(--text-primary); margin-bottom:3px; }
+    .cc-chg  { font-family:'Space Mono',monospace; font-size:10px; font-weight:700; }
+
+    /* ── SKELETON ── */
+    .skel{
+      background:linear-gradient(90deg,var(--bg-card) 25%,var(--bg-card-hover) 50%,var(--bg-card) 75%);
+      background-size:200% 100%; border-radius:4px; animation:skelShim 1.4s ease-in-out infinite;
+    }
+    @keyframes skelShim{ 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+    .skel-line{ height:10px; margin:5px 0; }
+    .skel-sm  { height:14px; }
+  </style>
+</head>
+
+<body data-page="home" data-mob="home">
+
+<div class="bg-canvas">
+  <div class="orb orb1"></div><div class="orb orb2"></div>
+  <div class="orb orb3"></div><div class="orb orb4"></div>
+</div>
+
+<div id="nav-placeholder"></div>
+
+<div class="container">
+
+  <!-- ═══ TOP BAR ═══ -->
+  <div class="top-bar">
+    <div class="top-widget">
+      <div class="tw-icon" id="clockIcon">🕐</div>
+      <div class="tw-body">
+        <div class="tw-label">Central Time</div>
+        <div class="tw-value" id="clockValue">--:-- --</div>
+        <div class="tw-sub" id="clockDate"></div>
+      </div>
+    </div>
+    <div class="top-widget">
+      <div class="tw-icon" id="wxIcon">⛅</div>
+      <div class="tw-body">
+        <div class="tw-label">Lombard, IL</div>
+        <div class="tw-value" id="wxTemp">--°F</div>
+        <div class="tw-sub" id="wxDesc">Loading…</div>
+      </div>
+    </div>
+    <div class="top-widget gluc-widget" id="glucWidget">
+      <div class="tw-icon">🩸</div>
+      <div class="tw-body">
+        <div class="tw-label">Glucose · 24h Avg</div>
+        <div id="glucVal">
+          <span id="glucCurrent">--</span>
+          <span id="glucArrow" style="font-size:1rem;color:var(--text-muted)">—</span>
+        </div>
+        <div class="tw-sub" id="glucSub">Loading…</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ TOP STORIES ═══ -->
+  <div class="dash-section">
+    <div class="section-header">
+      <div class="section-pip pip-purple"></div>
+      <div class="section-title">Top Stories</div>
+      <div class="section-line"></div>
+      <div id="aiNewsStatus" style="font-family:'Space Mono',monospace;font-size:8px;color:var(--text-muted);white-space:nowrap;"></div>
+    </div>
+    <div class="news-feed" id="newsFeed">
+      <div style="padding:12px 0">
+        <div class="skel skel-sm" style="width:88%;margin-bottom:8px"></div>
+        <div class="skel skel-line" style="width:72%"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ MARKET ═══ -->
+  <div class="dash-section">
+    <div class="section-header">
+      <div class="section-pip"></div>
+      <div class="section-title">Market</div>
+      <div class="section-line"></div>
+    </div>
+    <div class="market-watchlist">
+      <div>
+        <div class="market-grid" id="indicesGrid">
+          <div class="idx-card"><div class="idx-label">S&amp;P 500</div><div class="idx-price skel skel-sm" style="width:70px">&nbsp;</div></div>
+          <div class="idx-card"><div class="idx-label">NASDAQ</div><div class="idx-price skel skel-sm" style="width:70px">&nbsp;</div></div>
+          <div class="idx-card"><div class="idx-label">DOW</div><div class="idx-price skel skel-sm" style="width:70px">&nbsp;</div></div>
+          <div class="idx-card"><div class="idx-label">RUSSELL</div><div class="idx-price skel skel-sm" style="width:70px">&nbsp;</div></div>
+        </div>
+        <div class="ai-block">
+          <div class="ai-label">
+            <div class="ai-dot"></div>
+            <span id="aiLabel">Chuck's AI · Analyzing…</span>
+          </div>
+          <div id="aiLoading" class="ai-loading">
+            <div class="ai-spin"></div>Generating market summary…
+          </div>
+          <div id="aiText" class="ai-text" style="display:none"></div>
+        </div>
+      </div>
+      <div class="watchlist-card">
+        <div class="wl-card-label">Watchlist</div>
+        <div id="watchlistWrap"></div>
+        <div class="wl-add">
+          <input class="wl-input" id="wlInput" placeholder="ADD TICKER" maxlength="8"/>
+          <button class="wl-btn" onclick="addToWatchlist()">+ ADD</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ FEAR & GREED ═══ -->
+  <div class="dash-section">
+    <div class="section-header">
+      <div class="section-pip pip-red"></div>
+      <div class="section-title">Fear &amp; Greed</div>
+      <div class="section-line"></div>
+    </div>
+    <div class="fg-dual">
+
+      <!-- Equity — CNN via worker -->
+      <div class="fg-card equity">
+        <div class="fg-card-label">Equity Market</div>
+        <div class="fg-score-row">
+          <div class="fg-num" id="eqFgNum">—</div>
+          <div class="fg-word-stack">
+            <div class="fg-word" id="eqFgWord">Loading…</div>
+            <div class="fg-source">CNN Fear &amp; Greed Index</div>
+          </div>
+        </div>
+        <div class="fg-bar"><div class="fg-fill" id="eqFgFill" style="width:50%"></div></div>
+        <div class="fg-labels"><span>Extreme Fear</span><span>Extreme Greed</span></div>
+      </div>
+
+      <!-- Crypto — Alternative.me -->
+      <div class="fg-card crypto">
+        <div class="fg-card-label">Crypto Market</div>
+        <div class="fg-score-row">
+          <div class="fg-num" id="crFgNum">—</div>
+          <div class="fg-word-stack">
+            <div class="fg-word" id="crFgWord">Loading…</div>
+            <div class="fg-source" id="crFgDate">Alternative.me</div>
+          </div>
+        </div>
+        <div class="fg-bar"><div class="fg-fill" id="crFgFill" style="width:50%"></div></div>
+        <div class="fg-labels"><span>Extreme Fear</span><span>Extreme Greed</span></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══ CRYPTO ═══ -->
+  <div class="dash-section">
+    <div class="section-header">
+      <div class="section-pip pip-yellow"></div>
+      <div class="section-title">Crypto</div>
+      <div class="section-line"></div>
+    </div>
+    <div class="crypto-grid" id="cryptoGrid">
+      <div class="crypto-card"><div class="cc-sym">BTC</div><div class="cc-price skel skel-sm" style="width:80px">&nbsp;</div></div>
+      <div class="crypto-card"><div class="cc-sym">ETH</div><div class="cc-price skel skel-sm" style="width:70px">&nbsp;</div></div>
+      <div class="crypto-card"><div class="cc-sym">LTC</div><div class="cc-price skel skel-sm" style="width:60px">&nbsp;</div></div>
+      <div class="crypto-card"><div class="cc-sym">DOGE</div><div class="cc-price skel skel-sm" style="width:60px">&nbsp;</div></div>
+      <div class="crypto-card"><div class="cc-sym">XLM</div><div class="cc-price skel skel-sm" style="width:60px">&nbsp;</div></div>
+    </div>
+  </div>
+
+</div>
+
+<footer>CHUCKSAI.COM &nbsp;·&nbsp; CLAUDE AI · FINNHUB · COINBASE · COINGECKO · THENEWSAPI · CNN · ALTERNATIVE.ME · OPEN-METEO · DEXCOM</footer>
+
+<script>
+const FH_KEY   = 'd7kohmpr01qiqbcv6f8gd7kohmpr01qiqbcv6f90';
+const NEWS_KEY = 'EaYs0yWgGLNEmYbHfDp47HwYeaCMaG8HxgOSHHsg';
+const AI_PROXY = 'https://anthropic.infiniti306.workers.dev';
+const DEXCOM   = 'https://dexcom-proxy.infiniti306.workers.dev';
+
+function fmtPrice(n,dec=2){
+  if(n==null||isNaN(n)||n===0) return '—';
+  if(n>=1000) return '$'+n.toLocaleString('en-US',{minimumFractionDigits:dec,maximumFractionDigits:dec});
+  return '$'+Number(n).toFixed(dec);
+}
+function fmtPct(n){ return n==null||isNaN(n)?'—':(n>=0?'+':'')+n.toFixed(2)+'%'; }
+function pctClass(n){ return n>0.05?'up':n<-0.05?'down':'flat'; }
+function fgColor(v){ return v>=60?'var(--up)':v<=40?'var(--down)':'var(--accent3)'; }
+
+async function fhQuote(sym){
+  const r=await fetch(`https://finnhub.io/api/v1/quote?symbol=${encodeURIComponent(sym)}&token=${FH_KEY}`);
+  const d=await r.json();
+  if(!d||!d.c||d.c===0) throw new Error('no data');
+  return {price:d.c, pct:((d.c-d.pc)/d.pc)*100};
+}
+
+/* ── CLOCK ── */
+const CLOCK_ICONS=['🕛','🕐','🕑','🕒','🕓','🕔','🕔','🕔','🕗','🕘','🕙','🕙'];
+function tickClock(){
+  const ct=new Date(new Date().toLocaleString('en-US',{timeZone:'America/Chicago'}));
+  const h=ct.getHours(),m=ct.getMinutes();
+  const ampm=h>=12?'PM':'AM', hh=h%12||12, mm=String(m).padStart(2,'0');
+  document.getElementById('clockValue').textContent=`${hh}:${mm} ${ampm}`;
+  document.getElementById('clockDate').textContent=ct.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+  document.getElementById('clockIcon').textContent=CLOCK_ICONS[h%12]||'🕐';
+}
+tickClock(); setInterval(tickClock,1000);
+
+/* ── WEATHER ── */
+const WX_ICONS={0:'☀️',1:'🌤️',2:'⛅',3:'☁️',45:'🌫️',48:'🌫️',51:'🌦️',53:'🌦️',55:'🌧️',61:'🌧️',63:'🌧️',65:'🌧️',71:'🌨️',73:'🌨️',75:'❄️',80:'🌦️',81:'🌧️',82:'⛈️',95:'⛈️',96:'⛈️',99:'⛈️'};
+const WX_DESC ={0:'Clear sky',1:'Mainly clear',2:'Partly cloudy',3:'Overcast',45:'Foggy',48:'Icy fog',51:'Light drizzle',53:'Drizzle',55:'Heavy drizzle',61:'Light rain',63:'Rain',65:'Heavy rain',71:'Light snow',73:'Snow',75:'Heavy snow',80:'Rain showers',81:'Heavy showers',82:'Violent showers',95:'Thunderstorm',96:'Thunderstorm',99:'Severe storm'};
+async function loadWeather(){
+  try{
+    const r=await fetch('https://api.open-meteo.com/v1/forecast?latitude=41.88&longitude=-88.01&current_weather=true&temperature_unit=fahrenheit');
+    const d=await r.json();
+    const cw=d.current_weather, temp=Math.round(cw.temperature), code=cw.weathercode;
+    document.getElementById('wxTemp').textContent=`${temp}°F`;
+    document.getElementById('wxDesc').textContent=WX_DESC[code]||'Clear';
+    document.getElementById('wxIcon').textContent=WX_ICONS[code]||'🌡️';
+  }catch{ document.getElementById('wxDesc').textContent='Unavailable'; }
+}
+
+/* ── GLUCOSE ── */
+const TREND_MAP={doubleUp:'⬆⬆',singleUp:'⬆',fortyFiveUp:'↗',flat:'→',fortyFiveDown:'↘',singleDown:'⬇',doubleDown:'⬇⬇'};
+async function loadGlucose(){
+  const widget=document.getElementById('glucWidget');
+  const valEl=document.getElementById('glucCurrent');
+  const arrEl=document.getElementById('glucArrow');
+  const subEl=document.getElementById('glucSub');
+  try{
+    const [latestRes,histRes]=await Promise.allSettled([
+      fetch(`${DEXCOM}/latest`),
+      fetch(`${DEXCOM}/egvs?minutes=1440`)
+    ]);
+    let minsAgo='—';
+    if(latestRes.status==='fulfilled'){
+      const ld=await latestRes.value.json();
+      const r=ld.reading;
+      if(r&&r.value){
+        const val=r.value;
+        const glucColor=val<70?'var(--down)':val>180?'var(--accent3)':'var(--up)';
+        const cls=val<70?'is-low':val>180?'is-high':'is-normal';
+        widget.classList.remove('is-low','is-high','is-normal');
+        widget.classList.add(cls);
+        valEl.textContent=val; valEl.style.color=glucColor;
+        arrEl.textContent=TREND_MAP[r.trend]||'—'; arrEl.style.color=glucColor;
+        const t=new Date(r.systemTime);
+        minsAgo=Math.round((Date.now()-t)/60000);
+      }
+    }
+    let avgText='—';
+    if(histRes.status==='fulfilled'){
+      const hd=await histRes.value.json();
+      const vals=(hd.records||[]).map(r=>r.value).filter(v=>v>0);
+      if(vals.length) avgText=Math.round(vals.reduce((a,b)=>a+b,0)/vals.length);
+    }
+    const agoStr=typeof minsAgo==='number'?(minsAgo<=1?'Just now':`${minsAgo}m ago`):'—';
+    subEl.textContent=`Avg 24h: ${avgText} mg/dL · ${agoStr}`;
+    if(valEl.textContent==='--'){ valEl.textContent='—'; subEl.textContent='Not connected'; }
+  }catch{
+    document.getElementById('glucCurrent').textContent='—';
+    document.getElementById('glucSub').textContent='Unavailable';
+  }
+}
+
+/* ── INDICES ── */
+async function loadIndices(){
+  const grid=document.getElementById('indicesGrid');
+  const INDICES=[['SPY','S&P 500'],['QQQ','NASDAQ'],['DIA','DOW'],['IWM','RUSSELL']];
+  const cards=[];
+  for(const [sym,name] of INDICES){
+    try{
+      const q=await fhQuote(sym);
+      const cls=pctClass(q.pct);
+      const state=cls==='up'?'is-up':cls==='down'?'is-down':'';
+      cards.push(`<div class="idx-card ${state}">
+        <div class="idx-label">${name}</div>
+        <div class="idx-price ${cls}">${fmtPrice(q.price)}</div>
+        <div class="idx-chg ${cls}">${fmtPct(q.pct)}</div>
+        <div class="idx-name">${sym}</div>
+      </div>`);
+    }catch{
+      cards.push(`<div class="idx-card"><div class="idx-label">${name}</div><div class="idx-price" style="color:var(--text-muted)">—</div></div>`);
+    }
+    await new Promise(r=>setTimeout(r,300));
+  }
+  grid.innerHTML=cards.join('');
+}
+
+/* ── FEAR & GREED — EQUITY (CNN via worker) ── */
+async function loadFearGreedEquity(){
+  try{
+    const r=await fetch(`${AI_PROXY}/cnn-fg`);
+    const d=await r.json();
+    if(d.error) throw new Error(d.error);
+    const color=fgColor(d.score);
+    document.getElementById('eqFgNum').textContent=d.score;
+    document.getElementById('eqFgNum').style.color=color;
+    document.getElementById('eqFgWord').textContent=d.rating;
+    document.getElementById('eqFgWord').style.color=color;
+    document.getElementById('eqFgFill').style.width=d.score+'%';
+  }catch{
+    document.getElementById('eqFgWord').textContent='Unavailable';
+    document.getElementById('eqFgNum').textContent='—';
+  }
+}
+
+/* ── FEAR & GREED — CRYPTO (Alternative.me) ── */
+async function loadFearGreedCrypto(){
+  try{
+    const r=await fetch('https://api.alternative.me/fng/?limit=1');
+    const d=await r.json();
+    const val=parseInt(d.data?.[0]?.value||50);
+    const label=d.data?.[0]?.value_classification||'Neutral';
+    const ts=d.data?.[0]?.timestamp;
+    const color=fgColor(val);
+    document.getElementById('crFgNum').textContent=val;
+    document.getElementById('crFgNum').style.color=color;
+    document.getElementById('crFgWord').textContent=label;
+    document.getElementById('crFgWord').style.color=color;
+    document.getElementById('crFgFill').style.width=val+'%';
+    if(ts) document.getElementById('crFgDate').textContent=
+      'Alt.me · '+new Date(ts*1000).toLocaleDateString('en-US',{month:'short',day:'numeric'});
+  }catch{
+    document.getElementById('crFgWord').textContent='Unavailable';
+  }
+}
+
+/* ── CRYPTO WIDGETS (CoinGecko) ── */
+const CRYPTO_COINS=[
+  {id:'bitcoin',  sym:'BTC', name:'Bitcoin' },
+  {id:'ethereum', sym:'ETH', name:'Ethereum'},
+  {id:'litecoin', sym:'LTC', name:'Litecoin'},
+  {id:'dogecoin', sym:'DOGE',name:'Dogecoin'},
+  {id:'stellar',  sym:'XLM', name:'Stellar' }
+];
+async function loadCrypto(){
+  try{
+    const ids=CRYPTO_COINS.map(c=>c.id).join(',');
+    const r=await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd&include_24hr_change=true`);
+    const d=await r.json();
+    document.getElementById('cryptoGrid').innerHTML=CRYPTO_COINS.map(coin=>{
+      const data=d[coin.id];
+      if(!data) return `<div class="crypto-card"><div class="cc-sym">${coin.sym}</div><div class="cc-name">${coin.name}</div><div class="cc-price">—</div></div>`;
+      const price=data.usd, chg=data.usd_24h_change||0;
+      const cls=pctClass(chg), state=cls==='up'?'is-up':cls==='down'?'is-down':'';
+      const priceFmt=price>=1000?'$'+price.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0}):price>=1?'$'+price.toFixed(2):'$'+price.toFixed(4);
+      return `<div class="crypto-card ${state}">
+        <div class="cc-sym">${coin.sym}</div>
+        <div class="cc-name">${coin.name}</div>
+        <div class="cc-price ${cls}">${priceFmt}</div>
+        <div class="cc-chg ${cls}">${fmtPct(chg)}</div>
+      </div>`;
+    }).join('');
+  }catch(e){ console.warn('Crypto failed',e); }
+}
+
+/* ── NEWS + AI ── */
+const AI_CACHE_KEY='cai_home_ai_v8';
+async function loadNewsAndAI(){
+  const feedEl=document.getElementById('newsFeed');
+  const loadEl=document.getElementById('aiLoading');
+  const textEl=document.getElementById('aiText');
+  const labelEl=document.getElementById('aiLabel');
+  const statusEl=document.getElementById('aiNewsStatus');
+
+  let articles=[];
+  try{
+    const r=await fetch(`https://api.thenewsapi.com/v1/news/top?api_token=${NEWS_KEY}&locale=us&language=en&limit=8&categories=business,tech,general`);
+    const d=await r.json();
+    articles=d.data||[];
+  }catch{
+    feedEl.innerHTML='<div style="font-size:12px;color:var(--text-muted);padding:10px 0">News unavailable.</div>';
+    loadEl.innerHTML='<span style="font-size:11px;color:var(--text-muted)">News required for AI summary.</span>';
+    return;
+  }
+  if(!articles.length){ feedEl.innerHTML='<div style="font-size:12px;color:var(--text-muted);padding:10px 0">No articles found.</div>'; return; }
+
+  feedEl.innerHTML=articles.map((a,i)=>`
+    <a class="news-item" href="${(a.url||'#').replace(/"/g,'%22')}" target="_blank" rel="noopener">
+      <div class="ni-num">${String(i+1).padStart(2,'0')}</div>
+      <div class="ni-body">
+        <div class="ni-headline">${a.title}</div>
+        <div class="ni-meta">
+          ${a.source?`<span class="ni-source">${a.source}</span>`:''}
+          ${a.published_at?`<span class="ni-time">${new Date(a.published_at).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true,timeZone:'America/Chicago'})}</span>`:''}
+        </div>
+        <div class="ni-summary" id="ns-${i}"></div>
+      </div>
+    </a>`).join('');
+
+  const fingerprint=articles.slice(0,3).map(a=>a.title).join('|');
+  let cached=null;
+  try{
+    const raw=localStorage.getItem(AI_CACHE_KEY);
+    if(raw){ const c=JSON.parse(raw); if(c.fingerprint===fingerprint&&Date.now()-c.cachedAt<30*60*1000) cached=c; }
+  }catch{}
+
+  if(cached){
+    renderAIRead(cached.marketRead,textEl,loadEl,labelEl);
+    renderSummaries(cached.summaries);
+    statusEl.textContent='CACHED';
+    return;
+  }
+
+  statusEl.textContent='GENERATING…';
+  const headlines=articles.map((a,i)=>`${i+1}. [${a.source||'?'}] ${a.title}`).join('\n');
+  const payload=JSON.stringify(articles.map((a,i)=>({id:i,title:a.title,source:a.source||'',desc:(a.description||'').slice(0,400)})));
+
+  const [readRes,sumRes]=await Promise.allSettled([
+    fetch(AI_PROXY,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-5-20250929',max_tokens:280,
+        system:`You are a sharp US market analyst. Write a 3-sentence market briefing: (1) dominant macro theme. (2) sector/asset implications — be specific. (3) key risk or opportunity. Bold 2-3 tickers/terms with **bold**. No fluff.`,
+        messages:[{role:'user',content:`Today's headlines:\n${headlines}\n\nWrite the briefing.`}]
+      })
+    }),
+    fetch(AI_PROXY,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-5-20250929',max_tokens:1600,
+        system:`You are a financial news analyst. For each article write 2-3 sentences: what happened (specifics), why it matters to US markets, what to watch. Be direct. Return ONLY valid JSON array, no markdown: [{"id":0,"summary":"..."},...]`,
+        messages:[{role:'user',content:`Summarize ${articles.length} articles:\n${payload}`}]
+      })
+    })
+  ]);
+
+  let marketRead='',summaries=[];
+  try{
+    const data=await readRes.value.json();
+    marketRead=data.content?.[0]?.text||'';
+    renderAIRead(marketRead,textEl,loadEl,labelEl);
+    statusEl.textContent='LIVE';
+  }catch{
+    loadEl.innerHTML='<span style="color:var(--text-muted);font-size:11px">AI summary unavailable.</span>';
+    loadEl.style.display='block';
+  }
+  try{
+    const data2=await sumRes.value.json();
+    const raw=(data2.content?.[0]?.text||'[]').replace(/```json[\s\S]*?```|```/g,'').trim();
+    summaries=JSON.parse(raw);
+    renderSummaries(summaries);
+  }catch{}
+
+  if(marketRead&&summaries.length){
+    try{ localStorage.setItem(AI_CACHE_KEY,JSON.stringify({cachedAt:Date.now(),fingerprint,marketRead,summaries})); }catch{}
+  }
+}
+
+function renderAIRead(text,textEl,loadEl,labelEl){
+  if(!text) return;
+  loadEl.style.display='none';
+  textEl.style.display='block';
+  textEl.innerHTML=text.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
+  const ts=new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true,timeZone:'America/Chicago'});
+  labelEl.innerHTML=`<div class="ai-dot"></div>Chuck's AI · ${ts}`;
+}
+
+function renderSummaries(summaries){
+  summaries.forEach(s=>{
+    const el=document.getElementById('ns-'+s.id);
+    if(!el) return;
+    el.innerHTML=`<div style="margin-top:4px;font-size:11.5px;color:var(--text-secondary);line-height:1.6">${s.summary}</div><div style="margin-top:4px"><span class="ni-ai-tag">✦ Chuck's AI</span></div>`;
+    el.classList.add('visible');
+  });
+}
+
+/* ── WATCHLIST ── */
+const WL_KEY='cai_watchlist_v7';
+function getWatchlist(){ return JSON.parse(localStorage.getItem(WL_KEY)||'["AAPL","NVDA","TSLA","MSFT","SPY"]'); }
+function saveWatchlist(list){ localStorage.setItem(WL_KEY,JSON.stringify(list)); }
+
+async function renderWatchlist(){
+  const list=getWatchlist();
+  document.getElementById('watchlistWrap').innerHTML=list.map(sym=>`
+    <div class="wl-row" id="wl-${sym}">
+      <span class="wl-sym">${sym}</span>
+      <div class="wl-right">
+        <span class="wl-px" id="wlpx-${sym}">…</span>
+        <span class="wl-chg flat" id="wlchg-${sym}">—</span>
+        <span class="wl-rm" onclick="removeFromWatchlist('${sym}')" title="Remove">✕</span>
+      </div>
+    </div>`).join('');
+  for(let i=0;i<list.length;i++){
+    const sym=list[i];
+    try{
+      const q=await fhQuote(sym);
+      const px=document.getElementById('wlpx-'+sym), ch=document.getElementById('wlchg-'+sym);
+      if(px) px.textContent=fmtPrice(q.price);
+      if(ch){ ch.textContent=fmtPct(q.pct); ch.className='wl-chg '+pctClass(q.pct); }
+    }catch{
+      const px=document.getElementById('wlpx-'+sym); if(px) px.textContent='—';
+    }
+    if(i<list.length-1) await new Promise(r=>setTimeout(r,300));
+  }
+}
+
+function addToWatchlist(){
+  const input=document.getElementById('wlInput');
+  const sym=input.value.trim().toUpperCase();
+  if(!sym||sym.length>8) return;
+  const list=getWatchlist();
+  if(list.includes(sym)){ input.value=''; return; }
+  list.push(sym); saveWatchlist(list); input.value='';
+  renderWatchlist();
+}
+
+function removeFromWatchlist(sym){
+  const list=getWatchlist().filter(s=>s!==sym);
+  saveWatchlist(list);
+  const row=document.getElementById('wl-'+sym);
+  if(row){ row.style.opacity='0'; row.style.transition='opacity .2s'; setTimeout(()=>renderWatchlist(),200); }
+}
+
+document.getElementById('wlInput').addEventListener('keydown',e=>{ if(e.key==='Enter') addToWatchlist(); });
+
+/* ── BOOT ── */
+(async function boot(){
+  // Non-Finnhub calls fire immediately — no rate limit concerns
+  loadWeather();
+  loadGlucose();
+  loadFearGreedEquity();
+  loadFearGreedCrypto();
+  loadCrypto();
+  setTimeout(loadNewsAndAI, 1200);
+
+  // Finnhub calls staggered to stay under 30 req/min free tier:
+  // Indices: 4 calls × 300ms = ~1.2s
+  // Watchlist: 5 calls × 300ms = ~1.5s — start after indices finish
+  await loadIndices();
+  await renderWatchlist();
+})();
+
+/* ── NAV INJECT ── */
+function injectNav(html){
+  const placeholder=document.getElementById('nav-placeholder');
+  if(!placeholder) return;
+  const tmp=document.createElement('div');
+  tmp.innerHTML=html;
+  Array.from(tmp.childNodes).forEach(node=>{
+    if(node.nodeName!=='SCRIPT') placeholder.parentNode.insertBefore(node.cloneNode(true),placeholder);
+  });
+  tmp.querySelectorAll('script').forEach(oldScript=>{
+    const s=document.createElement('script');
+    if(oldScript.src) s.src=oldScript.src;
+    else s.textContent=oldScript.textContent;
+    document.head.appendChild(s);
+  });
+  placeholder.remove();
+}
+fetch('nav.html').then(r=>r.text()).then(injectNav).catch(()=>{});
+</script>
+</body>
+</html>
