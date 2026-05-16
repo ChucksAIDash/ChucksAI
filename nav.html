@@ -19,14 +19,15 @@
     border-bottom-color: #dde2ea;
   }
 
-  .nav-left  { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
-  .nav-right { display: flex; align-items: center; gap: 4px; flex-wrap: nowrap; }
+  /* nav-left can compress on narrow screens; nav-right is protected */
+  .nav-left  { display: flex; align-items: center; gap: 8px; min-width: 0; overflow: hidden; }
+  .nav-right { display: flex; align-items: center; gap: 4px; flex-wrap: nowrap; flex-shrink: 0; }
 
   /* ── LOGO ── */
   .nav-logo {
     font-family: 'Space Mono', monospace; font-size: 14px; font-weight: 700;
     letter-spacing: -.5px; text-decoration: none; color: var(--text-primary);
-    white-space: nowrap;
+    white-space: nowrap; flex-shrink: 0;
   }
   .nav-logo .hi  { color: var(--accent2); text-shadow: 0 0 18px rgba(91,200,245,.5); }
   .nav-logo .dot { color: var(--accent);  text-shadow: 0 0 18px rgba(127,217,184,.5); }
@@ -38,7 +39,7 @@
     color: var(--text-muted); letter-spacing: .06em;
     background: var(--bg-card); border: 1px solid var(--border);
     border-radius: 6px; padding: 3px 10px; white-space: nowrap;
-    user-select: none;
+    user-select: none; flex-shrink: 0;
   }
   html.light .market-clock { background: #f4f6fa; border-color: #dde2ea; color: #7a8494; }
   .market-status-dot {
@@ -58,7 +59,7 @@
     font-family: 'Space Mono', monospace; font-size: 10px; color: var(--text-secondary);
     background: var(--bg-card); border: 1px solid var(--border);
     border-radius: 6px; padding: 3px 9px; white-space: nowrap;
-    cursor: pointer; user-select: none; transition: border-color .18s;
+    cursor: pointer; user-select: none; transition: border-color .18s; flex-shrink: 0;
   }
   html.light .nav-weather { background: #f4f6fa; border-color: #dde2ea; }
   .nav-weather:hover { border-color: var(--border-bright); }
@@ -89,7 +90,7 @@
     letter-spacing: .07em; text-decoration: none; color: var(--text-secondary);
     text-transform: uppercase; padding: 5px 9px; border-radius: 6px;
     border: 1px solid transparent; transition: all .18s; white-space: nowrap;
-    background: none; cursor: pointer; min-width: 36px; text-align: center;
+    background: none; cursor: pointer;
   }
   .nav-link:hover {
     color: var(--text-primary); border-color: var(--border-bright); background: var(--bg-card);
@@ -102,7 +103,7 @@
   html.light .nav-link.active { color: #1a6fb5; border-color: #c8dff7; background: #eef6ff; text-shadow: none; }
 
   /* ── DROPDOWN ── */
-  .nav-drop { position: relative; display: inline-flex; align-items: center; }
+  .nav-drop { position: relative; display: inline-block; }
   .nav-drop > .nav-link::after { content: ' ▾'; font-size: 8px; opacity: .6; }
   .nav-drop.drop-open > .nav-link { color: var(--text-primary); }
 
@@ -203,7 +204,12 @@
   }
   @media (max-width: 600px) {
     #site-nav { padding: .6rem 1rem; }
-    .nav-weather .wloc { display: none; }
+    /* Hide weather widget entirely on portrait phones — too wide */
+    .nav-weather { display: none; }
+  }
+  @media (max-width: 380px) {
+    /* Very narrow phones: hide clock too, just logo + theme + hamburger */
+    .market-clock { display: none; }
   }
 
 </style>
@@ -260,8 +266,14 @@
       </div>
     </div>
 
-    <!-- AI direct link -->
-    <a class="nav-link" href="chat.html" data-page="chat">AI</a>
+    <!-- AI dropdown -->
+    <div class="nav-drop" id="dropAI">
+      <span class="nav-link" tabindex="0">AI</span>
+      <div class="nav-drop-menu">
+        <a class="nav-drop-item" href="morning-briefing.html" data-page="morning-briefing">Morning Briefing</a>
+        <a class="nav-drop-item" href="chat.html"             data-page="chat">AI Market Chat</a>
+      </div>
+    </div>
 
     <!-- Health dropdown -->
     <div class="nav-drop" id="dropHealth">
@@ -295,7 +307,8 @@
   <a class="mob-link" href="options-flow.html"       data-mob="options-flow">📋 Options Flow</a>
   <a class="mob-link" href="heat-map.html"           data-mob="heat-map">🗺️ Sector Heatmap</a>
 
-  <div class="mob-section">AI</div>
+  <div class="mob-section">AI Tools</div>
+  <a class="mob-link" href="morning-briefing.html"   data-mob="morning-briefing">🌅 Morning Briefing</a>
   <a class="mob-link" href="chat.html"               data-mob="chat">🤖 AI Market Chat</a>
 
   <div class="mob-section">Health</div>
@@ -359,7 +372,6 @@
     if (window.CAI?.toggleTheme) {
       window.CAI.toggleTheme();
     } else {
-      // Fallback if theme.js somehow not loaded
       const isLight = document.body.classList.toggle('light');
       document.documentElement.classList.toggle('light', isLight);
       localStorage.setItem('cai_theme', isLight ? 'light' : 'dark');
@@ -373,16 +385,15 @@
     const h = et.getHours(), m = et.getMinutes(), day = et.getDay();
 
     const hhmm = h * 60 + m;
-    const pre   = 4 * 60;          // 4:00 AM
-    const open  = 9 * 60 + 30;     // 9:30 AM
-    const close = 16 * 60;         // 4:00 PM
-    const after = 20 * 60;         // 8:00 PM
+    const pre   = 4 * 60;
+    const open  = 9 * 60 + 30;
+    const close = 16 * 60;
+    const after = 20 * 60;
 
     const dot  = document.getElementById('marketDot');
     const txt  = document.getElementById('marketStatusText');
     const clk  = document.getElementById('navClock');
 
-    // Format time
     const ampm = h >= 12 ? 'PM' : 'AM';
     const hd   = h % 12 || 12;
     const md   = String(m).padStart(2, '0');
