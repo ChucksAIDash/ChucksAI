@@ -11,18 +11,23 @@
     /* ── CHAT PAGE SPECIFIC ── */
 
     /*
-      Mobile fix: use dvh (dynamic viewport height) so the layout accounts
-      for the browser chrome (address bar, bottom nav) on iOS/Android.
-      Falls back to 100vh on older browsers which is acceptable.
+      Mobile fix: override styles.css `min-height: 100vh` which prevents
+      the body from being height-constrained. We need an exact height so
+      flex children can pin the input bar to the bottom of the viewport.
+      dvh = dynamic viewport height — accounts for mobile browser chrome.
     */
-    html, body {
-      height: 100dvh;
-      /* fallback for browsers without dvh support */
-      height: -webkit-fill-available;
+    html {
+      height: 100% !important;
+      min-height: unset !important;
     }
-
-    /* Full-height flex layout */
-    body { display: flex; flex-direction: column; }
+    body {
+      height: 100dvh !important;         /* modern mobile browsers */
+      height: -webkit-fill-available;    /* iOS Safari fallback */
+      min-height: unset !important;      /* kill the styles.css override */
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;                  /* prevent body scroll; .messages scrolls internally */
+    }
 
     .chat-page {
       position: relative; z-index: 1;
