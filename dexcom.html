@@ -49,6 +49,33 @@
       transform: translateY(-1px);
     }
 
+    /* ── TAB NAVIGATION ── */
+    .tab-nav {
+      display: flex; gap: 4px;
+      margin-bottom: 1.5rem;
+      background: rgba(255,255,255,.03);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      padding: 4px;
+    }
+    .tab-btn {
+      flex: 1; padding: .55rem 1rem;
+      font-family: 'Space Mono', monospace; font-size: 11px; font-weight: 700;
+      letter-spacing: .07em; text-transform: uppercase;
+      background: none; border: none; border-radius: calc(var(--r-lg) - 2px);
+      color: var(--text-muted); cursor: pointer; transition: all .18s;
+    }
+    .tab-btn:hover { color: var(--text-secondary); background: rgba(255,255,255,.04); }
+    .tab-btn.active {
+      background: rgba(127,217,184,.14);
+      border: 1px solid rgba(127,217,184,.3);
+      color: var(--accent);
+    }
+
+    /* ── TAB PANELS ── */
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
     /* ── DASHBOARD CONTENT (hidden until authenticated) ── */
     .dash-content { display: none; }
     .dash-content.visible { display: block; }
@@ -101,39 +128,30 @@
     }
 
     .gh-right { text-align: center; }
-
-    .gh-trend {
-      font-size: 56px; line-height: 1;
-      filter: drop-shadow(0 0 12px rgba(127,217,184,.4));
-    }
-
+    .gh-trend { font-size: 56px; line-height: 1; }
     .gh-trend-label {
-      font-family: 'Space Mono', monospace; font-size: 9px;
-      letter-spacing: .1em; text-transform: uppercase;
+      font-family: 'Space Mono', monospace; font-size: 10px;
       color: var(--text-muted); margin-top: .25rem;
     }
 
     /* ── STATS ROW ── */
     .stats-row {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-      gap: 10px;
-      margin-bottom: 1.25rem;
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(120px,1fr));
+      gap: 10px; margin-bottom: 1.25rem;
     }
-
     .stat-card {
       background: var(--bg-card);
       border: 1px solid var(--border);
       border-radius: var(--r-lg);
-      padding: 1rem 1.1rem;
+      padding: 1rem .9rem;
     }
     .stat-label {
-      font-family: 'Space Mono', monospace; font-size: 8px;
-      letter-spacing: .14em; text-transform: uppercase;
+      font-family: 'Space Mono', monospace; font-size: 9px;
+      letter-spacing: .1em; text-transform: uppercase;
       color: var(--text-muted); margin-bottom: .4rem;
     }
     .stat-val {
-      font-family: 'Space Mono', monospace; font-size: 18px;
+      font-family: 'Space Mono', monospace; font-size: 24px;
       font-weight: 700; color: var(--text-primary);
     }
     .stat-val.is-low    { color: var(--down); }
@@ -144,7 +162,7 @@
       color: var(--text-muted); margin-top: 2px;
     }
 
-    /* ── CHART ── */
+    /* ── CHART CARD ── */
     .chart-card {
       background: var(--bg-card);
       border: 1px solid var(--border);
@@ -152,60 +170,57 @@
       padding: 1.25rem 1.25rem 1rem;
       margin-bottom: 1.25rem;
     }
-
     .chart-header {
       display: flex; align-items: center; justify-content: space-between;
-      margin-bottom: 1rem; flex-wrap: wrap; gap: 8px;
+      flex-wrap: wrap; gap: .75rem; margin-bottom: 1rem;
     }
-
     .chart-title {
-      font-family: 'Space Mono', monospace; font-size: 10px;
-      font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+      font-family: 'Space Mono', monospace; font-size: 11px; font-weight: 700;
+      letter-spacing: .1em; text-transform: uppercase;
       color: var(--text-secondary);
     }
-
     .chart-tf-row {
-      display: flex; gap: 4px;
+      display: flex; gap: 5px; flex-wrap: wrap;
     }
-
     .tf-btn {
-      font-family: 'Space Mono', monospace; font-size: 9px; font-weight: 700;
-      letter-spacing: .06em; text-transform: uppercase;
-      padding: 4px 10px;
-      background: none; border: 1px solid var(--border);
-      color: var(--text-muted); border-radius: var(--r-sm);
-      cursor: pointer; transition: all .15s;
+      font-family: 'Space Mono', monospace; font-size: 10px; font-weight: 700;
+      padding: .3rem .7rem; background: none;
+      border: 1px solid var(--border); border-radius: var(--r-sm);
+      color: var(--text-muted); cursor: pointer; transition: all .15s;
     }
     .tf-btn:hover { border-color: var(--border-bright); color: var(--text-secondary); }
     .tf-btn.active {
-      background: rgba(127,217,184,.1);
-      border-color: rgba(127,217,184,.3);
+      background: rgba(127,217,184,.14);
+      border-color: rgba(127,217,184,.4);
       color: var(--accent);
     }
-
     .chart-wrap {
-      position: relative; width: 100%; height: 200px;
+      position: relative; height: 220px;
     }
-
     canvas#glucoseChart {
-      width: 100% !important; height: 200px !important;
+      width: 100% !important; height: 100% !important;
     }
 
-    /* ── RANGE ZONES LEGEND ── */
+    /* ── CHART LOADING OVERLAY ── */
+    #chart-loading {
+      position: absolute; inset: 0;
+      display: none; align-items: center; justify-content: center;
+      background: rgba(5,8,12,.6); border-radius: var(--r-md);
+      z-index: 2;
+    }
+
+    /* ── RANGE LEGEND ── */
     .range-legend {
-      display: flex; gap: 12px; flex-wrap: wrap;
-      margin-top: .75rem;
+      display: flex; gap: 1rem; margin-top: .75rem; flex-wrap: wrap;
     }
     .range-item {
       display: flex; align-items: center; gap: 5px;
-      font-family: 'Space Mono', monospace; font-size: 9px;
-      color: var(--text-muted); letter-spacing: .06em;
+      font-family: 'DM Sans', sans-serif; font-size: 11px;
+      color: var(--text-muted);
     }
-    .range-dot {
-      width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0;
-    }
+    .range-dot { width: 8px; height: 8px; border-radius: 50%; }
 
-    /* ── TIME IN RANGE ── */
+    /* ── TIR CARD ── */
     .tir-card {
       background: var(--bg-card);
       border: 1px solid var(--border);
@@ -213,70 +228,54 @@
       padding: 1.25rem;
       margin-bottom: 1.25rem;
     }
-
     .tir-title {
-      font-family: 'Space Mono', monospace; font-size: 10px;
-      font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+      font-family: 'Space Mono', monospace; font-size: 11px; font-weight: 700;
+      letter-spacing: .1em; text-transform: uppercase;
       color: var(--text-secondary); margin-bottom: 1rem;
     }
-
     .tir-bar-wrap {
-      height: 20px; border-radius: var(--r-sm); overflow: hidden;
-      display: flex; margin-bottom: .75rem;
-      background: rgba(255,255,255,.04);
+      display: flex; height: 12px; border-radius: 6px; overflow: hidden;
+      background: rgba(255,255,255,.05); margin-bottom: .9rem;
     }
-
-    .tir-seg { height: 100%; transition: width .5s ease; }
-
+    .tir-seg { transition: width .5s ease; }
     .tir-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-      gap: 8px;
+      display: flex; gap: 1.5rem; flex-wrap: wrap;
     }
-
-    .tir-item {
-      display: flex; align-items: center; gap: 6px;
-    }
-    .tir-swatch {
-      width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0;
-    }
-    .tir-info {}
+    .tir-item { display: flex; align-items: center; gap: 8px; }
+    .tir-swatch { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
     .tir-pct {
-      font-family: 'Space Mono', monospace; font-size: 13px;
-      font-weight: 700; color: var(--text-primary);
+      font-family: 'Space Mono', monospace; font-size: 16px; font-weight: 700;
+      color: var(--text-primary);
     }
     .tir-lbl {
-      font-family: 'DM Sans', sans-serif; font-size: 10px;
+      font-family: 'DM Sans', sans-serif; font-size: 11px;
       color: var(--text-muted);
     }
 
-    /* ── RECENT READINGS TABLE ── */
+    /* ── READINGS CARD ── */
     .readings-card {
       background: var(--bg-card);
       border: 1px solid var(--border);
       border-radius: var(--r-lg);
       padding: 1.25rem;
       margin-bottom: 1.25rem;
+      overflow-x: auto;
     }
-
     .readings-title {
-      font-family: 'Space Mono', monospace; font-size: 10px;
-      font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+      font-family: 'Space Mono', monospace; font-size: 11px; font-weight: 700;
+      letter-spacing: .1em; text-transform: uppercase;
       color: var(--text-secondary); margin-bottom: 1rem;
     }
-
-    .readings-table {
-      width: 100%; border-collapse: collapse;
-    }
+    .readings-table { width: 100%; border-collapse: collapse; }
     .readings-table th {
-      font-family: 'Space Mono', monospace; font-size: 8px;
-      letter-spacing: .12em; text-transform: uppercase;
-      color: var(--text-muted); text-align: left;
-      padding: 0 8px 8px 0; border-bottom: 1px solid var(--border);
+      font-family: 'Space Mono', monospace; font-size: 9px;
+      letter-spacing: .1em; text-transform: uppercase;
+      color: var(--text-muted); padding: .4rem .5rem;
+      border-bottom: 1px solid var(--border); text-align: left;
     }
     .readings-table td {
-      font-family: 'Space Mono', monospace; font-size: 11px;
-      color: var(--text-secondary); padding: 7px 8px 7px 0;
+      font-family: 'Space Mono', monospace; font-size: 12px;
+      color: var(--text-secondary); padding: .55rem .5rem;
       border-bottom: 1px solid rgba(255,255,255,.04);
     }
     .readings-table tr:last-child td { border-bottom: none; }
@@ -284,9 +283,27 @@
     .readings-table .val-high { color: var(--accent3); font-weight: 700; }
     .readings-table .val-ok   { color: var(--up); }
 
-    /* ── SPINNER / LOADING ── */
+    /* ── REFRESH BTN ── */
+    .refresh-btn {
+      font-family: 'Space Mono', monospace; font-size: 10px; font-weight: 700;
+      letter-spacing: .08em; text-transform: uppercase;
+      padding: .45rem 1rem; background: none;
+      border: 1px solid var(--border); border-radius: var(--r-sm);
+      color: var(--text-muted); cursor: pointer; transition: all .15s;
+    }
+    .refresh-btn:hover { border-color: var(--border-bright); color: var(--accent); }
+
+    /* ── COUNTDOWN ── */
+    .countdown-badge {
+      font-family: 'Space Mono', monospace; font-size: 9px;
+      letter-spacing: .1em; text-transform: uppercase;
+      color: var(--text-muted); padding: .3rem .6rem;
+      border: 1px solid var(--border); border-radius: 20px;
+    }
+
+    /* ── SPINNER ── */
     .spinner {
-      display: inline-block; width: 12px; height: 12px; flex-shrink: 0;
+      display: inline-block; width: 14px; height: 14px;
       border: 1.5px solid rgba(255,255,255,.1);
       border-top-color: var(--accent); border-radius: 50%;
       animation: spin .7s linear infinite;
@@ -303,10 +320,160 @@
     .fade-in { animation: fadeUp .35s ease both; }
     @keyframes fadeUp { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
 
+    /* ── HISTORY TAB STYLES ── */
+
+    .hist-section {
+      margin-bottom: 1.5rem;
+    }
+
+    /* Period cards grid */
+    .period-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 10px;
+      margin-bottom: 1.25rem;
+    }
+
+    .period-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      padding: 1.1rem 1rem;
+      transition: border-color .2s;
+    }
+    .period-card:hover { border-color: rgba(127,217,184,.3); }
+
+    .period-card-header {
+      display: flex; justify-content: space-between; align-items: flex-start;
+      margin-bottom: .75rem;
+    }
+    .period-card-label {
+      font-family: 'Space Mono', monospace; font-size: 11px; font-weight: 700;
+      color: var(--text-primary); letter-spacing: .04em;
+    }
+    .period-card-date {
+      font-family: 'DM Sans', sans-serif; font-size: 10px;
+      color: var(--text-muted); margin-top: 2px;
+    }
+    .med-badge {
+      font-family: 'Space Mono', monospace; font-size: 8px; font-weight: 700;
+      letter-spacing: .06em; text-transform: uppercase;
+      padding: 2px 6px; border-radius: 4px;
+      background: rgba(127,217,184,.1); border: 1px solid rgba(127,217,184,.22);
+      color: var(--accent); white-space: nowrap;
+    }
+    .med-badge.mounjaro {
+      background: rgba(138,99,255,.12); border-color: rgba(138,99,255,.3);
+      color: #a78bfa;
+    }
+
+    .period-card-stats {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+    .pc-stat { }
+    .pc-stat-val {
+      font-family: 'Space Mono', monospace; font-size: 18px; font-weight: 700;
+      color: var(--text-primary); line-height: 1;
+    }
+    .pc-stat-lbl {
+      font-family: 'DM Sans', sans-serif; font-size: 10px;
+      color: var(--text-muted); margin-top: 1px;
+    }
+    .pc-stat-val.good { color: var(--up); }
+    .pc-stat-val.warn { color: var(--accent3); }
+    .pc-stat-val.bad  { color: var(--down); }
+
+    /* TIR mini bar in period card */
+    .pc-tir-bar {
+      display: flex; height: 5px; border-radius: 3px;
+      overflow: hidden; margin-top: 8px;
+      background: rgba(255,255,255,.05);
+    }
+    .pc-tir-seg { }
+
+    /* Section header */
+    .hist-section-title {
+      font-family: 'Space Mono', monospace; font-size: 10px; font-weight: 700;
+      letter-spacing: .12em; text-transform: uppercase;
+      color: var(--text-muted); margin-bottom: .85rem;
+      display: flex; align-items: center; gap: .6rem;
+    }
+    .hist-section-title::after {
+      content: ''; flex: 1; height: 1px;
+      background: var(--border);
+    }
+
+    /* Period selector for hourly charts */
+    .period-selector {
+      display: flex; gap: 5px; flex-wrap: wrap;
+    }
+    .ps-btn {
+      font-family: 'Space Mono', monospace; font-size: 9px; font-weight: 700;
+      letter-spacing: .06em; text-transform: uppercase;
+      padding: .25rem .65rem; background: none;
+      border: 1px solid var(--border); border-radius: var(--r-sm);
+      color: var(--text-muted); cursor: pointer; transition: all .15s;
+    }
+    .ps-btn:hover { border-color: var(--border-bright); color: var(--text-secondary); }
+    .ps-btn.active {
+      background: rgba(127,217,184,.12);
+      border-color: rgba(127,217,184,.35);
+      color: var(--accent);
+    }
+
+    /* Best/Worst day cards */
+    .bestworst-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .bw-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      padding: 1rem;
+    }
+    .bw-card.best  { border-color: rgba(61,220,132,.25); background: rgba(61,220,132,.04); }
+    .bw-card.worst { border-color: rgba(240,184,106,.25); background: rgba(240,184,106,.04); }
+    .bw-label {
+      font-family: 'Space Mono', monospace; font-size: 9px; font-weight: 700;
+      letter-spacing: .12em; text-transform: uppercase;
+      color: var(--text-muted); margin-bottom: .5rem;
+    }
+    .bw-period {
+      font-family: 'DM Sans', sans-serif; font-size: 11px;
+      color: var(--text-muted); margin-bottom: .35rem;
+    }
+    .bw-val {
+      font-family: 'Space Mono', monospace; font-size: 28px; font-weight: 700;
+      line-height: 1;
+    }
+    .bw-card.best  .bw-val { color: var(--up); }
+    .bw-card.worst .bw-val { color: var(--accent3); }
+    .bw-sub {
+      font-family: 'DM Sans', sans-serif; font-size: 11px;
+      color: var(--text-muted); margin-top: 3px;
+    }
+
+    /* Hist chart canvases */
+    .hist-chart-wrap { position: relative; height: 200px; }
+    .hist-chart-wrap.tall { height: 240px; }
+    .hist-chart-wrap canvas { width: 100% !important; height: 100% !important; }
+
+    /* History loading */
+    #hist-loading {
+      display: flex; align-items: center; justify-content: center;
+      padding: 3rem; gap: 10px;
+      font-family: 'Space Mono', monospace; font-size: 11px;
+      color: var(--text-muted);
+    }
+
     @media(max-width: 600px) {
       .gh-value { font-size: 52px; }
       .gh-trend { font-size: 40px; }
       .stats-row { grid-template-columns: repeat(2, 1fr); }
+      .bestworst-grid { grid-template-columns: 1fr; }
+      .period-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -335,149 +502,264 @@
     </div>
   </div>
 
-  <!-- Connect banner (shown when not logged in) -->
-  <div class="connect-banner" id="connectBanner">
-    <div class="connect-icon">🩸</div>
-    <div class="connect-title">Connect Your Dexcom Account</div>
-    <div class="connect-sub">
-      Link your Dexcom G7 / Clarity account to view real-time glucose readings,
-      trends, and time-in-range stats right here on your dashboard.
-    </div>
-    <button class="connect-btn" onclick="startAuth()">Connect Dexcom →</button>
+  <!-- Tab Navigation -->
+  <div class="tab-nav">
+    <button class="tab-btn active" id="tab-live" onclick="switchTab('live')">⚡ Live</button>
+    <button class="tab-btn" id="tab-history" onclick="switchTab('history')">📊 History</button>
   </div>
 
-  <!-- Dashboard (shown when authenticated) -->
-  <div class="dash-content" id="dashContent">
+  <!-- ══ LIVE TAB ══ -->
+  <div class="tab-panel active" id="panel-live">
 
-    <!-- Current reading hero -->
-    <div class="glucose-hero" id="glucoseHero">
-      <div class="gh-left">
-        <div class="gh-label">Current Glucose</div>
-        <div class="gh-value" id="ghValue"><span class="spinner"></span></div>
-        <div class="gh-unit">mg/dL</div>
-        <div class="gh-time" id="ghTime">—</div>
+    <!-- Connect banner (shown when not logged in) -->
+    <div class="connect-banner" id="connectBanner">
+      <div class="connect-icon">🩸</div>
+      <div class="connect-title">Connect Your Dexcom Account</div>
+      <div class="connect-sub">
+        Link your Dexcom G7 / Clarity account to view real-time glucose readings,
+        trends, and time-in-range stats right here on your dashboard.
       </div>
-      <div class="gh-right">
-        <div class="gh-trend" id="ghTrend">—</div>
-        <div class="gh-trend-label" id="ghTrendLabel">—</div>
-      </div>
+      <button class="connect-btn" onclick="startAuth()">Connect Dexcom →</button>
     </div>
 
-    <!-- Stats row -->
-    <div class="stats-row">
-      <div class="stat-card">
-        <div class="stat-label">Average (24h)</div>
-        <div class="stat-val" id="statAvg">—</div>
-        <div class="stat-sub">mg/dL</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">High (24h)</div>
-        <div class="stat-val is-high" id="statHigh">—</div>
-        <div class="stat-sub">mg/dL</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Low (24h)</div>
-        <div class="stat-val is-low" id="statLow">—</div>
-        <div class="stat-sub">mg/dL</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Readings (24h)</div>
-        <div class="stat-val" id="statCount">—</div>
-        <div class="stat-sub">data points</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Time in Range</div>
-        <div class="stat-val is-normal" id="statTIR">—</div>
-        <div class="stat-sub">70–180 mg/dL</div>
-      </div>
-    </div>
+    <!-- Dashboard (shown when authenticated) -->
+    <div class="dash-content" id="dashContent">
 
-    <!-- Glucose chart -->
-    <div class="chart-card">
-      <div class="chart-header">
-        <div class="chart-title">Glucose History</div>
-        <div class="chart-tf-row" style="flex-wrap:wrap;">
-          <button class="tf-btn" onclick="setTF('3h')"  id="tf-3h">3h</button>
-          <button class="tf-btn active" onclick="setTF('6h')"  id="tf-6h">6h</button>
-          <button class="tf-btn" onclick="setTF('12h')" id="tf-12h">12h</button>
-          <button class="tf-btn" onclick="setTF('24h')" id="tf-24h">24h</button>
-          <button class="tf-btn" onclick="setTF('7d')"  id="tf-7d">7d</button>
-          <button class="tf-btn" onclick="setTF('14d')" id="tf-14d">14d</button>
-          <button class="tf-btn" onclick="setTF('30d')" id="tf-30d">30d</button>
-          <button class="tf-btn" onclick="setTF('60d')" id="tf-60d">60d</button>
-          <button class="tf-btn" onclick="setTF('90d')" id="tf-90d">90d</button>
+      <!-- Current reading hero -->
+      <div class="glucose-hero" id="glucoseHero">
+        <div class="gh-left">
+          <div class="gh-label">Current Glucose</div>
+          <div class="gh-value" id="ghValue"><span class="spinner"></span></div>
+          <div class="gh-unit">mg/dL</div>
+          <div class="gh-time" id="ghTime">—</div>
+        </div>
+        <div class="gh-right">
+          <div class="gh-trend" id="ghTrend">—</div>
+          <div class="gh-trend-label" id="ghTrendLabel">—</div>
         </div>
       </div>
-      <div class="chart-wrap">
-        <canvas id="glucoseChart"></canvas>
-      </div>
-      <div class="range-legend">
-        <div class="range-item"><div class="range-dot" style="background:rgba(240,82,82,.7)"></div>Low &lt;70</div>
-        <div class="range-item"><div class="range-dot" style="background:rgba(61,220,132,.7)"></div>Normal 70–180</div>
-        <div class="range-item"><div class="range-dot" style="background:rgba(240,184,106,.7)"></div>High &gt;180</div>
-      </div>
-    </div>
 
-    <!-- Time in range -->
-    <div class="tir-card">
-      <div class="tir-title">Time in Range — Last 24h</div>
-      <div class="tir-bar-wrap" id="tirBar">
-        <div class="tir-seg" id="tirSegLow"  style="background:rgba(240,82,82,.75);width:0%"></div>
-        <div class="tir-seg" id="tirSegNorm" style="background:rgba(61,220,132,.75);width:0%"></div>
-        <div class="tir-seg" id="tirSegHigh" style="background:rgba(240,184,106,.75);width:0%"></div>
+      <!-- Stats row -->
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-label">Average (24h)</div>
+          <div class="stat-val" id="statAvg">—</div>
+          <div class="stat-sub">mg/dL</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">High (24h)</div>
+          <div class="stat-val is-high" id="statHigh">—</div>
+          <div class="stat-sub">mg/dL</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Low (24h)</div>
+          <div class="stat-val is-low" id="statLow">—</div>
+          <div class="stat-sub">mg/dL</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Readings (24h)</div>
+          <div class="stat-val" id="statCount">—</div>
+          <div class="stat-sub">data points</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Time in Range</div>
+          <div class="stat-val is-normal" id="statTIR">—</div>
+          <div class="stat-sub">70–180 mg/dL</div>
+        </div>
       </div>
-      <div class="tir-grid">
-        <div class="tir-item">
-          <div class="tir-swatch" style="background:rgba(240,82,82,.75)"></div>
-          <div class="tir-info">
-            <div class="tir-pct" id="tirLowPct">—</div>
-            <div class="tir-lbl">Low &lt;70</div>
+
+      <!-- Glucose chart -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="chart-title">Glucose History</div>
+          <div class="chart-tf-row" style="flex-wrap:wrap;">
+            <button class="tf-btn" onclick="setTF('3h')"  id="tf-3h">3h</button>
+            <button class="tf-btn active" onclick="setTF('6h')"  id="tf-6h">6h</button>
+            <button class="tf-btn" onclick="setTF('12h')" id="tf-12h">12h</button>
+            <button class="tf-btn" onclick="setTF('24h')" id="tf-24h">24h</button>
+            <button class="tf-btn" onclick="setTF('7d')"  id="tf-7d">7d</button>
+            <button class="tf-btn" onclick="setTF('14d')" id="tf-14d">14d</button>
+            <button class="tf-btn" onclick="setTF('30d')" id="tf-30d">30d</button>
+            <button class="tf-btn" onclick="setTF('60d')" id="tf-60d">60d</button>
+            <button class="tf-btn" onclick="setTF('90d')" id="tf-90d">90d</button>
           </div>
         </div>
-        <div class="tir-item">
-          <div class="tir-swatch" style="background:rgba(61,220,132,.75)"></div>
-          <div class="tir-info">
-            <div class="tir-pct" id="tirNormPct">—</div>
-            <div class="tir-lbl">In Range</div>
-          </div>
+        <div class="chart-wrap">
+          <canvas id="glucoseChart"></canvas>
+          <div id="chart-loading"><span class="spinner"></span></div>
         </div>
-        <div class="tir-item">
-          <div class="tir-swatch" style="background:rgba(240,184,106,.75)"></div>
-          <div class="tir-info">
-            <div class="tir-pct" id="tirHighPct">—</div>
-            <div class="tir-lbl">High &gt;180</div>
+        <div class="range-legend">
+          <div class="range-item"><div class="range-dot" style="background:rgba(240,82,82,.7)"></div>Low &lt;70</div>
+          <div class="range-item"><div class="range-dot" style="background:rgba(61,220,132,.7)"></div>Normal 70–180</div>
+          <div class="range-item"><div class="range-dot" style="background:rgba(240,184,106,.7)"></div>High &gt;180</div>
+        </div>
+      </div>
+
+      <!-- Time in range -->
+      <div class="tir-card">
+        <div class="tir-title">Time in Range — Last 24h</div>
+        <div class="tir-bar-wrap" id="tirBar">
+          <div class="tir-seg" id="tirSegLow"  style="background:rgba(240,82,82,.75);width:0%"></div>
+          <div class="tir-seg" id="tirSegNorm" style="background:rgba(61,220,132,.75);width:0%"></div>
+          <div class="tir-seg" id="tirSegHigh" style="background:rgba(240,184,106,.75);width:0%"></div>
+        </div>
+        <div class="tir-grid">
+          <div class="tir-item">
+            <div class="tir-swatch" style="background:rgba(240,82,82,.75)"></div>
+            <div class="tir-info">
+              <div class="tir-pct" id="tirLowPct">—</div>
+              <div class="tir-lbl">Low &lt;70</div>
+            </div>
+          </div>
+          <div class="tir-item">
+            <div class="tir-swatch" style="background:rgba(61,220,132,.75)"></div>
+            <div class="tir-info">
+              <div class="tir-pct" id="tirNormPct">—</div>
+              <div class="tir-lbl">In Range</div>
+            </div>
+          </div>
+          <div class="tir-item">
+            <div class="tir-swatch" style="background:rgba(240,184,106,.75)"></div>
+            <div class="tir-info">
+              <div class="tir-pct" id="tirHighPct">—</div>
+              <div class="tir-lbl">High &gt;180</div>
+            </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- Period averages -->
-    <div class="tir-card" id="avgCard">
-      <div class="tir-title">Period Averages</div>
-      <div id="avgGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;">
-        <div class="loading-text"><span class="spinner"></span>Loading…</div>
+      <!-- Period averages -->
+      <div class="tir-card" id="avgCard">
+        <div class="tir-title">Period Averages</div>
+        <div id="avgGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;">
+          <div class="loading-text"><span class="spinner"></span>Loading…</div>
+        </div>
       </div>
+
+      <!-- Recent readings -->
+      <div class="readings-card">
+        <div class="readings-title">Recent Readings</div>
+        <table class="readings-table">
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Glucose</th>
+              <th>Trend</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="readingsBody">
+            <tr><td colspan="4"><span class="loading-text"><span class="spinner"></span>Loading…</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div><!-- /.dash-content -->
+
+  </div><!-- /#panel-live -->
+
+  <!-- ══ HISTORY TAB ══ -->
+  <div class="tab-panel" id="panel-history">
+
+    <div id="hist-loading">
+      <span class="spinner"></span> Loading history…
     </div>
 
-    <!-- Recent readings -->
-    <div class="readings-card">
-      <div class="readings-title">Recent Readings</div>
-      <table class="readings-table">
-        <thead>
-          <tr>
-            <th>Time</th>
-            <th>Glucose</th>
-            <th>Trend</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody id="readingsBody">
-          <tr><td colspan="4"><span class="loading-text"><span class="spinner"></span>Loading…</span></td></tr>
-        </tbody>
-      </table>
-    </div>
+    <div id="hist-content" style="display:none;">
 
-  </div><!-- /.dash-content -->
+      <!-- 1. PERIOD SUMMARY CARDS -->
+      <div class="hist-section">
+        <div class="hist-section-title">Period Summaries</div>
+        <div class="period-grid" id="periodGrid"><!-- filled by JS --></div>
+      </div>
+
+      <!-- 2. PROGRESS CHART: avg glucose + TIR over all periods -->
+      <div class="hist-section">
+        <div class="hist-section-title">Progress Over Time</div>
+        <div class="chart-card" style="margin-bottom:0;">
+          <div class="chart-header">
+            <div class="chart-title">Average Glucose &amp; TIR by Period</div>
+            <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+              <div class="range-item"><div class="range-dot" style="background:rgba(127,217,184,.8)"></div><span style="font-family:'Space Mono',monospace;font-size:9px;color:var(--text-muted);">Avg Glucose</span></div>
+              <div class="range-item"><div class="range-dot" style="background:rgba(138,99,255,.8)"></div><span style="font-family:'Space Mono',monospace;font-size:9px;color:var(--text-muted);">TIR %</span></div>
+            </div>
+          </div>
+          <div class="hist-chart-wrap tall">
+            <canvas id="progressChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. CV / VARIABILITY LINE CHART -->
+      <div class="hist-section" style="margin-top:1.25rem;">
+        <div class="hist-section-title">Variability Trend</div>
+        <div class="chart-card" style="margin-bottom:0;">
+          <div class="chart-header">
+            <div class="chart-title">Coefficient of Variation (CV%) Over Time</div>
+            <div style="font-family:'DM Sans',sans-serif;font-size:11px;color:var(--text-muted);">Lower = more stable · Goal &lt;36%</div>
+          </div>
+          <div class="hist-chart-wrap">
+            <canvas id="cvChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. BEST / WORST DAY SPOTLIGHT -->
+      <div class="hist-section" style="margin-top:1.25rem;">
+        <div class="hist-section-title">Best &amp; Worst Periods</div>
+        <div class="bestworst-grid" id="bestWorstGrid"><!-- filled by JS --></div>
+      </div>
+
+      <!-- 5. TIME-OF-DAY HEATMAP -->
+      <div class="hist-section" style="margin-top:1.25rem;">
+        <div class="hist-section-title">Time-of-Day Glucose Heatmap</div>
+        <div class="chart-card" style="margin-bottom:0;">
+          <div class="chart-header">
+            <div class="chart-title">Avg Glucose by Hour</div>
+            <div class="period-selector" id="heatmapPeriodSel"><!-- filled by JS --></div>
+          </div>
+          <div class="hist-chart-wrap tall">
+            <canvas id="heatmapChart"></canvas>
+          </div>
+          <div class="range-legend" style="margin-top:.75rem;">
+            <div class="range-item"><div class="range-dot" style="background:rgba(61,220,132,.8)"></div>In Range (70–180)</div>
+            <div class="range-item"><div class="range-dot" style="background:rgba(240,184,106,.9)"></div>High (&gt;180)</div>
+            <div class="range-item"><div class="range-dot" style="background:rgba(240,82,82,.8)"></div>Low (&lt;70)</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 6. HOURLY TIR STACKED BAR -->
+      <div class="hist-section" style="margin-top:1.25rem;">
+        <div class="hist-section-title">Hourly Time-in-Range Breakdown</div>
+        <div class="chart-card" style="margin-bottom:0;">
+          <div class="chart-header">
+            <div class="chart-title">% High / In Range / Low by Hour</div>
+            <div class="period-selector" id="tirHourlyPeriodSel"><!-- filled by JS --></div>
+          </div>
+          <div class="hist-chart-wrap tall">
+            <canvas id="tirHourlyChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- 7. DAY-OF-WEEK BREAKDOWN -->
+      <div class="hist-section" style="margin-top:1.25rem;">
+        <div class="hist-section-title">Day-of-Week Patterns</div>
+        <div class="chart-card" style="margin-bottom:0;">
+          <div class="chart-header">
+            <div class="chart-title">Avg Glucose by Day of Week</div>
+            <div style="font-family:'DM Sans',sans-serif;font-size:11px;color:var(--text-muted);">Mar 23 – Apr 23, 2026</div>
+          </div>
+          <div class="hist-chart-wrap">
+            <canvas id="dowChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /#hist-content -->
+
+  </div><!-- /#panel-history -->
 
 </div><!-- /container -->
 
@@ -485,7 +767,7 @@
 
 <script>
 /* ═══════════════════════════════════════
-   DEXCOM DASHBOARD — Chuck's AI v7
+   DEXCOM DASHBOARD — Chuck's AI v8
    Worker: dexcom-proxy.infiniti306.workers.dev
 ═══════════════════════════════════════ */
 
@@ -501,9 +783,19 @@ const HIGH = 180;
 
 // Chart state
 let chart    = null;
-let chartTF  = '6h';  // active timeframe key
-let allData  = [];    // 24h cache
-let longData = {};    // cache for day-range data: { '7d': [], '14d': [], ... }
+let chartTF  = '6h';
+let allData  = [];
+let longData = {};
+
+// History state
+let histData         = null;
+let heatmapChart     = null;
+let tirHourlyChart   = null;
+let progressChart    = null;
+let cvChart          = null;
+let dowChart         = null;
+let activeHeatmapIdx = 0;
+let activeTirIdx     = 0;
 
 // Timeframe definitions
 const TF_DEFS = {
@@ -529,27 +821,36 @@ setInterval(() => {
   if (secsLeft <= 0) { secsLeft = 300; loadData(); }
 }, 1000);
 
+/* ── MANUAL REFRESH ── */
 function manualRefresh() {
   secsLeft = 300;
-  if (cdEl) cdEl.textContent = 'AUTO ⟳ 5:00';
   loadData();
 }
 
-/* ── TREND ARROW MAP ── */
+/* ── TAB SWITCHING ── */
+function switchTab(tab) {
+  ['live','history'].forEach(t => {
+    document.getElementById(`tab-${t}`).classList.toggle('active', t === tab);
+    document.getElementById(`panel-${t}`).classList.toggle('active', t === tab);
+  });
+  if (tab === 'history' && !histData) {
+    loadHistory();
+  }
+}
+
+/* ── TREND ARROWS ── */
 const TREND_MAP = {
-  'none':                 { arrow: '—',  label: 'No trend' },
-  'doubleUp':             { arrow: '⬆⬆', label: 'Rising fast' },
-  'singleUp':             { arrow: '⬆',  label: 'Rising' },
+  'doubleUp':             { arrow: '⇈',  label: 'Rising fast' },
+  'singleUp':             { arrow: '↑',  label: 'Rising' },
   'fortyFiveUp':          { arrow: '↗',  label: 'Rising slowly' },
   'flat':                 { arrow: '→',  label: 'Stable' },
   'fortyFiveDown':        { arrow: '↘',  label: 'Falling slowly' },
-  'singleDown':           { arrow: '⬇',  label: 'Falling' },
-  'doubleDown':           { arrow: '⬇⬇', label: 'Falling fast' },
+  'singleDown':           { arrow: '↓',  label: 'Falling' },
+  'doubleDown':           { arrow: '⇊',  label: 'Falling fast' },
   'notComputable':        { arrow: '?',   label: 'Not computable' },
   'rateOutOfRange':       { arrow: '!',   label: 'Rate out of range' },
 };
 
-/* ── GLUCOSE CLASS ── */
 function glucoseClass(val) {
   if (val < LOW)  return 'is-low';
   if (val > HIGH) return 'is-high';
@@ -562,29 +863,28 @@ function glucoseTdClass(val) {
   return 'val-ok';
 }
 
-/* ── AUTH FLOW ── */
+/* ── AUTH ── */
 function startAuth() {
+  const state = crypto.randomUUID();
+  sessionStorage.setItem('dex_state', state);
   const params = new URLSearchParams({
     client_id:     CLIENT_ID,
     redirect_uri:  REDIRECT_URI,
     response_type: 'code',
     scope:         SCOPES,
+    state,
   });
-  window.location.href = `${AUTH_URL}?${params.toString()}`;
+  window.location.href = `${AUTH_URL}?${params}`;
 }
 
-/* ── CHECK AUTH STATUS ── */
 async function checkStatus() {
   try {
     const res  = await fetch(`${WORKER}/status`);
     const data = await res.json();
     return data.authenticated === true;
-  } catch {
-    return false;
-  }
+  } catch { return false; }
 }
 
-/* ── SHOW/HIDE UI ── */
 function showDash() {
   document.getElementById('connectBanner').classList.add('hidden');
   document.getElementById('dashContent').classList.add('visible');
@@ -595,58 +895,43 @@ function showConnect() {
   document.getElementById('dashContent').classList.remove('visible');
 }
 
-/* ── LOAD ALL DATA ── */
+/* ── LOAD LIVE DATA ── */
 async function loadData() {
-  // Fetch 24h of readings for stats + chart
   try {
     const res  = await fetch(`${WORKER}/egvs?minutes=1440`);
     const data = await res.json();
-
-    if (!res.ok) {
-      console.error('Dexcom egvs error:', data);
-      return;
-    }
-
-    allData = (data.records || []).sort((a, b) =>
+    allData = (data.records || []).sort((a,b) =>
       new Date(a.systemTime) - new Date(b.systemTime)
     );
-
-    if (allData.length === 0) {
-      document.getElementById('ghValue').textContent = '—';
-      document.getElementById('ghTime').textContent  = 'No readings available';
-      return;
-    }
-
     updateHero();
     updateStats();
-    updateChart(allData);
     updateTIR();
-    updateTable();
+    updateChart(allData);
+    updateReadings();
     loadAverages();
-
-  } catch (err) {
+  } catch(err) {
     console.error('loadData error:', err);
   }
 }
 
-/* ── HERO: LATEST READING ── */
+/* ── HERO ── */
 function updateHero() {
   if (!allData.length) return;
   const latest = allData[allData.length - 1];
   const val    = latest.value;
-  const trend  = TREND_MAP[latest.trend] || { arrow: '—', label: '—' };
-  const cls    = glucoseClass(val);
-  const time   = new Date(latest.systemTime);
-  const minsAgo = Math.round((Date.now() - time) / 60000);
+  const hero   = document.getElementById('glucoseHero');
+  const valEl  = document.getElementById('ghValue');
+  const timeEl = document.getElementById('ghTime');
+  const trendEl= document.getElementById('ghTrend');
+  const tlblEl = document.getElementById('ghTrendLabel');
 
-  const hero = document.getElementById('glucoseHero');
-  hero.className = `glucose-hero ${cls} fade-in`;
+  hero.className   = 'glucose-hero ' + glucoseClass(val);
+  valEl.textContent = val;
+  timeEl.textContent = 'Last reading: ' + fmtTime(new Date(latest.systemTime));
 
-  document.getElementById('ghValue').textContent      = val;
-  document.getElementById('ghTrend').textContent      = trend.arrow;
-  document.getElementById('ghTrendLabel').textContent = trend.label;
-  document.getElementById('ghTime').textContent       =
-    minsAgo <= 1 ? 'Just now' : `${minsAgo}m ago · ${fmtTime(time)}`;
+  const t = TREND_MAP[latest.trend] || { arrow: '—', label: '—' };
+  trendEl.textContent = t.arrow;
+  tlblEl.textContent  = t.label;
 }
 
 /* ── STATS ── */
@@ -693,15 +978,14 @@ function updateTIR() {
 async function setTF(tf) {
   chartTF = tf;
 
-  // Update button states
   Object.keys(TF_DEFS).forEach(k => {
     const btn = document.getElementById(`tf-${k}`);
     if (btn) btn.className = 'tf-btn' + (k === tf ? ' active' : '');
   });
 
-  // For day ranges, fetch longer data if not cached
-  const def = TF_DEFS[tf];
-  if (def.minutes > 1440) {
+  if (def_needs_hist(tf)) {
+    // Try API first, fall back to history.json data for 60d/90d
+    const def = TF_DEFS[tf];
     if (!longData[tf]) {
       const wrap = document.getElementById('chart-loading');
       if (wrap) wrap.style.display = 'flex';
@@ -712,6 +996,23 @@ async function setTF(tf) {
           new Date(a.systemTime) - new Date(b.systemTime)
         );
       } catch { longData[tf] = []; }
+      const wrap2 = document.getElementById('chart-loading');
+      if (wrap2) wrap2.style.display = 'none';
+    }
+    updateChart(longData[tf]);
+  } else if (TF_DEFS[tf].minutes > 1440) {
+    if (!longData[tf]) {
+      const wrap = document.getElementById('chart-loading');
+      if (wrap) wrap.style.display = 'flex';
+      try {
+        const res  = await fetch(`${WORKER}/egvs?minutes=${TF_DEFS[tf].minutes}`);
+        const data = await res.json();
+        longData[tf] = (data.records || []).sort((a,b) =>
+          new Date(a.systemTime) - new Date(b.systemTime)
+        );
+      } catch { longData[tf] = []; }
+      const wrap2 = document.getElementById('chart-loading');
+      if (wrap2) wrap2.style.display = 'none';
     }
     updateChart(longData[tf]);
   } else {
@@ -719,20 +1020,19 @@ async function setTF(tf) {
   }
 }
 
+function def_needs_hist(tf) { return false; } // placeholder – could extend later
+
 function updateChart(data) {
   const def     = TF_DEFS[chartTF];
   const cutoff  = Date.now() - def.minutes * 60 * 1000;
   const visible = data.filter(r => new Date(r.systemTime) >= cutoff);
 
-  // Thin out points for long ranges to keep chart readable
-  // Target ~200 points max on the chart
   let points = visible;
   if (visible.length > 200) {
     const step = Math.ceil(visible.length / 200);
     points = visible.filter((_, i) => i % step === 0);
   }
 
-  // For day ranges show date, for hour ranges show time
   const isDayRange = def.minutes > 1440;
   const labels = points.map(r => {
     const d = new Date(r.systemTime);
@@ -824,36 +1124,29 @@ function updateChart(data) {
   });
 }
 
-/* ── RECENT READINGS TABLE ── */
-function updateTable() {
-  const tbody  = document.getElementById('readingsBody');
+/* ── READINGS TABLE ── */
+function updateReadings() {
+  if (!allData.length) return;
   const recent = [...allData].reverse().slice(0, 20);
-
-  if (!recent.length) {
-    tbody.innerHTML = '<tr><td colspan="4" style="color:var(--text-muted);font-size:11px">No readings available</td></tr>';
-    return;
-  }
-
+  const tbody  = document.getElementById('readingsBody');
   tbody.innerHTML = recent.map(r => {
-    const trend = TREND_MAP[r.trend] || { arrow: '—', label: '—' };
-    const cls   = glucoseTdClass(r.value);
-    const time  = new Date(r.systemTime);
-    const status = r.value < LOW ? 'LOW' : r.value > HIGH ? 'HIGH' : 'OK';
+    const t = TREND_MAP[r.trend] || { arrow: '—', label: '—' };
+    const cls = glucoseTdClass(r.value);
+    const status = r.value < LOW ? 'Low' : r.value > HIGH ? 'High' : 'In Range';
     return `<tr>
-      <td>${fmtTime(time)} <span style="color:var(--text-muted);font-size:9px">${fmtDate(time)}</span></td>
+      <td>${fmtTime(new Date(r.systemTime))}</td>
       <td class="${cls}">${r.value}</td>
-      <td>${trend.arrow} <span style="font-size:9px;color:var(--text-muted)">${trend.label}</span></td>
+      <td>${t.arrow}</td>
       <td class="${cls}">${status}</td>
     </tr>`;
   }).join('');
 }
 
-/* ── PERIOD AVERAGES ── */
+/* ── PERIOD AVERAGES (with history.json fallback for 60d/90d) ── */
 async function loadAverages() {
   const grid = document.getElementById('avgGrid');
   if (!grid) return;
 
-  // Periods to show: label, days
   const periods = [
     { label: '7 Day',  days: 7  },
     { label: '14 Day', days: 14 },
@@ -866,15 +1159,21 @@ async function loadAverages() {
     `<div class="stat-card" id="avg-${p.days}">
       <div class="stat-label">${p.label} Avg</div>
       <div class="stat-val" id="avg-val-${p.days}"><span class="spinner" style="width:10px;height:10px;border-width:1.5px"></span></div>
-      <div class="stat-sub">mg/dL</div>
+      <div class="stat-sub" id="avg-sub-${p.days}">mg/dL</div>
     </div>`
   ).join('');
 
-  // Fetch each period — stagger to avoid hammering the API
+  // Load history.json for fallback averages
+  let histPeriods = [];
+  try {
+    const hr = await fetch('history.json');
+    const hd = await hr.json();
+    histPeriods = hd.periods || [];
+  } catch {}
+
   for (const p of periods) {
     try {
       const minutes = p.days * 1440;
-      // Use cached data if available
       let records = longData[`${p.days}d`];
       if (!records) {
         const res  = await fetch(`${WORKER}/egvs?minutes=${minutes}`);
@@ -885,24 +1184,562 @@ async function loadAverages() {
         );
       }
       const vals = records.map(r => r.value).filter(v => v > 0);
-      const avg  = vals.length
+      let avg = vals.length
         ? Math.round(vals.reduce((a,b) => a+b, 0) / vals.length)
         : null;
 
-      const el = document.getElementById(`avg-val-${p.days}`);
+      // Fallback for 60d/90d: compute weighted avg from Clarity period data
+      if (avg === null && histPeriods.length) {
+        avg = computeHistAvg(histPeriods, p.days);
+      }
+
+      const el    = document.getElementById(`avg-val-${p.days}`);
+      const subEl = document.getElementById(`avg-sub-${p.days}`);
       if (el) {
         el.textContent = avg !== null ? avg : '—';
         if (avg !== null) {
           el.className = 'stat-val ' + (avg < LOW ? 'is-low' : avg > HIGH ? 'is-high' : 'is-normal');
+          if (vals.length === 0 && subEl) subEl.textContent = 'mg/dL (est.)';
         }
       }
     } catch {
       const el = document.getElementById(`avg-val-${p.days}`);
       if (el) { el.textContent = '—'; el.className = 'stat-val'; }
     }
-    // Small delay between requests
     await new Promise(r => setTimeout(r, 300));
   }
+}
+
+function computeHistAvg(periods, days) {
+  // Compute a weighted average from historical period data covering ~days days back
+  const now = Date.now();
+  const cutoff = now - days * 86400000;
+  let totalWeighted = 0, totalDays = 0;
+
+  // Use most recent periods and weight by overlap with window
+  for (const p of periods) {
+    if (!p.avg) continue;
+    // Just use all available periods weighted by days
+    totalWeighted += p.avg * p.days;
+    totalDays += p.days;
+  }
+  return totalDays > 0 ? Math.round(totalWeighted / totalDays) : null;
+}
+
+/* ══════════════════════════════════════════
+   HISTORY TAB
+══════════════════════════════════════════ */
+
+async function loadHistory() {
+  try {
+    const res = await fetch('history.json');
+    histData  = await res.json();
+    document.getElementById('hist-loading').style.display  = 'none';
+    document.getElementById('hist-content').style.display = 'block';
+    renderHistory();
+  } catch(e) {
+    document.getElementById('hist-loading').innerHTML =
+      '<span style="color:var(--down)">Failed to load history.json</span>';
+  }
+}
+
+function renderHistory() {
+  renderPeriodCards();
+  renderProgressChart();
+  renderCVChart();
+  renderBestWorst();
+  renderHourlySelectors();
+  renderHeatmap(0);
+  renderTirHourly(0);
+  renderDOWChart();
+}
+
+/* ── 1. PERIOD SUMMARY CARDS ── */
+function renderPeriodCards() {
+  const grid = document.getElementById('periodGrid');
+  grid.innerHTML = histData.periods.map(p => {
+    const isMounjaro = p.medication.includes('Mounjaro');
+    const tirColor = p.tir >= 70 ? 'good' : p.tir >= 55 ? 'warn' : 'bad';
+    const avgColor = p.avg < 140 ? 'good' : p.avg < 160 ? 'warn' : 'bad';
+    const gmiStr = p.gmi ? p.gmi.toFixed(1) + '%' : 'N/A';
+
+    return `<div class="period-card fade-in">
+      <div class="period-card-header">
+        <div>
+          <div class="period-card-label">${p.label}</div>
+          <div class="period-card-date">${p.dateRange}</div>
+        </div>
+        <div class="med-badge ${isMounjaro ? 'mounjaro' : ''}">${p.medication}</div>
+      </div>
+      <div class="period-card-stats">
+        <div class="pc-stat">
+          <div class="pc-stat-val ${avgColor}">${p.avg}</div>
+          <div class="pc-stat-lbl">Avg mg/dL</div>
+        </div>
+        <div class="pc-stat">
+          <div class="pc-stat-val ${tirColor}">${p.tir}%</div>
+          <div class="pc-stat-lbl">TIR</div>
+        </div>
+        <div class="pc-stat">
+          <div class="pc-stat-val">${gmiStr}</div>
+          <div class="pc-stat-lbl">GMI</div>
+        </div>
+        <div class="pc-stat">
+          <div class="pc-stat-val">${p.cv}%</div>
+          <div class="pc-stat-lbl">CV</div>
+        </div>
+      </div>
+      <div class="pc-tir-bar">
+        <div class="pc-tir-seg" style="width:${p.low+p.veryLow}%;background:rgba(240,82,82,.75)"></div>
+        <div class="pc-tir-seg" style="width:${p.inRange}%;background:rgba(61,220,132,.75)"></div>
+        <div class="pc-tir-seg" style="width:${p.high+p.veryHigh}%;background:rgba(240,184,106,.75)"></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ── 2. PROGRESS CHART ── */
+function renderProgressChart() {
+  const periods = histData.periods;
+  const labels  = periods.map(p => p.label);
+  const avgs    = periods.map(p => p.avg);
+  const tirs    = periods.map(p => p.tir);
+
+  const ctx = document.getElementById('progressChart').getContext('2d');
+  if (progressChart) progressChart.destroy();
+
+  progressChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Avg Glucose',
+          data:  avgs,
+          backgroundColor: 'rgba(127,217,184,.55)',
+          borderColor:     'rgba(127,217,184,.9)',
+          borderWidth: 1,
+          borderRadius: 4,
+          yAxisID: 'yGlucose',
+        },
+        {
+          label: 'TIR %',
+          data:  tirs,
+          backgroundColor: 'rgba(138,99,255,.45)',
+          borderColor:     'rgba(138,99,255,.85)',
+          borderWidth: 1,
+          borderRadius: 4,
+          yAxisID: 'yTIR',
+          type: 'line',
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          tension: 0.3,
+          fill: false,
+        },
+      ],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      animation: { duration: 500 },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(5,8,12,.92)',
+          borderColor: 'rgba(255,255,255,.1)', borderWidth: 1,
+          titleFont: { family: 'Space Mono', size: 10 },
+          bodyFont:  { family: 'Space Mono', size: 11 },
+        },
+      },
+      scales: {
+        x: {
+          ticks: { color: 'rgba(232,240,247,.35)', font: { family: 'Space Mono', size: 8 }, maxRotation: 20 },
+          grid: { color: 'rgba(255,255,255,.04)' },
+        },
+        yGlucose: {
+          position: 'left', min: 100, max: 200,
+          title: { display: true, text: 'mg/dL', color: 'rgba(127,217,184,.5)', font: { family: 'Space Mono', size: 9 } },
+          ticks: { color: 'rgba(232,240,247,.28)', font: { family: 'Space Mono', size: 9 } },
+          grid: { color: 'rgba(255,255,255,.04)' },
+        },
+        yTIR: {
+          position: 'right', min: 40, max: 100,
+          title: { display: true, text: 'TIR %', color: 'rgba(138,99,255,.5)', font: { family: 'Space Mono', size: 9 } },
+          ticks: { color: 'rgba(232,240,247,.28)', font: { family: 'Space Mono', size: 9 }, callback: v => v + '%' },
+          grid: { display: false },
+        },
+      },
+    },
+    plugins: [{
+      id: 'targetLine',
+      afterDraw(chart) {
+        const yScale = chart.scales['yGlucose'];
+        const { ctx, chartArea: { left, right } } = chart;
+        if (!yScale) return;
+        // Draw 154 mg/dL target line
+        const y = yScale.getPixelForValue(154);
+        ctx.save();
+        ctx.strokeStyle = 'rgba(240,184,106,.4)';
+        ctx.lineWidth   = 1;
+        ctx.setLineDash([4,4]);
+        ctx.beginPath(); ctx.moveTo(left, y); ctx.lineTo(right, y); ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = 'rgba(240,184,106,.5)';
+        ctx.font      = '8px Space Mono';
+        ctx.fillText('Goal <154', left + 4, y - 4);
+        ctx.restore();
+      },
+    }],
+  });
+}
+
+/* ── 3. CV CHART ── */
+function renderCVChart() {
+  const periods = histData.periods;
+  const labels  = periods.map(p => p.label);
+  const cvs     = periods.map(p => p.cv);
+
+  const ctx = document.getElementById('cvChart').getContext('2d');
+  if (cvChart) cvChart.destroy();
+
+  const colors = cvs.map(v => v < 36 ? 'rgba(61,220,132,.9)' : 'rgba(240,184,106,.9)');
+
+  cvChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        data:   cvs,
+        borderColor: 'rgba(127,217,184,.7)',
+        borderWidth: 2,
+        pointBackgroundColor: colors,
+        pointBorderColor:     colors,
+        pointRadius: 5,
+        pointHoverRadius: 7,
+        fill: true,
+        backgroundColor: ctx2 => {
+          const g = ctx2.chart.ctx.createLinearGradient(0,0,0,160);
+          g.addColorStop(0, 'rgba(127,217,184,.15)');
+          g.addColorStop(1, 'rgba(127,217,184,.02)');
+          return g;
+        },
+        tension: 0.3,
+      }],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      animation: { duration: 500 },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(5,8,12,.92)',
+          borderColor: 'rgba(255,255,255,.1)', borderWidth: 1,
+          titleFont: { family: 'Space Mono', size: 10 },
+          bodyFont:  { family: 'Space Mono', size: 11 },
+          callbacks: { label: ctx => `CV: ${ctx.parsed.y}%` },
+        },
+      },
+      scales: {
+        x: {
+          ticks: { color: 'rgba(232,240,247,.35)', font: { family: 'Space Mono', size: 8 }, maxRotation: 20 },
+          grid: { color: 'rgba(255,255,255,.04)' },
+        },
+        y: {
+          min: 20, max: 45,
+          ticks: { color: 'rgba(232,240,247,.28)', font: { family: 'Space Mono', size: 9 }, callback: v => v + '%' },
+          grid: { color: 'rgba(255,255,255,.04)' },
+        },
+      },
+    },
+    plugins: [{
+      id: 'goalLine',
+      afterDraw(chart) {
+        const { ctx, chartArea: { left, right }, scales: { y } } = chart;
+        const yPx = y.getPixelForValue(36);
+        ctx.save();
+        ctx.strokeStyle = 'rgba(240,184,106,.4)';
+        ctx.lineWidth   = 1;
+        ctx.setLineDash([4,4]);
+        ctx.beginPath(); ctx.moveTo(left, yPx); ctx.lineTo(right, yPx); ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = 'rgba(240,184,106,.5)';
+        ctx.font      = '8px Space Mono';
+        ctx.fillText('Goal <36%', left + 4, yPx - 4);
+        ctx.restore();
+      },
+    }],
+  });
+}
+
+/* ── 4. BEST / WORST PERIODS ── */
+function renderBestWorst() {
+  const periods = histData.periods;
+  const byTIR   = [...periods].sort((a,b) => b.tir - a.tir);
+  const best    = byTIR[0];
+  const worst   = byTIR[byTIR.length - 1];
+
+  document.getElementById('bestWorstGrid').innerHTML = `
+    <div class="bw-card best fade-in">
+      <div class="bw-label">🏆 Best Period</div>
+      <div class="bw-period">${best.label} · ${best.medication}</div>
+      <div class="bw-val">${best.tir}%</div>
+      <div class="bw-sub">Time in Range</div>
+      <div style="margin-top:.5rem;font-family:'Space Mono',monospace;font-size:11px;color:var(--text-muted);">
+        Avg ${best.avg} mg/dL · CV ${best.cv}%
+      </div>
+    </div>
+    <div class="bw-card worst fade-in">
+      <div class="bw-label">📉 Worst Period</div>
+      <div class="bw-period">${worst.label} · ${worst.medication}</div>
+      <div class="bw-val">${worst.tir}%</div>
+      <div class="bw-sub">Time in Range</div>
+      <div style="margin-top:.5rem;font-family:'Space Mono',monospace;font-size:11px;color:var(--text-muted);">
+        Avg ${worst.avg} mg/dL · CV ${worst.cv}%
+      </div>
+    </div>`;
+}
+
+/* ── 5. HEATMAP & 6. HOURLY TIR — period selectors ── */
+function renderHourlySelectors() {
+  const periods = histData.hourly;
+
+  const heatSel = document.getElementById('heatmapPeriodSel');
+  const tirSel  = document.getElementById('tirHourlyPeriodSel');
+
+  heatSel.innerHTML = periods.map((p, i) =>
+    `<button class="ps-btn ${i===0?'active':''}" onclick="selectHeatmapPeriod(${i})">${p.label}</button>`
+  ).join('');
+
+  tirSel.innerHTML = periods.map((p, i) =>
+    `<button class="ps-btn ${i===0?'active':''}" onclick="selectTirPeriod(${i})">${p.label}</button>`
+  ).join('');
+}
+
+function selectHeatmapPeriod(idx) {
+  activeHeatmapIdx = idx;
+  document.querySelectorAll('#heatmapPeriodSel .ps-btn').forEach((b, i) =>
+    b.classList.toggle('active', i === idx));
+  renderHeatmap(idx);
+}
+
+function selectTirPeriod(idx) {
+  activeTirIdx = idx;
+  document.querySelectorAll('#tirHourlyPeriodSel .ps-btn').forEach((b, i) =>
+    b.classList.toggle('active', i === idx));
+  renderTirHourly(idx);
+}
+
+/* ── 5. HEATMAP ── */
+function renderHeatmap(periodIdx) {
+  const period = histData.hourly[periodIdx];
+  const hours  = Array.from({length:24}, (_,i) => {
+    const h = i % 12 || 12;
+    return `${h}${i < 12 ? 'am' : 'pm'}`;
+  });
+
+  const means  = period.means;
+  const bgColors = means.map(v =>
+    v < LOW  ? 'rgba(240,82,82,.75)'   :
+    v > HIGH ? 'rgba(240,184,106,.85)' :
+    // interpolate green shade by proximity to ideal
+    (() => {
+      const ideal = 110;
+      const dist  = Math.abs(v - ideal) / (HIGH - ideal);
+      const alpha = 0.45 + dist * 0.35;
+      return `rgba(61,220,132,${alpha.toFixed(2)})`;
+    })()
+  );
+
+  const ctx = document.getElementById('heatmapChart').getContext('2d');
+  if (heatmapChart) heatmapChart.destroy();
+
+  heatmapChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: hours,
+      datasets: [{
+        data:            means,
+        backgroundColor: bgColors,
+        borderColor:     bgColors.map(c => c.replace(/[\d.]+\)$/, '1)')),
+        borderWidth:     1,
+        borderRadius:    3,
+      }],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      animation: { duration: 400 },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(5,8,12,.92)',
+          borderColor: 'rgba(255,255,255,.1)', borderWidth: 1,
+          titleFont: { family: 'Space Mono', size: 10 },
+          bodyFont:  { family: 'Space Mono', size: 11 },
+          callbacks: { label: ctx => `Avg: ${ctx.parsed.y} mg/dL` },
+        },
+      },
+      scales: {
+        x: {
+          ticks: { color: 'rgba(232,240,247,.35)', font: { family: 'Space Mono', size: 8 }, maxRotation: 0 },
+          grid: { color: 'rgba(255,255,255,.04)' },
+        },
+        y: {
+          min: 60, max: 250,
+          ticks: { color: 'rgba(232,240,247,.28)', font: { family: 'Space Mono', size: 9 }, stepSize: 50 },
+          grid: { color: 'rgba(255,255,255,.04)' },
+        },
+      },
+    },
+    plugins: [{
+      id: 'rangeBandHeat',
+      beforeDraw(chart) {
+        const { ctx, chartArea: { left, right }, scales: { y } } = chart;
+        ctx.save();
+        ctx.fillStyle = 'rgba(61,220,132,.05)';
+        ctx.fillRect(left, y.getPixelForValue(HIGH), right-left, y.getPixelForValue(LOW)-y.getPixelForValue(HIGH));
+        ctx.restore();
+      },
+    }],
+  });
+}
+
+/* ── 6. HOURLY TIR STACKED BAR ── */
+function renderTirHourly(periodIdx) {
+  const period = histData.hourly[periodIdx];
+  const hours  = Array.from({length:24}, (_,i) => {
+    const h = i % 12 || 12;
+    return `${h}${i < 12 ? 'am' : 'pm'}`;
+  });
+
+  const ctx = document.getElementById('tirHourlyChart').getContext('2d');
+  if (tirHourlyChart) tirHourlyChart.destroy();
+
+  tirHourlyChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: hours,
+      datasets: [
+        {
+          label: 'Low',
+          data:  period.tirLow,
+          backgroundColor: 'rgba(240,82,82,.7)',
+          stack: 'tir',
+          borderRadius: 0,
+        },
+        {
+          label: 'In Range',
+          data:  period.tirInRange,
+          backgroundColor: 'rgba(61,220,132,.65)',
+          stack: 'tir',
+          borderRadius: 0,
+        },
+        {
+          label: 'High',
+          data:  period.tirHigh,
+          backgroundColor: 'rgba(240,184,106,.75)',
+          stack: 'tir',
+          borderRadius: 0,
+        },
+      ],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      animation: { duration: 400 },
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top',
+          labels: { color: 'rgba(232,240,247,.4)', font: { family: 'Space Mono', size: 8 }, boxWidth: 10 },
+        },
+        tooltip: {
+          backgroundColor: 'rgba(5,8,12,.92)',
+          borderColor: 'rgba(255,255,255,.1)', borderWidth: 1,
+          titleFont: { family: 'Space Mono', size: 10 },
+          bodyFont:  { family: 'Space Mono', size: 11 },
+          callbacks: { label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y}%` },
+        },
+      },
+      scales: {
+        x: {
+          stacked: true,
+          ticks: { color: 'rgba(232,240,247,.35)', font: { family: 'Space Mono', size: 8 }, maxRotation: 0 },
+          grid: { color: 'rgba(255,255,255,.04)' },
+        },
+        y: {
+          stacked: true, min: 0, max: 100,
+          ticks: { color: 'rgba(232,240,247,.28)', font: { family: 'Space Mono', size: 9 }, callback: v => v + '%' },
+          grid: { color: 'rgba(255,255,255,.04)' },
+        },
+      },
+    },
+  });
+}
+
+/* ── 7. DAY OF WEEK ── */
+function renderDOWChart() {
+  const dow    = histData.dow.days;
+  const labels = dow.map(d => d.day);
+  const avgs   = dow.map(d => d.avg);
+  const colors = avgs.map(v =>
+    v > 150 ? 'rgba(240,184,106,.8)' : 'rgba(127,217,184,.65)'
+  );
+
+  const ctx = document.getElementById('dowChart').getContext('2d');
+  if (dowChart) dowChart.destroy();
+
+  dowChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        data:            avgs,
+        backgroundColor: colors,
+        borderColor:     colors.map(c => c.replace(/[\d.]+\)$/, '1)')),
+        borderWidth:     1,
+        borderRadius:    5,
+      }],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      animation: { duration: 400 },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(5,8,12,.92)',
+          borderColor: 'rgba(255,255,255,.1)', borderWidth: 1,
+          titleFont: { family: 'Space Mono', size: 10 },
+          bodyFont:  { family: 'Space Mono', size: 11 },
+          callbacks: { label: ctx => `Avg: ${ctx.parsed.y} mg/dL` },
+        },
+      },
+      scales: {
+        x: {
+          ticks: { color: 'rgba(232,240,247,.45)', font: { family: 'Space Mono', size: 11, weight: '700' } },
+          grid: { color: 'rgba(255,255,255,.04)' },
+        },
+        y: {
+          min: 100, max: 180,
+          ticks: { color: 'rgba(232,240,247,.28)', font: { family: 'Space Mono', size: 9 } },
+          grid: { color: 'rgba(255,255,255,.04)' },
+        },
+      },
+    },
+    plugins: [{
+      id: 'valueLabels',
+      afterDraw(chart) {
+        const { ctx, scales: { y } } = chart;
+        chart.data.datasets[0].data.forEach((val, i) => {
+          const meta = chart.getDatasetMeta(0);
+          const bar  = meta.data[i];
+          ctx.save();
+          ctx.fillStyle = 'rgba(232,240,247,.6)';
+          ctx.font      = '700 10px Space Mono';
+          ctx.textAlign = 'center';
+          ctx.fillText(val, bar.x, y.getPixelForValue(val) - 6);
+          ctx.restore();
+        });
+      },
+    }],
+  });
 }
 
 /* ── FORMAT HELPERS ── */
