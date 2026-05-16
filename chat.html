@@ -135,17 +135,16 @@
     .typing-dots span:nth-child(3) { animation-delay: .4s; }
     @keyframes dot { 0%,80%,100%{transform:scale(.8);opacity:.4} 40%{transform:scale(1);opacity:1} }
 
-    /* ── Input bar (sticky bottom) ── */
+    /* ── Input bar — pure flexbox, no sticky ── */
     .chat-input-wrap {
       display: flex; gap: 10px;
       border-top: 1px solid var(--border);
-      position: sticky; bottom: 0;
-      background: linear-gradient(transparent, var(--bg-deep) 22%);
-      padding: 1.25rem 0 1.25rem;
+      background: var(--bg-deep);
+      padding: 1.25rem 0;
       flex-shrink: 0;
     }
     @media(max-width:600px) {
-      .chat-input-wrap { padding: .875rem 0 .875rem; }
+      .chat-input-wrap { padding: .875rem 0; }
     }
     .chat-input {
       flex: 1;
@@ -267,9 +266,9 @@
     <button class="send-btn" id="send-btn" onclick="sendMessage()">SEND →</button>
   </div>
 
-</div><!-- /.chat-page -->
+  <div class="chat-footer">Powered by Claude Sonnet via Cloudflare Worker · chucksai.com</div>
 
-<div class="chat-footer">Powered by Claude Sonnet via Cloudflare Worker · chucksai.com</div>
+</div><!-- /.chat-page -->
 
 <script>
 /* ═══════════════════════════════════════
