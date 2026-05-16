@@ -282,6 +282,7 @@
       background: var(--bg-card); border: 1px solid var(--border);
       border-radius: var(--r-lg); padding: 2rem;
       position: relative; overflow: hidden;
+      max-width: 100%; box-sizing: border-box;
     }
     .briefing-card::before {
       content: ''; position: absolute; top: 0; left: 10%; right: 10%; height: 1px;
@@ -298,7 +299,8 @@
       background: var(--accent2); border-radius: 2px;
       box-shadow: 0 0 8px rgba(91,200,245,.7);
     }
-    .briefing-content { font-size: 14px; line-height: 1.8; color: var(--text-primary); }
+    .briefing-content { font-size: 14px; line-height: 1.8; color: var(--text-primary); overflow-wrap: break-word; word-break: break-word; }
+    #briefing-output { width: 100%; min-width: 0; overflow: hidden; box-sizing: border-box; }
     .briefing-content h2 {
       font-family: 'Space Mono', monospace;
       font-size: 12px; font-weight: 700;
@@ -363,6 +365,8 @@
       .snap-card { min-width: calc(50% - 5px); }
       .date-row { gap: 8px; }
       .gen-btn { width: 100%; }
+      .briefing-card { padding: 1rem; }
+      .briefing-content p, .briefing-content li { font-size: 13px; }
     }
   </style>
 </head>
