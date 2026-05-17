@@ -1002,11 +1002,14 @@ async function generateBriefing(){
       signal:ctrl.signal,
       body:JSON.stringify({model:MB_AI_MODEL,max_tokens:2000,stream:true,messages:[{role:'user',content:prompt}]})
     });
+    clearTimeout(timer);
+    const httpStatus=resp.status;
+    const contentType=resp.headers.get('content-type')||'';
+    const hasBody=!!resp.body;
     if(!resp.ok){
       const err=await resp.json().catch(()=>({}));
-      throw new Error(err.error?.message||`HTTP ${resp.status}`);
+      throw new Error(`HTTP ${httpStatus}: `+(err.error?.message||JSON.stringify(err)));
     }
-    clearTimeout(timer);
     stepDone('step-claude'); await paint();
     // Set up streaming display card
     const dateObj2=new Date(date+'T12:00:00');
@@ -1020,10 +1023,11 @@ async function generateBriefing(){
     let fullText='';
     let chunks=0,events=0;
     const flushRender=()=>{ if(streamEl) streamEl.innerHTML='<p>'+markdownToHtml(fullText)+'</p>'; };
+    if(!hasBody){ throw new Error(`resp.body is null — status:${httpStatus} ct:${contentType}`); }
     const reader=resp.body.getReader();
     const decoder=new TextDecoder();
     let buf='';
-    if(streamEl) streamEl.innerHTML='<span style="color:var(--text-muted);font-size:11px;font-family:Space Mono,monospace">Receiving stream…</span>';
+    if(streamEl) streamEl.innerHTML=`<span style="color:var(--text-muted);font-size:11px;font-family:'Space Mono',monospace">status:${httpStatus} ct:${contentType} body:${hasBody} — reading…</span>`;
     while(true){
       const {done,value}=await reader.read();
       if(done) break;
