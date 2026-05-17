@@ -325,13 +325,11 @@
       border-top-color: var(--accent2); border-radius: 50%;
       animation: spin .8s linear infinite; margin-bottom: 1rem;
     }
-    @keyframes spin { to { transform: rotate(360deg); } }
     .loading-state p { font-family: 'Space Mono', monospace; font-size: 12px; color: var(--text-secondary); }
     .loading-steps { list-style: none; padding: 0; margin: 1rem 0 0; }
     .loading-steps li { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--text-muted); padding: 3px 0; transition: color .3s; }
     .loading-steps li.done   { color: var(--up); }
-    .loading-steps li.active { color: var(--accent2); animation: stepPulse 1.2s ease-in-out infinite; }
-    @keyframes stepPulse { 0%,100%{ opacity:1; } 50%{ opacity:.4; } }
+    .loading-steps li.active { color: var(--accent2); }
 
     .empty-state  { text-align: center; padding: 3rem 1rem; }
     .empty-icon   { font-size: 3rem; margin-bottom: 1rem; }
@@ -363,6 +361,7 @@
 
     .fade-in { animation: fadeUp .35s ease both; }
     @keyframes fadeUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
     @media (max-width: 600px) {
       .snap-card { min-width: calc(50% - 5px); }
@@ -447,8 +446,14 @@
           <div class="idx-card"><div class="idx-label">DOW</div><div class="idx-price skel skel-sm" style="width:70px">&nbsp;</div></div>
           <div class="idx-card"><div class="idx-label">RUSSELL</div><div class="idx-price skel skel-sm" style="width:70px">&nbsp;</div></div>
         </div>
+        <!-- Snapshot cards (populated by renderSnapshot) -->
+        <div class="snapshot-row" id="snapshot-row" style="margin-bottom:10px"></div>
+        <div style="text-align:right;margin:-6px 0 10px">
+          <span class="snap-status loading" id="snap-status">LOADING…</span>
+        </div>
+
         <!-- Date + generate -->
-        <div class="date-row" style="margin-top:12px">
+        <div class="date-row" style="margin-top:4px">
           <div class="date-label">Briefing for:</div>
           <input class="date-input" type="date" id="briefing-date"/>
           <button class="gen-btn" id="gen-btn" onclick="generateBriefing()">GENERATE BRIEFING →</button>
@@ -555,6 +560,7 @@ function fmtPrice(n,dec=2){
 function fmtPct(n){ return n==null||isNaN(n)?'—':(n>=0?'+':'')+n.toFixed(2)+'%'; }
 function pctClass(n){ return n>0.05?'up':n<-0.05?'down':'flat'; }
 function fgColor(v){ return v>=60?'var(--up)':v<=40?'var(--down)':'var(--accent3)'; }
+function paint(){ return new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))); }
 
 async function fhQuote(sym){
   const r=await fetch(`https://finnhub.io/api/v1/quote?symbol=${encodeURIComponent(sym)}&token=${FH_KEY}`);
@@ -880,8 +886,8 @@ function renderSnapshot(d){
   if(d.crypto?.btc?.price){ const c=mbPctCls(d.crypto.btc.pct); cards.push(`<div class="snap-card ${mbPctCardCls(d.crypto.btc.pct)} fade-in"><div class="snap-label">Bitcoin</div><div class="snap-value">$${Math.round(d.crypto.btc.price).toLocaleString()}</div><div class="snap-chg ${c}">${mbFmtPct(d.crypto.btc.pct)}</div></div>`); }
   if(d.crypto?.eth?.price){ const c=mbPctCls(d.crypto.eth.pct); cards.push(`<div class="snap-card ${mbPctCardCls(d.crypto.eth.pct)} fade-in"><div class="snap-label">Ethereum</div><div class="snap-value">$${Math.round(d.crypto.eth.price).toLocaleString()}</div><div class="snap-chg ${c}">${mbFmtPct(d.crypto.eth.pct)}</div></div>`); }
   if(d.fg){ const fc=d.fg.score<=45?'down':d.fg.score<=55?'flat':'up'; cards.push(`<div class="snap-card fade-in"><div class="snap-label">Fear &amp; Greed</div><div class="snap-value" style="font-size:13px">${d.fg.score}</div><div class="snap-chg ${fc}">${d.fg.label}</div></div>`); }
-  document.getElementById('snapshot-row').innerHTML=cards.join('')||'<div class="snap-card"><div class="snap-loading">Data unavailable</div></div>';
-  const st=document.getElementById('snap-status'); st.textContent='LIVE'; st.className='snap-status';
+  const sr=document.getElementById('snapshot-row'); if(sr) sr.innerHTML=cards.join('')||'<div class="snap-card"><div class="snap-loading">Data unavailable</div></div>';
+  const st=document.getElementById('snap-status'); if(st){st.textContent='LIVE'; st.className='snap-status';}
 }
 
 function buildPrompt(dateStr,isWeekend,d){
@@ -971,7 +977,7 @@ async function generateBriefing(){
         <li id="step-claude">⟳ Generating briefing with Claude…</li>
       </ul>
     </div>`;
-  const paint=()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+  await paint();
   function stepDone(id){
     const el=document.getElementById(id);
     if(el){el.className='done';el.textContent='✓ '+el.textContent.slice(2);}
@@ -979,20 +985,16 @@ async function generateBriefing(){
     const idx=steps.indexOf(id);
     if(idx>=0&&idx<steps.length-1){const next=document.getElementById(steps[idx+1]);if(next)next.className='active';}
   }
-  let d={spy:null,qqq:null,dia:null,iwm:null,crypto:null,fg:null,earnings:[],news:[]};
+  let d;
   try{
-    const [spyR,qqqR,diaR,iwmR]=await Promise.allSettled([mbFhQuote('SPY'),mbFhQuote('QQQ'),mbFhQuote('DIA'),mbFhQuote('IWM')]);
-    d.spy=spyR.status==='fulfilled'?spyR.value:null;
-    d.qqq=qqqR.status==='fulfilled'?qqqR.value:null;
-    d.dia=diaR.status==='fulfilled'?diaR.value:null;
-    d.iwm=iwmR.status==='fulfilled'?iwmR.value:null;
+    d=await fetchLiveData(date);
+    liveData=d; renderSnapshot(d);
     stepDone('step-indices'); await paint();
-  }catch{}
-  try{ d.crypto=await fetchMBCrypto(); stepDone('step-crypto'); await paint(); }catch{}
-  try{ d.fg=await fetchMBFearGreed(); stepDone('step-fg'); await paint(); }catch{}
-  try{ d.earnings=await fetchEarningsToday(date); stepDone('step-earnings'); await paint(); }catch{}
-  try{ d.news=await fetchMBNews(); stepDone('step-news'); await paint(); }catch{}
-  liveData=d; renderSnapshot(d);
+    stepDone('step-crypto');  await paint();
+    stepDone('step-fg');      await paint();
+    stepDone('step-earnings');await paint();
+    stepDone('step-news');    await paint();
+  }catch{d={spy:null,qqq:null,dia:null,iwm:null,crypto:null,fg:null,earnings:[],news:[]};}
   const prompt=buildPrompt(date,isWeekend,d);
   try{
     const ctrl=new AbortController();
@@ -1013,12 +1015,11 @@ async function generateBriefing(){
     mbSaveHistory(date,fullText,fullText.slice(0,140).replace(/[#*\n]/g,' ').trim());
     mbRenderHistory();
   }catch(e){
-    const msg=e.name==='AbortError'?'Request timed out — try again':e.message;
     document.getElementById('briefing-output').innerHTML=`
       <div class="empty-state">
         <div class="empty-icon">⚠️</div>
         <div class="empty-title">Generation Failed</div>
-        <div class="empty-sub" style="color:var(--down);font-family:'Space Mono',monospace;font-size:11px">${msg}</div>
+        <div class="empty-sub" style="color:var(--down);font-family:'Space Mono',monospace;font-size:11px">${e.message}</div>
       </div>`;
   }
   btn.disabled=false; btn.textContent='GENERATE BRIEFING →';
