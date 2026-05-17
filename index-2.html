@@ -1003,51 +1003,15 @@ async function generateBriefing(){
       method:'POST',
       headers:{'Content-Type':'application/json'},
       signal:ctrl.signal,
-      body:JSON.stringify({model:MB_AI_MODEL,max_tokens:2000,stream:true,messages:[{role:'user',content:prompt}]})
+      body:JSON.stringify({model:MB_AI_MODEL,max_tokens:2000,messages:[{role:'user',content:prompt}]})
     });
     clearTimeout(timer);
-    if(!resp.ok) throw new Error(`HTTP ${resp.status}`);
-
-    // ── Switch to streaming briefing card immediately ──
-    stepDone('step-claude'); await paint();
-    const dateObj2=new Date(date+'T12:00:00');
-    const dateStr=dateObj2.toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
-    document.getElementById('briefing-output').innerHTML=`
-      <div class="briefing-card fade-in">
-        <div class="briefing-date">${dateStr}</div>
-        <div class="briefing-content" id="stream-content"><p></p></div>
-      </div>`;
-    await paint();
-
-    // ── Read SSE stream ──
-    const reader=resp.body.getReader();
-    const decoder=new TextDecoder();
-    let fullText='';
-    let buf='';
-
-    while(true){
-      const {done,value}=await reader.read();
-      if(done) break;
-      buf+=decoder.decode(value,{stream:true});
-      const lines=buf.split('\n');
-      buf=lines.pop(); // keep incomplete line in buffer
-      for(const line of lines){
-        if(!line.startsWith('data: ')) continue;
-        const raw=line.slice(6).trim();
-        if(raw==='[DONE]') continue;
-        try{
-          const evt=JSON.parse(raw);
-          if(evt.type==='content_block_delta'&&evt.delta?.type==='text_delta'){
-            fullText+=evt.delta.text;
-            const el=document.getElementById('stream-content');
-            if(el) el.innerHTML='<p>'+markdownToHtml(fullText)+'</p>';
-          }
-          if(evt.type==='message_stop') break;
-        }catch{ /* partial JSON — skip */ }
-      }
-    }
-
+    const data=await resp.json();
+    if(data.error) throw new Error(data.error.message||JSON.stringify(data.error));
+    const fullText=data.content?.[0]?.text||'';
     if(!fullText) throw new Error('Empty response from Claude');
+    stepDone('step-claude'); await paint();
+    mbDisplayBriefing(date,fullText);
     mbSaveHistory(date,fullText,fullText.slice(0,140).replace(/[#*\n]/g,' ').trim());
     mbRenderHistory();
   }catch(e){
