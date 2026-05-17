@@ -51,27 +51,27 @@
   --r-xl:  18px;
 }
 
-/* ── LIGHT MODE TOKENS ── */
+/* ── LIGHT MODE TOKENS — E1-B Navy Glass ── */
 html.light {
-  --bg-deep:          #f0f4f8;
-  --bg-card:          rgba(255,255,255,.85);
-  --bg-card-hover:    rgba(255,255,255,1);
-  --bg-ticker:        rgba(255,255,255,.9);
+  --bg-deep:          #1e3248;
+  --bg-card:          rgba(255,255,255,.07);
+  --bg-card-hover:    rgba(255,255,255,.12);
+  --bg-ticker:        rgba(255,255,255,.06);
 
-  --text-primary:     #0f1623;
-  --text-secondary:   rgba(15,22,35,.58);
-  --text-muted:       rgba(15,22,35,.35);
+  --text-primary:     #e8f4ff;
+  --text-secondary:   rgba(232,244,255,.54);
+  --text-muted:       rgba(232,244,255,.28);
 
-  --border:           rgba(0,0,0,.08);
-  --border-bright:    rgba(0,0,0,.15);
+  --border:           rgba(255,255,255,.09);
+  --border-bright:    rgba(255,255,255,.20);
 
-  --up:               #0d7a56;
-  --down:             #c43434;
-  --up-glow:          0 0 4px rgba(13,122,86,.35);
-  --down-glow:        0 0 4px rgba(196,52,52,.35);
+  --up:               #3ddc84;
+  --down:             #f05252;
+  --up-glow:          0 0 8px rgba(61,220,132,.5),  0 0 20px rgba(61,220,132,.2);
+  --down-glow:        0 0 8px rgba(240,82,82,.5),   0 0 20px rgba(240,82,82,.2);
 
-  --glow-blue:        rgba(26,111,181,.3);
-  --glow-green:       rgba(13,122,86,.3);
+  --glow-blue:        rgba(91,200,245,.4);
+  --glow-green:       rgba(127,217,184,.4);
 }
 
 /* Keep body.light in sync for any legacy selectors */
