@@ -1018,15 +1018,18 @@ async function generateBriefing(){
       </div>`;
     const streamEl=document.getElementById('stream-content');
     let fullText='';
-    let renderTimer=null;
+    let chunks=0,events=0;
     const flushRender=()=>{ if(streamEl) streamEl.innerHTML='<p>'+markdownToHtml(fullText)+'</p>'; };
     const reader=resp.body.getReader();
     const decoder=new TextDecoder();
     let buf='';
+    if(streamEl) streamEl.innerHTML='<span style="color:var(--text-muted);font-size:11px;font-family:Space Mono,monospace">Receiving stream…</span>';
     while(true){
       const {done,value}=await reader.read();
       if(done) break;
+      chunks++;
       buf+=decoder.decode(value,{stream:true});
+      if(streamEl&&!fullText) streamEl.innerHTML='<span style="color:var(--text-muted);font-size:11px;font-family:Space Mono,monospace">chunks: '+chunks+' events: '+events+'</span>';
       const lines=buf.split('\n');
       buf=lines.pop();
       for(const line of lines){
@@ -1037,14 +1040,14 @@ async function generateBriefing(){
           const evt=JSON.parse(data);
           if(evt.type==='content_block_delta'&&evt.delta?.type==='text_delta'){
             fullText+=evt.delta.text;
-            clearTimeout(renderTimer);
-            renderTimer=setTimeout(flushRender,60);
+            events++;
+            flushRender();
           }
         }catch{}
       }
     }
     flushRender();
-    if(!fullText) throw new Error('Empty response from Claude');
+    if(!fullText) throw new Error('No text received — chunks:'+chunks+' events:'+events);
     mbSaveHistory(date,fullText,fullText.slice(0,140).replace(/[#*\n]/g,' ').trim());
     mbRenderHistory();
   }catch(e){
