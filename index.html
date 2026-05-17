@@ -325,6 +325,7 @@
       border-top-color: var(--accent2); border-radius: 50%;
       animation: spin .8s linear infinite; margin-bottom: 1rem;
     }
+    @keyframes spin { to { transform: rotate(360deg); } }
     .loading-state p { font-family: 'Space Mono', monospace; font-size: 12px; color: var(--text-secondary); }
     .loading-steps { list-style: none; padding: 0; margin: 1rem 0 0; }
     .loading-steps li { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--text-muted); padding: 3px 0; transition: color .3s; }
@@ -993,23 +994,66 @@ async function generateBriefing(){
   liveData=d; renderSnapshot(d);
   const prompt=buildPrompt(date,isWeekend,d);
   try{
+    const ctrl=new AbortController();
+    const timer=setTimeout(()=>ctrl.abort(),90000);
     const resp=await fetch(`${AI_PROXY}/v1/messages`,{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:MB_AI_MODEL,max_tokens:2500,messages:[{role:'user',content:prompt}]})
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      signal:ctrl.signal,
+      body:JSON.stringify({model:MB_AI_MODEL,max_tokens:2000,stream:true,messages:[{role:'user',content:prompt}]})
     });
-    const data=await resp.json();
-    if(data.error) throw new Error(data.error.message||JSON.stringify(data.error));
-    const fullText=data.content?.[0]?.text||'';
+    if(!resp.ok){
+      const err=await resp.json().catch(()=>({}));
+      throw new Error(err.error?.message||`HTTP ${resp.status}`);
+    }
+    clearTimeout(timer);
+    stepDone('step-claude'); await paint();
+    // Set up streaming display card
+    const dateObj2=new Date(date+'T12:00:00');
+    const dateStr2=dateObj2.toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+    document.getElementById('briefing-output').innerHTML=`
+      <div class="briefing-card fade-in">
+        <div class="briefing-date">${dateStr2}</div>
+        <div class="briefing-content" id="stream-content"></div>
+      </div>`;
+    const streamEl=document.getElementById('stream-content');
+    let fullText='';
+    let renderTimer=null;
+    const flushRender=()=>{ if(streamEl) streamEl.innerHTML='<p>'+markdownToHtml(fullText)+'</p>'; };
+    const reader=resp.body.getReader();
+    const decoder=new TextDecoder();
+    let buf='';
+    while(true){
+      const {done,value}=await reader.read();
+      if(done) break;
+      buf+=decoder.decode(value,{stream:true});
+      const lines=buf.split('\n');
+      buf=lines.pop();
+      for(const line of lines){
+        if(!line.startsWith('data:')) continue;
+        const data=line.slice(5).trim();
+        if(data==='[DONE]') break;
+        try{
+          const evt=JSON.parse(data);
+          if(evt.type==='content_block_delta'&&evt.delta?.type==='text_delta'){
+            fullText+=evt.delta.text;
+            clearTimeout(renderTimer);
+            renderTimer=setTimeout(flushRender,60);
+          }
+        }catch{}
+      }
+    }
+    flushRender();
     if(!fullText) throw new Error('Empty response from Claude');
-    mbDisplayBriefing(date,fullText);
     mbSaveHistory(date,fullText,fullText.slice(0,140).replace(/[#*\n]/g,' ').trim());
     mbRenderHistory();
   }catch(e){
+    const msg=e.name==='AbortError'?'Request timed out — try again':e.message;
     document.getElementById('briefing-output').innerHTML=`
       <div class="empty-state">
         <div class="empty-icon">⚠️</div>
         <div class="empty-title">Generation Failed</div>
-        <div class="empty-sub" style="color:var(--down);font-family:'Space Mono',monospace;font-size:11px">${e.message}</div>
+        <div class="empty-sub" style="color:var(--down);font-family:'Space Mono',monospace;font-size:11px">${msg}</div>
       </div>`;
   }
   btn.disabled=false; btn.textContent='GENERATE BRIEFING →';
