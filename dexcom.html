@@ -1183,6 +1183,39 @@
         </div>
       </div>
 
+      <!-- 8. DAWN SPIKE SCORE -->
+      <div class="hist-section" style="margin-top:1.25rem;" id="dawnSpikeSection">
+        <div class="hist-section-title">🌄 Dawn Spike Score</div>
+        <div id="dawnSpikeInsightRow" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin-bottom:1rem;"></div>
+        <div class="chart-card" style="margin-bottom:0;">
+          <div class="chart-header">
+            <div class="chart-title">Peak (6–9am) minus Midnight Baseline — per Period</div>
+            <div style="font-family:'DM Sans',sans-serif;font-size:11px;color:var(--text-muted);">Lower score = smaller dawn spike</div>
+          </div>
+          <div class="hist-chart-wrap">
+            <canvas id="dawnSpikeChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- 9. POST-MIDNIGHT STABILITY -->
+      <div class="hist-section" style="margin-top:1.25rem;" id="postMidnightSection">
+        <div class="hist-section-title">🌙 Post-Midnight Stability</div>
+        <div id="postMidnightInsightRow" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin-bottom:1rem;"></div>
+        <div class="chart-card" style="margin-bottom:0;">
+          <div class="chart-header">
+            <div class="chart-title">Avg Glucose by Hour · 12am–5am</div>
+            <div class="period-selector" id="postMidnightPeriodSel"><!-- filled by JS --></div>
+          </div>
+          <div class="hist-chart-wrap">
+            <canvas id="postMidnightChart"></canvas>
+          </div>
+          <div id="postMidnightNote" style="font-family:'DM Sans',sans-serif;font-size:11px;color:var(--text-muted);margin-top:.6rem;display:none;">
+            ℹ️ No hourly data for this period
+          </div>
+        </div>
+      </div>
+
     </div><!-- /#hist-content -->
 
   </div><!-- /#panel-history -->
@@ -1221,6 +1254,9 @@ let tirHourlyChart   = null;
 let progressChart    = null;
 let cvChart          = null;
 let dowChart         = null;
+let dawnSpikeChart   = null;
+let postMidnightChart = null;
+let activePostMidIdx  = 0;
 let activeHeatmapIdx = 0;
 let activeTirIdx     = 0;
 
@@ -2012,6 +2048,8 @@ function renderHistory() {
   renderHeatmap(0);
   renderTirHourly(0);
   renderDOWChart();
+  renderDawnSpikeScore();
+  renderPostMidnight();
 }
 
 /* ── MOUNJARO DOSE TRACKER ── */
@@ -3429,7 +3467,345 @@ function renderDOWChart() {
   });
 }
 
-/* ── FORMAT HELPERS ── */
+/* ══════════════════════════════════════
+   DAWN SPIKE SCORE
+   Score = max(hours 6-9) - midnight(hour 0)
+   Lower = better (smaller spike off baseline)
+══════════════════════════════════════ */
+function renderDawnSpikeScore() {
+  const hourlyPeriods = histData.hourly;
+  const allPeriods    = histData.periods;
+
+  // Build spike data for all periods with hourly info
+  const spikeData = hourlyPeriods.map(h => {
+    const midnight = h.means[0];
+    const peak     = Math.max(h.means[6], h.means[7], h.means[8], h.means[9]);
+    const score    = peak - midnight;
+    const p        = allPeriods.find(p => p.id === h.periodId);
+    return {
+      label: h.label,
+      periodId: h.periodId,
+      med: p ? p.medication : '',
+      midnight,
+      peak,
+      score,
+    };
+  });
+
+  renderDawnSpikeInsights(spikeData);
+  renderDawnSpikeChart(spikeData);
+}
+
+function renderDawnSpikeInsights(data) {
+  const wrap = document.getElementById('dawnSpikeInsightRow');
+  if (!wrap || !data.length) return;
+
+  const latest  = data[data.length - 1];
+  const best    = data.reduce((b, d) => d.score < b.score ? d : b, data[0]);
+  const worst   = data.reduce((w, d) => d.score > w.score ? d : w, data[0]);
+  const delta   = data.length >= 2 ? latest.score - data[data.length - 2].score : null;
+
+  const scoreClass = s => s < 60 ? 'good' : s < 90 ? 'warn' : 'bad';
+  const scoreBorder = s => s < 60 ? 'improving' : s < 90 ? 'warning' : 'alert';
+  const dStr = v => (v > 0 ? '↑' : '↓') + Math.abs(v) + ' vs prev';
+  const dCls = v => v < 0 ? 'pos' : 'neg';
+
+  wrap.innerHTML = [
+    `<div class="dawn-insight ${scoreBorder(latest.score)}">
+      <div class="dawn-insight-label">Latest Spike Score</div>
+      <div class="dawn-insight-val ${scoreClass(latest.score)}">${latest.score}</div>
+      <div class="dawn-insight-sub">mg/dL · ${latest.label}</div>
+      <div class="dawn-insight-sub" style="margin-top:3px">Peak ${latest.peak} − Base ${latest.midnight}</div>
+      ${delta !== null ? `<div class="dawn-insight-delta ${dCls(delta)}">${dStr(delta)}</div>` : ''}
+    </div>`,
+    `<div class="dawn-insight improving">
+      <div class="dawn-insight-label">Best Score</div>
+      <div class="dawn-insight-val good">${best.score}</div>
+      <div class="dawn-insight-sub">mg/dL · ${best.label}</div>
+    </div>`,
+    `<div class="dawn-insight alert">
+      <div class="dawn-insight-label">Worst Score</div>
+      <div class="dawn-insight-val bad">${worst.score}</div>
+      <div class="dawn-insight-sub">mg/dL · ${worst.label}</div>
+    </div>`,
+    `<div class="dawn-insight warning">
+      <div class="dawn-insight-label">What it Means</div>
+      <div class="dawn-insight-val warn" style="font-size:16px;line-height:1.3">&lt;60 = Good</div>
+      <div class="dawn-insight-sub">60–89 = moderate spike</div>
+      <div class="dawn-insight-sub">90+ = significant</div>
+    </div>`,
+  ].join('');
+}
+
+function renderDawnSpikeChart(data) {
+  const ctx = document.getElementById('dawnSpikeChart');
+  if (!ctx) return;
+
+  const labels  = data.map(d => d.label.replace(/ \(\d+d\)/, ''));
+  const scores  = data.map(d => d.score);
+  const peaks   = data.map(d => d.peak);
+  const bases   = data.map(d => d.midnight);
+  const colors  = scores.map(s => s < 60 ? 'rgba(61,220,132,.75)' : s < 90 ? 'rgba(240,184,106,.75)' : 'rgba(240,82,82,.75)');
+
+  if (dawnSpikeChart) dawnSpikeChart.destroy();
+  dawnSpikeChart = new Chart(ctx.getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Spike Score (Peak − Midnight)',
+        data: scores,
+        backgroundColor: colors,
+        borderColor: colors.map(c => c.replace(/[\d.]+\)$/, '1)')),
+        borderWidth: 1,
+        borderRadius: 5,
+      }],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      animation: { duration: 400 },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(5,8,12,.92)',
+          borderColor: 'rgba(255,255,255,.1)', borderWidth: 1,
+          titleFont: { family: 'Space Mono', size: 10 },
+          bodyFont:  { family: 'Space Mono', size: 11 },
+          callbacks: {
+            title: items => labels[items[0].dataIndex],
+            label: item => [
+              `  Spike score: ${scores[item.dataIndex]} mg/dL`,
+              `  Peak (6–9am): ${peaks[item.dataIndex]} mg/dL`,
+              `  Midnight base: ${bases[item.dataIndex]} mg/dL`,
+            ],
+          },
+        },
+        annotation: {
+          annotations: [
+            { type:'line', yMin:60, yMax:60, borderColor:'rgba(61,220,132,.35)', borderWidth:1, borderDash:[4,4],
+              label:{ content:'60 — good', display:true, position:'end', color:'rgba(61,220,132,.65)', font:{family:'Space Mono',size:9} } },
+            { type:'line', yMin:90, yMax:90, borderColor:'rgba(240,82,82,.35)', borderWidth:1, borderDash:[4,4],
+              label:{ content:'90 — significant', display:true, position:'end', color:'rgba(240,82,82,.65)', font:{family:'Space Mono',size:9} } },
+          ],
+        },
+      },
+      scales: {
+        x: {
+          ticks: { color: 'rgba(232,240,247,.45)', font: { family: 'Space Mono', size: 10, weight: '700' } },
+          grid: { color: 'rgba(255,255,255,.04)' },
+        },
+        y: {
+          min: 0,
+          ticks: { color: 'rgba(232,240,247,.28)', font: { family: 'Space Mono', size: 9 }, callback: v => v + ' mg/dL' },
+          grid: { color: 'rgba(255,255,255,.04)' },
+          title: { display: true, text: 'Spike Score (mg/dL)', color: 'rgba(232,240,247,.3)', font: { family: 'DM Sans', size: 10 } },
+        },
+      },
+    },
+    plugins: [{
+      id: 'spikeLabelPlugin',
+      afterDraw(chart) {
+        const { ctx: c, scales: { y } } = chart;
+        chart.data.datasets[0].data.forEach((val, i) => {
+          const meta = chart.getDatasetMeta(0);
+          const bar  = meta.data[i];
+          c.save();
+          c.fillStyle = 'rgba(232,240,247,.65)';
+          c.font      = '700 10px Space Mono';
+          c.textAlign = 'center';
+          c.fillText(val, bar.x, y.getPixelForValue(val) - 6);
+          c.restore();
+        });
+      },
+    }],
+  });
+}
+
+/* ══════════════════════════════════════
+   POST-MIDNIGHT STABILITY
+   Hours 0–5 (12am–5am), per period selector
+══════════════════════════════════════ */
+const PM_HOURS       = [0, 1, 2, 3, 4, 5];
+const PM_HOUR_LABELS = ['12am', '1am', '2am', '3am', '4am', '5am'];
+
+function renderPostMidnight() {
+  const hourlyPeriods = histData.hourly;
+
+  // Insight cards: overnight avg and low% across all hourly periods
+  renderPostMidnightInsights(hourlyPeriods);
+
+  // Period selector
+  const sel = document.getElementById('postMidnightPeriodSel');
+  if (sel) {
+    sel.innerHTML = hourlyPeriods.map((p, i) =>
+      `<button class="ps-btn${i === 0 ? ' active' : ''}" onclick="selectPostMidnight(${i}, this)">${p.label.replace(/ \(\d+d\)/, '')}</button>`
+    ).join('');
+  }
+
+  renderPostMidnightChart(0);
+}
+
+function renderPostMidnightInsights(periods) {
+  const wrap = document.getElementById('postMidnightInsightRow');
+  if (!wrap || !periods.length) return;
+
+  // Compute overnight avg (hours 0-5) and low % for each period
+  const summaries = periods.map(h => {
+    const vals   = PM_HOURS.map(i => h.means[i]);
+    const avg    = Math.round(vals.reduce((a, b) => a + b, 0) / vals.length);
+    const lowPct = Math.round(PM_HOURS.reduce((sum, i) => sum + (h.tirLow[i] || 0), 0) / PM_HOURS.length);
+    const range  = Math.max(...vals) - Math.min(...vals);
+    return { label: h.label.replace(/ \(\d+d\)/, ''), avg, lowPct, range };
+  });
+
+  const latest = summaries[summaries.length - 1];
+  const stablest = summaries.reduce((b, s) => s.range < b.range ? s : b, summaries[0]);
+
+  const avgClass = a => a < 100 ? 'bad' : a < 120 ? 'good' : a < 140 ? 'warn' : 'bad';
+  const avgBorder = a => a < 100 ? 'alert' : a < 120 ? 'improving' : a < 140 ? 'warning' : 'alert';
+
+  wrap.innerHTML = [
+    `<div class="dawn-insight ${avgBorder(latest.avg)}">
+      <div class="dawn-insight-label">Latest Overnight Avg</div>
+      <div class="dawn-insight-val ${avgClass(latest.avg)}">${latest.avg}</div>
+      <div class="dawn-insight-sub">mg/dL · 12am–5am · ${latest.label}</div>
+      ${latest.lowPct > 0 ? `<div class="dawn-insight-delta neg">⚠ ${latest.lowPct}% low readings</div>` : '<div class="dawn-insight-delta pos">✓ No lows</div>'}
+    </div>`,
+    `<div class="dawn-insight improving">
+      <div class="dawn-insight-label">Most Stable Night</div>
+      <div class="dawn-insight-val good">${stablest.range}</div>
+      <div class="dawn-insight-sub">mg/dL range · ${stablest.label}</div>
+      <div class="dawn-insight-sub" style="margin-top:2px">Smaller = flatter overnight</div>
+    </div>`,
+    `<div class="dawn-insight ${latest.lowPct > 5 ? 'alert' : 'improving'}">
+      <div class="dawn-insight-label">Overnight Lows (Latest)</div>
+      <div class="dawn-insight-val ${latest.lowPct > 5 ? 'bad' : 'good'}">${latest.lowPct}%</div>
+      <div class="dawn-insight-sub">12am–5am · ${latest.label}</div>
+      <div class="dawn-insight-delta ${latest.lowPct > 5 ? 'neg' : 'pos'}">${latest.lowPct > 5 ? 'Watch closely' : 'Glimepiride skip ✓'}</div>
+    </div>`,
+  ].join('');
+}
+
+function selectPostMidnight(idx, btn) {
+  activePostMidIdx = idx;
+  document.querySelectorAll('#postMidnightPeriodSel .ps-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderPostMidnightChart(idx);
+}
+
+function renderPostMidnightChart(idx) {
+  const noteEl = document.getElementById('postMidnightNote');
+  const ctx    = document.getElementById('postMidnightChart');
+  if (!ctx) return;
+
+  const period = histData.hourly[idx];
+  if (!period) {
+    if (noteEl) noteEl.style.display = 'block';
+    if (postMidnightChart) { postMidnightChart.destroy(); postMidnightChart = null; }
+    return;
+  }
+  if (noteEl) noteEl.style.display = 'none';
+
+  const means   = PM_HOURS.map(h => period.means[h]);
+  const tirLow  = PM_HOURS.map(h => period.tirLow[h]);
+  const tirIn   = PM_HOURS.map(h => period.tirInRange[h]);
+
+  if (postMidnightChart) postMidnightChart.destroy();
+  postMidnightChart = new Chart(ctx.getContext('2d'), {
+    type: 'line',
+    data: {
+      labels: PM_HOUR_LABELS,
+      datasets: [
+        {
+          label: 'Avg Glucose',
+          data: means,
+          borderColor: 'rgba(127,217,184,.9)',
+          backgroundColor: 'rgba(127,217,184,.08)',
+          borderWidth: 2.5,
+          pointBackgroundColor: means.map(v => v < 70 ? 'rgba(240,82,82,.9)' : v > 140 ? 'rgba(240,184,106,.9)' : 'rgba(127,217,184,.9)'),
+          pointRadius: 5,
+          tension: 0.35,
+          fill: true,
+          yAxisID: 'yGlucose',
+        },
+        {
+          label: '% Low',
+          data: tirLow,
+          borderColor: 'rgba(240,82,82,.6)',
+          backgroundColor: 'rgba(240,82,82,.08)',
+          borderWidth: 1.5,
+          borderDash: [4, 3],
+          pointRadius: 3,
+          tension: 0.3,
+          fill: false,
+          yAxisID: 'yPct',
+        },
+      ],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      animation: { duration: 400 },
+      plugins: {
+        legend: {
+          display: true,
+          labels: { color: 'rgba(232,240,247,.5)', font: { family: 'Space Mono', size: 9 }, boxWidth: 12 },
+        },
+        tooltip: {
+          backgroundColor: 'rgba(5,8,12,.92)',
+          borderColor: 'rgba(255,255,255,.1)', borderWidth: 1,
+          titleFont: { family: 'Space Mono', size: 10 },
+          bodyFont:  { family: 'Space Mono', size: 11 },
+          callbacks: {
+            label: item => item.datasetIndex === 0
+              ? `  Avg: ${item.parsed.y} mg/dL`
+              : `  Low: ${item.parsed.y}%`,
+          },
+        },
+      },
+      scales: {
+        x: {
+          ticks: { color: 'rgba(232,240,247,.45)', font: { family: 'Space Mono', size: 11, weight: '700' } },
+          grid: { color: 'rgba(255,255,255,.04)' },
+        },
+        yGlucose: {
+          position: 'left',
+          min: 60, max: 180,
+          ticks: { color: 'rgba(232,240,247,.28)', font: { family: 'Space Mono', size: 9 }, callback: v => v },
+          grid: { color: 'rgba(255,255,255,.04)' },
+          title: { display: true, text: 'mg/dL', color: 'rgba(232,240,247,.3)', font: { family: 'DM Sans', size: 10 } },
+        },
+        yPct: {
+          position: 'right',
+          min: 0, max: 30,
+          ticks: { color: 'rgba(240,82,82,.4)', font: { family: 'Space Mono', size: 9 }, callback: v => v + '%' },
+          grid: { display: false },
+          title: { display: true, text: '% Low', color: 'rgba(240,82,82,.4)', font: { family: 'DM Sans', size: 10 } },
+        },
+      },
+    },
+    plugins: [{
+      id: 'pmBands',
+      beforeDraw(chart) {
+        const { ctx: c, chartArea: { left, right, top, bottom }, scales: { yGlucose } } = chart;
+        // Target band 70–140
+        const y1 = yGlucose.getPixelForValue(140);
+        const y2 = yGlucose.getPixelForValue(70);
+        c.save();
+        c.fillStyle = 'rgba(127,217,184,.05)';
+        c.fillRect(left, y1, right - left, y2 - y1);
+        // Low threshold line
+        const yLow = yGlucose.getPixelForValue(70);
+        c.strokeStyle = 'rgba(240,82,82,.25)';
+        c.lineWidth = 1;
+        c.setLineDash([4, 4]);
+        c.beginPath(); c.moveTo(left, yLow); c.lineTo(right, yLow); c.stroke();
+        c.restore();
+      },
+    }],
+  });
+}
+
+
 function fmtTime(d) {
   return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
 }
