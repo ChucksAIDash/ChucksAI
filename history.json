@@ -135,6 +135,25 @@
       "veryLow": 0,
       "daysWithData": 7,
       "timeActive": 100
+    },
+    {
+      "id": "may10-may20-2026",
+      "label": "May 10–20",
+      "dateRange": "May 10 – May 20, 2026",
+      "days": 11,
+      "medication": "Mounjaro 5mg",
+      "avg": 145,
+      "gmi": 6.8,
+      "tir": 80,
+      "sd": 42,
+      "cv": 28.8,
+      "veryHigh": 1,
+      "high": 19,
+      "inRange": 80,
+      "low": 0,
+      "veryLow": 0,
+      "daysWithData": 11,
+      "timeActive": 100
     }
   ],
 
@@ -170,20 +189,28 @@
       "tirInRange": [90, 89, 95, 100, 100, 100, 95, 51, 69, 96, 100, 100, 86, 50, 67, 92, 99, 99, 91, 100, 100, 100, 100, 99],
       "tirHigh":    [0, 0, 0, 0, 0, 0, 5, 49, 31, 4, 0, 0, 14, 40, 29, 0, 0, 0, 0, 0, 0, 0, 0, 0],
       "tirLow":     [10, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 1, 1, 9, 0, 0, 0, 0, 1]
+    },
+    {
+      "periodId": "may10-may20-2026",
+      "label": "May 10–20 (11d)",
+      "means": [134, 126, 120, 121, 130, 151, 169, 190, 190, 177, 150, 126, 108, 137, 172, 158, 131, 121, 123, 133, 141, 160, 159, 148],
+      "tirInRange": [98, 94, 91, 91, 89, 78, 60, 55, 48, 54, 88, 91, 98, 82, 50, 73, 83, 92, 100, 100, 87, 69, 72, 79],
+      "tirHigh":    [2, 6, 9, 9, 11, 22, 38, 28, 42, 46, 12, 9, 1, 18, 50, 27, 17, 8, 0, 0, 9, 31, 27, 21],
+      "tirLow":     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 2, 0, 1, 0]
     }
   ],
 
   "dow": {
-    "source": "mar-apr-2026",
-    "note": "Day-of-week averages from Mar 23–Apr 23, 2026 Clarity export (32 days). Based on meal/event log glucose readings at time of entry.",
+    "source": "may10-may20-2026",
+    "note": "Day-of-week mean glucose from May 10–20, 2026 Clarity daily statistics table. 11-day window, values are daily means from the hourly stats breakdown.",
     "days": [
-      { "day": "Mon", "avg": 136, "n": 3 },
-      { "day": "Tue", "avg": 140, "n": 3 },
-      { "day": "Wed", "avg": 130, "n": 3 },
-      { "day": "Thu", "avg": 122, "n": 3 },
-      { "day": "Fri", "avg": 128, "n": 2 },
-      { "day": "Sat", "avg": 129, "n": 3 },
-      { "day": "Sun", "avg": 157, "n": 3 }
+      { "day": "Mon", "avg": 157, "n": 2 },
+      { "day": "Tue", "avg": 143, "n": 2 },
+      { "day": "Wed", "avg": 170, "n": 2 },
+      { "day": "Thu", "avg": 130, "n": 1 },
+      { "day": "Fri", "avg": 124, "n": 1 },
+      { "day": "Sat", "avg": 128, "n": 1 },
+      { "day": "Sun", "avg": 137, "n": 2 }
     ]
   }
 }
