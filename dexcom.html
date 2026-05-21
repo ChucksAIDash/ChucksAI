@@ -679,6 +679,11 @@
     .dawn-insight-delta.pos { color: var(--up); }
     .dawn-insight-delta.neg { color: var(--down); }
 
+    /* ── ABOVE 200 / ZONE STYLES (reuses dawn-insight) ── */
+    .zone-delta-good { color: var(--up);     font-family: 'Space Mono', monospace; font-size: 10px; margin-top: 4px; }
+    .zone-delta-bad  { color: var(--down);   font-family: 'Space Mono', monospace; font-size: 10px; margin-top: 4px; }
+    .zone-delta-warn { color: var(--accent3);font-family: 'Space Mono', monospace; font-size: 10px; margin-top: 4px; }
+
     @media(max-width: 600px) {
       .gh-value { font-size: 52px; }
       .gh-trend { font-size: 40px; }
@@ -964,18 +969,6 @@
       <div class="hist-section">
         <div class="hist-section-title">In Development</div>
 
-        <!-- #3 Time Above 200 (history view) -->
-        <div style="margin-bottom:10px;">
-          <div class="placeholder-card">
-            <div class="placeholder-left">
-              <div class="placeholder-title">📈 Time Above 200 — History View</div>
-              <div class="placeholder-desc">Tracks % of readings above 200 mg/dL by period — more relevant than the generic "High >180" bucket given your dawn spikes regularly hit 200–220+.</div>
-              <div class="placeholder-preview"></div>
-            </div>
-            <div class="placeholder-badge">Coming Soon</div>
-          </div>
-        </div>
-
         <!-- #4 Rolling 7-Day Average -->
         <div style="margin-bottom:10px;">
           <div class="placeholder-card">
@@ -1041,6 +1034,44 @@
           </div>
           <div id="dawnHourlyNote" style="font-family:'DM Sans',sans-serif;font-size:11px;color:var(--text-muted);margin-top:.6rem;display:none;">
             ⚠ Hourly data not available for older periods — only period-level averages shown above.
+          </div>
+        </div>
+      </div>
+
+      <!-- ── TIME ABOVE 200 ── -->
+      <div class="hist-section" id="above200Section">
+        <div class="hist-section-title">📈 Time Above 200</div>
+
+        <!-- Insight strip -->
+        <div id="above200InsightRow" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin-bottom:1rem;">
+          <!-- filled by JS -->
+        </div>
+
+        <!-- Stacked zone breakdown chart -->
+        <div class="chart-card" style="margin-bottom:.75rem;">
+          <div class="chart-header">
+            <div class="chart-title">Glucose Zone Breakdown by Period</div>
+            <div style="font-family:'DM Sans',sans-serif;font-size:11px;color:var(--text-muted);">% time in each zone · stacked to 100%</div>
+          </div>
+          <div class="hist-chart-wrap tall">
+            <canvas id="zoneChart"></canvas>
+          </div>
+          <div class="range-legend" style="margin-top:.75rem;">
+            <div class="range-item"><div class="range-dot" style="background:rgba(240,82,82,.85)"></div>Very High &gt;250</div>
+            <div class="range-item"><div class="range-dot" style="background:rgba(240,140,60,.8)"></div>High 180–250</div>
+            <div class="range-item"><div class="range-dot" style="background:rgba(61,220,132,.75)"></div>In Range 70–180</div>
+            <div class="range-item"><div class="range-dot" style="background:rgba(99,179,237,.8)"></div>Low &lt;70</div>
+          </div>
+        </div>
+
+        <!-- Above 200 trend line -->
+        <div class="chart-card" style="margin-bottom:0;">
+          <div class="chart-header">
+            <div class="chart-title">% Above 200 mg/dL — Estimated Trend</div>
+            <div style="font-family:'DM Sans',sans-serif;font-size:11px;color:var(--text-muted);">Derived from hourly data where available · veryHigh% elsewhere</div>
+          </div>
+          <div class="hist-chart-wrap">
+            <canvas id="above200Chart"></canvas>
           </div>
         </div>
       </div>
@@ -1703,6 +1734,7 @@ async function loadHistory() {
 function renderHistory() {
   renderMedTimeline();
   renderDawnTracker();
+  renderAbove200();
   renderPeriodCards();
   renderProgressChart();
   renderCVChart();
@@ -2340,6 +2372,303 @@ function renderDawnHourlyChart(idx) {
         c.restore();
       },
     }],
+  });
+}
+
+/* ══════════════════════════════════════════
+   TIME ABOVE 200 / ZONE BREAKDOWN
+══════════════════════════════════════════ */
+let zoneChart    = null;
+let above200Chart = null;
+
+function renderAbove200() {
+  if (!histData) return;
+  const periods      = histData.periods;
+  const hourlyLookup = {};
+  (histData.hourly || []).forEach(h => { hourlyLookup[h.periodId] = h; });
+
+  // For each period, estimate % above 200
+  // If hourly data available: count hours where mean > 200 as a proxy
+  // Otherwise: use veryHigh% (>250) as a floor + note it's an underestimate
+  const above200Data = periods.map(p => {
+    const h = hourlyLookup[p.id];
+    if (h) {
+      // Hours with mean > 200 / 24 * 100
+      const hoursAbove = h.means.filter(v => v > 200).length;
+      const pct = Math.round((hoursAbove / 24) * 100);
+      return { label: p.label, med: p.medication, pct, estimated: false, period: p };
+    } else {
+      // Use veryHigh as floor estimate
+      return { label: p.label, med: p.medication, pct: p.veryHigh || 0, estimated: true, period: p };
+    }
+  });
+
+  renderAbove200Insights(above200Data);
+  renderZoneChart(periods);
+  renderAbove200TrendChart(above200Data);
+}
+
+function renderAbove200Insights(data) {
+  const wrap = document.getElementById('above200InsightRow');
+  if (!wrap) return;
+
+  const withReal = data.filter(d => !d.estimated);
+  const latest   = withReal.length ? withReal[withReal.length - 1] : data[data.length - 1];
+  const prev     = withReal.length > 1 ? withReal[withReal.length - 2] : null;
+  const best     = data.reduce((a, b) => a.pct < b.pct ? a : b);
+  const delta    = prev ? latest.pct - prev.pct : null;
+
+  // Find worst dawn-driven spike periods
+  const worst = data.reduce((a, b) => a.pct > b.pct ? a : b);
+
+  wrap.innerHTML = [
+    // Latest above 200
+    `<div class="dawn-insight ${latest.pct > 20 ? 'alert' : latest.pct > 8 ? 'warning' : 'improving'}">
+      <div class="dawn-insight-label">Latest % Above 200</div>
+      <div class="dawn-insight-val ${latest.pct > 20 ? 'bad' : latest.pct > 8 ? 'warn' : 'good'}">${latest.pct}%</div>
+      <div class="dawn-insight-sub">${latest.label}${latest.estimated ? ' (est.)' : ''}</div>
+      ${delta !== null ? `<div class="${delta < 0 ? 'zone-delta-good' : 'zone-delta-bad'}">${delta < 0 ? '▼' : '▲'} ${Math.abs(delta)}% from prev</div>` : ''}
+    </div>`,
+
+    // Best period
+    `<div class="dawn-insight improving">
+      <div class="dawn-insight-label">Best Period</div>
+      <div class="dawn-insight-val good">${best.pct}%</div>
+      <div class="dawn-insight-sub">${best.label}</div>
+      <div class="zone-delta-good">✓ ${best.med}</div>
+    </div>`,
+
+    // Worst period
+    `<div class="dawn-insight alert">
+      <div class="dawn-insight-label">Worst Period</div>
+      <div class="dawn-insight-val bad">${worst.pct}%</div>
+      <div class="dawn-insight-sub">${worst.label}</div>
+      <div class="zone-delta-bad">↑ ${worst.med}</div>
+    </div>`,
+
+    // Dawn contribution note
+    `<div class="dawn-insight warning">
+      <div class="dawn-insight-label">Dawn Contribution</div>
+      <div class="dawn-insight-val warn" style="font-size:18px;line-height:1.3">6–9am</div>
+      <div class="dawn-insight-sub">Primary driver of &gt;200 spikes</div>
+      <div class="zone-delta-warn">Tracks with dawn chart ↑</div>
+    </div>`,
+  ].join('');
+}
+
+function renderZoneChart(periods) {
+  const ctx = document.getElementById('zoneChart');
+  if (!ctx) return;
+
+  const labels   = periods.map(p => p.label);
+  const veryHigh = periods.map(p => p.veryHigh || 0);
+  const high     = periods.map(p => p.high || 0);
+  const inRange  = periods.map(p => p.inRange || 0);
+  const low      = periods.map(p => (p.low || 0) + (p.veryLow || 0));
+
+  if (zoneChart) zoneChart.destroy();
+  zoneChart = new Chart(ctx.getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Low <70',
+          data: low,
+          backgroundColor: 'rgba(99,179,237,.75)',
+          stack: 'zones',
+          borderRadius: 0,
+        },
+        {
+          label: 'In Range',
+          data: inRange,
+          backgroundColor: 'rgba(61,220,132,.65)',
+          stack: 'zones',
+          borderRadius: 0,
+        },
+        {
+          label: 'High 180–250',
+          data: high,
+          backgroundColor: 'rgba(240,140,60,.75)',
+          stack: 'zones',
+          borderRadius: 0,
+        },
+        {
+          label: 'Very High >250',
+          data: veryHigh,
+          backgroundColor: 'rgba(240,82,82,.8)',
+          stack: 'zones',
+          borderRadius: { topLeft: 4, topRight: 4, bottomLeft: 0, bottomRight: 0 },
+        },
+      ],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      animation: { duration: 500 },
+      plugins: {
+        legend: {
+          display: true, position: 'top',
+          labels: { color: 'rgba(232,240,247,.4)', font: { family: 'Space Mono', size: 8 }, boxWidth: 10 },
+        },
+        tooltip: {
+          backgroundColor: 'rgba(5,8,12,.93)',
+          borderColor: 'rgba(255,255,255,.1)', borderWidth: 1,
+          titleFont: { family: 'Space Mono', size: 10 },
+          bodyFont:  { family: 'Space Mono', size: 11 },
+          callbacks: {
+            title: items => {
+              const p = periods[items[0].dataIndex];
+              return p.label + ' · ' + p.medication;
+            },
+            label: item => `  ${item.dataset.label}: ${item.parsed.y}%`,
+            afterBody: items => {
+              const p = periods[items[0].dataIndex];
+              return [`  TIR: ${p.inRange}%   Avg: ${p.avg} mg/dL`];
+            },
+          },
+        },
+      },
+      scales: {
+        x: {
+          stacked: true,
+          ticks: { color: 'rgba(232,240,247,.45)', font: { family: 'Space Mono', size: 8, weight: '700' }, maxRotation: 25 },
+          grid: { color: 'rgba(255,255,255,.04)' },
+        },
+        y: {
+          stacked: true, min: 0, max: 100,
+          ticks: { color: 'rgba(232,240,247,.3)', font: { family: 'Space Mono', size: 9 }, callback: v => v + '%' },
+          grid: { color: 'rgba(255,255,255,.04)' },
+        },
+      },
+    },
+    plugins: [
+      // TIR target line at 70%
+      {
+        id: 'tirTargetLine',
+        afterDraw(chart) {
+          const { ctx: c, chartArea: { left, right }, scales: { y } } = chart;
+          c.save();
+          const yy = y.getPixelForValue(70);
+          c.strokeStyle = 'rgba(61,220,132,.4)';
+          c.lineWidth = 1.5;
+          c.setLineDash([4, 4]);
+          c.beginPath(); c.moveTo(left, yy); c.lineTo(right, yy); c.stroke();
+          c.setLineDash([]);
+          c.fillStyle = 'rgba(61,220,132,.5)';
+          c.font = '8px Space Mono';
+          c.textAlign = 'left';
+          c.fillText('TIR 70% goal', left + 4, yy - 4);
+          c.restore();
+        },
+      },
+    ],
+  });
+}
+
+function renderAbove200TrendChart(data) {
+  const ctx = document.getElementById('above200Chart');
+  if (!ctx) return;
+
+  const labels  = data.map(d => d.label);
+  const pcts    = data.map(d => d.pct);
+  const isEst   = data.map(d => d.estimated);
+  const colors  = pcts.map(v => v > 20 ? 'rgba(240,82,82,.85)' : v > 8 ? 'rgba(240,140,60,.8)' : 'rgba(61,220,132,.75)');
+
+  if (above200Chart) above200Chart.destroy();
+  above200Chart = new Chart(ctx.getContext('2d'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: '% Above 200',
+          data: pcts,
+          borderColor: 'rgba(240,120,60,.8)',
+          backgroundColor: 'rgba(240,120,60,.0)',
+          borderWidth: 2.5,
+          pointBackgroundColor: colors,
+          pointBorderColor: 'rgba(5,8,12,.8)',
+          pointBorderWidth: 1.5,
+          pointRadius: pcts.map((_, i) => isEst[i] ? 4 : 6),
+          pointStyle: pcts.map((_, i) => isEst[i] ? 'triangle' : 'circle'),
+          pointHoverRadius: 8,
+          tension: 0.3,
+          fill: {
+            target: 'origin',
+            above: 'rgba(240,120,60,.06)',
+          },
+        },
+      ],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      animation: { duration: 500 },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(5,8,12,.93)',
+          borderColor: 'rgba(255,255,255,.1)', borderWidth: 1,
+          titleFont: { family: 'Space Mono', size: 10 },
+          bodyFont:  { family: 'Space Mono', size: 11 },
+          callbacks: {
+            title: items => data[items[0].dataIndex].label + ' · ' + data[items[0].dataIndex].med,
+            label: item => {
+              const d = data[item.dataIndex];
+              return `  Above 200: ${d.pct}%${d.estimated ? ' (estimated from veryHigh%)' : ' (from hourly data)'}`;
+            },
+          },
+        },
+      },
+      scales: {
+        x: {
+          ticks: { color: 'rgba(232,240,247,.45)', font: { family: 'Space Mono', size: 8, weight: '700' }, maxRotation: 25 },
+          grid: { color: 'rgba(255,255,255,.04)' },
+        },
+        y: {
+          min: 0,
+          suggestedMax: 30,
+          ticks: { color: 'rgba(232,240,247,.3)', font: { family: 'Space Mono', size: 9 }, callback: v => v + '%' },
+          grid: { color: 'rgba(255,255,255,.04)' },
+        },
+      },
+    },
+    plugins: [
+      // Zero/goal line
+      {
+        id: 'above200Goal',
+        afterDraw(chart) {
+          const { ctx: c, chartArea: { left, right }, scales: { y } } = chart;
+          c.save();
+          const yy = y.getPixelForValue(5);
+          c.strokeStyle = 'rgba(61,220,132,.35)';
+          c.lineWidth = 1;
+          c.setLineDash([4, 4]);
+          c.beginPath(); c.moveTo(left, yy); c.lineTo(right, yy); c.stroke();
+          c.setLineDash([]);
+          c.fillStyle = 'rgba(61,220,132,.45)';
+          c.font = '8px Space Mono';
+          c.textAlign = 'left';
+          c.fillText('Goal <5%', left + 4, yy - 4);
+          c.restore();
+        },
+      },
+      // Value labels
+      {
+        id: 'above200Labels',
+        afterDraw(chart) {
+          const { ctx: c, scales: { y } } = chart;
+          const meta = chart.getDatasetMeta(0);
+          c.save();
+          meta.data.forEach((pt, i) => {
+            c.fillStyle = colors[i];
+            c.font = `${isEst[i] ? '400' : '700'} 9px Space Mono`;
+            c.textAlign = 'center';
+            c.fillText(pcts[i] + '%', pt.x, y.getPixelForValue(pcts[i]) - 8);
+          });
+          c.restore();
+        },
+      },
+    ],
   });
 }
 
