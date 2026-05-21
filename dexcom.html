@@ -645,6 +645,40 @@
     .timeline-chart-wrap { position: relative; height: 260px; }
     .timeline-chart-wrap canvas { width: 100% !important; height: 100% !important; }
 
+    /* ── DAWN INSIGHT CARDS ── */
+    .dawn-insight {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      padding: .9rem 1rem;
+      transition: border-color .2s;
+    }
+    .dawn-insight.improving { border-color: rgba(61,220,132,.3); background: rgba(61,220,132,.03); }
+    .dawn-insight.warning   { border-color: rgba(240,184,106,.3); background: rgba(240,184,106,.03); }
+    .dawn-insight.alert     { border-color: rgba(240,82,82,.3);   background: rgba(240,82,82,.03); }
+    .dawn-insight-label {
+      font-family: 'Space Mono', monospace; font-size: 9px; font-weight: 700;
+      letter-spacing: .1em; text-transform: uppercase;
+      color: var(--text-muted); margin-bottom: .4rem;
+    }
+    .dawn-insight-val {
+      font-family: 'Space Mono', monospace; font-size: 26px; font-weight: 700;
+      line-height: 1; color: var(--text-primary);
+    }
+    .dawn-insight-val.good { color: var(--up); }
+    .dawn-insight-val.warn { color: var(--accent3); }
+    .dawn-insight-val.bad  { color: var(--down); }
+    .dawn-insight-sub {
+      font-family: 'DM Sans', sans-serif; font-size: 11px;
+      color: var(--text-muted); margin-top: 3px;
+    }
+    .dawn-insight-delta {
+      font-family: 'Space Mono', monospace; font-size: 10px;
+      margin-top: 4px;
+    }
+    .dawn-insight-delta.pos { color: var(--up); }
+    .dawn-insight-delta.neg { color: var(--down); }
+
     @media(max-width: 600px) {
       .gh-value { font-size: 52px; }
       .gh-trend { font-size: 40px; }
@@ -930,18 +964,6 @@
       <div class="hist-section">
         <div class="hist-section-title">In Development</div>
 
-        <!-- #2 Dawn Phenomenon Tracker -->
-        <div style="margin-bottom:10px;">
-          <div class="placeholder-card">
-            <div class="placeholder-left">
-              <div class="placeholder-title">🌅 Dawn Phenomenon Tracker</div>
-              <div class="placeholder-desc">Charts your 6–10am average peak glucose across all periods. Directly tracks your #1 problem and will show Mounjaro's impact as doses accumulate (expect improvement around dose 4–6).</div>
-              <div class="placeholder-preview"></div>
-            </div>
-            <div class="placeholder-badge">Coming Soon</div>
-          </div>
-        </div>
-
         <!-- #3 Time Above 200 (history view) -->
         <div style="margin-bottom:10px;">
           <div class="placeholder-card">
@@ -980,6 +1002,48 @@
 
       </div>
       <!-- ── END COMING SOON ── -->
+
+      <!-- ── DAWN PHENOMENON TRACKER ── -->
+      <div class="hist-section" id="dawnSection">
+        <div class="hist-section-title">🌅 Dawn Phenomenon Tracker</div>
+
+        <!-- Insight cards row -->
+        <div id="dawnInsightRow" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:1rem;">
+          <!-- filled by JS -->
+        </div>
+
+        <!-- Main chart -->
+        <div class="chart-card" style="margin-bottom:.75rem;">
+          <div class="chart-header">
+            <div class="chart-title">6–9am Peak Glucose by Period</div>
+            <div style="font-family:'DM Sans',sans-serif;font-size:11px;color:var(--text-muted);">
+              Dawn window avg · Lower = dawn phenomenon improving
+            </div>
+          </div>
+          <div class="hist-chart-wrap tall">
+            <canvas id="dawnChart"></canvas>
+          </div>
+          <div class="range-legend" style="margin-top:.75rem;">
+            <div class="range-item"><div class="range-dot" style="background:rgba(240,82,82,.8)"></div>Peak avg &gt;200</div>
+            <div class="range-item"><div class="range-dot" style="background:rgba(240,184,106,.8)"></div>Peak avg 180–200</div>
+            <div class="range-item"><div class="range-dot" style="background:rgba(61,220,132,.8)"></div>Peak avg &lt;180</div>
+          </div>
+        </div>
+
+        <!-- Hour-by-hour breakdown for selected period -->
+        <div class="chart-card" style="margin-bottom:0;">
+          <div class="chart-header">
+            <div class="chart-title">Hour-by-Hour: 5am–11am</div>
+            <div class="period-selector" id="dawnPeriodSel"><!-- filled by JS --></div>
+          </div>
+          <div class="hist-chart-wrap">
+            <canvas id="dawnHourlyChart"></canvas>
+          </div>
+          <div id="dawnHourlyNote" style="font-family:'DM Sans',sans-serif;font-size:11px;color:var(--text-muted);margin-top:.6rem;display:none;">
+            ⚠ Hourly data not available for older periods — only period-level averages shown above.
+          </div>
+        </div>
+      </div>
 
       <!-- 1. PERIOD SUMMARY CARDS -->
       <div class="hist-section">
@@ -1638,6 +1702,7 @@ async function loadHistory() {
 
 function renderHistory() {
   renderMedTimeline();
+  renderDawnTracker();
   renderPeriodCards();
   renderProgressChart();
   renderCVChart();
@@ -1931,6 +1996,353 @@ function renderMedPhaseSummary(periods, medColors) {
         </div>
       </div>`;
   }).join('');
+}
+
+}
+
+/* ══════════════════════════════════════════
+   DAWN PHENOMENON TRACKER
+══════════════════════════════════════════ */
+let dawnChart        = null;
+let dawnHourlyChart  = null;
+let activeDawnIdx    = 0;
+
+// Dawn window: hours 6,7,8,9 (indices in means[])
+const DAWN_HOURS = [6, 7, 8, 9];
+const DAWN_HOUR_LABELS = ['6am', '7am', '8am', '9am', '10am', '11am']; // 5am–10am for hourly view (indices 5–10)
+const DAWN_HOURLY_IDXS = [5, 6, 7, 8, 9, 10]; // 5am–10am window
+
+function dawnPeakForPeriod(hourly) {
+  // Average of hours 6–9 from the means array
+  const vals = DAWN_HOURS.map(h => hourly.means[h]).filter(v => v != null);
+  return vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : null;
+}
+
+function renderDawnTracker() {
+  if (!histData) return;
+
+  const hourlyPeriods = histData.hourly || [];
+  const allPeriods    = histData.periods;
+
+  // Build dawn peak data: for periods with hourly data use computed peak,
+  // for older ones we note they lack hourly data
+  const dawnData = allPeriods.map(p => {
+    const h = hourlyPeriods.find(hp => hp.periodId === p.id);
+    return {
+      label:    p.label,
+      med:      p.medication,
+      peak:     h ? dawnPeakForPeriod(h) : null,
+      hasHourly: !!h,
+      hourly:   h,
+      avg:      p.avg,
+    };
+  });
+
+  // Only those with real peak data for the main chart
+  const withData = dawnData.filter(d => d.peak !== null);
+
+  renderDawnInsightCards(withData);
+  renderDawnMainChart(dawnData);
+  renderDawnHourlySelector(hourlyPeriods);
+  renderDawnHourlyChart(0);
+}
+
+function renderDawnInsightCards(withData) {
+  const wrap = document.getElementById('dawnInsightRow');
+  if (!wrap || !withData.length) return;
+
+  const latest  = withData[withData.length - 1];
+  const prev    = withData.length > 1 ? withData[withData.length - 2] : null;
+  const earliest = withData[0];
+  const best    = withData.reduce((a, b) => a.peak < b.peak ? a : b);
+  const delta   = prev ? latest.peak - prev.peak : null;
+  const totalDelta = withData.length > 1 ? latest.peak - earliest.peak : null;
+
+  const deltaStr = d => d === null ? '' :
+    (d < 0 ? `▼ ${Math.abs(d)} from prev` : d > 0 ? `▲ ${d} from prev` : '→ No change');
+  const deltaClass = d => d === null ? '' : d < 0 ? 'pos' : d > 0 ? 'neg' : '';
+
+  // Overall trend card
+  const trendClass = totalDelta !== null && totalDelta < -10 ? 'improving' :
+                     totalDelta !== null && totalDelta > 5  ? 'alert' : 'warning';
+
+  wrap.innerHTML = [
+    // Latest dawn peak
+    `<div class="dawn-insight ${latest.peak < 180 ? 'improving' : latest.peak < 200 ? 'warning' : 'alert'}">
+      <div class="dawn-insight-label">Latest Peak (6–9am)</div>
+      <div class="dawn-insight-val ${latest.peak < 180 ? 'good' : latest.peak < 200 ? 'warn' : 'bad'}">${latest.peak}</div>
+      <div class="dawn-insight-sub">mg/dL · ${latest.label}</div>
+      ${delta !== null ? `<div class="dawn-insight-delta ${deltaClass(delta)}">${deltaStr(delta)}</div>` : ''}
+    </div>`,
+
+    // Best dawn period
+    `<div class="dawn-insight improving">
+      <div class="dawn-insight-label">Best Dawn Period</div>
+      <div class="dawn-insight-val good">${best.peak}</div>
+      <div class="dawn-insight-sub">mg/dL · ${best.label}</div>
+      <div class="dawn-insight-delta pos">✓ ${best.med}</div>
+    </div>`,
+
+    // Overall trend
+    totalDelta !== null ? `<div class="dawn-insight ${trendClass}">
+      <div class="dawn-insight-label">Overall Trend</div>
+      <div class="dawn-insight-val ${totalDelta < 0 ? 'good' : totalDelta > 5 ? 'bad' : 'warn'}">${totalDelta < 0 ? '↓' : '↑'}${Math.abs(totalDelta)}</div>
+      <div class="dawn-insight-sub">mg/dL since ${earliest.label}</div>
+      <div class="dawn-insight-delta ${totalDelta < 0 ? 'pos' : 'neg'}">${totalDelta < 0 ? 'Improving ✓' : 'Needs attention'}</div>
+    </div>` : '',
+
+    // Mounjaro expectation note
+    `<div class="dawn-insight warning">
+      <div class="dawn-insight-label">Mounjaro Outlook</div>
+      <div class="dawn-insight-val warn" style="font-size:18px;line-height:1.2">Dose 4–6</div>
+      <div class="dawn-insight-sub">Expected improvement window</div>
+      <div class="dawn-insight-delta" style="color:rgba(138,99,255,.8)">~Late May / June 2026</div>
+    </div>`,
+  ].join('');
+}
+
+function renderDawnMainChart(dawnData) {
+  const ctx = document.getElementById('dawnChart');
+  if (!ctx) return;
+
+  // Show all periods; gray out those without hourly data
+  const labels  = dawnData.map(d => d.label);
+  const peaks   = dawnData.map(d => d.peak);
+  const bgColors = dawnData.map(d => {
+    if (d.peak === null) return 'rgba(255,255,255,.08)';
+    if (d.peak > 200)   return 'rgba(240,82,82,.6)';
+    if (d.peak > 180)   return 'rgba(240,184,106,.65)';
+    return 'rgba(61,220,132,.6)';
+  });
+  const borderColors = bgColors.map(c => c.replace(/[\d.]+\)$/, '1)'));
+
+  if (dawnChart) dawnChart.destroy();
+  dawnChart = new Chart(ctx.getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Dawn Peak (6–9am avg)',
+        data: peaks,
+        backgroundColor: bgColors,
+        borderColor: borderColors,
+        borderWidth: 1.5,
+        borderRadius: 5,
+      }],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      animation: { duration: 500 },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(5,8,12,.93)',
+          borderColor: 'rgba(255,255,255,.1)', borderWidth: 1,
+          titleFont: { family: 'Space Mono', size: 10 },
+          bodyFont:  { family: 'Space Mono', size: 11 },
+          callbacks: {
+            title: items => dawnData[items[0].dataIndex].label + ' · ' + dawnData[items[0].dataIndex].med,
+            label: item => {
+              const d = dawnData[item.dataIndex];
+              if (d.peak === null) return '  No hourly data for this period';
+              return `  Dawn peak: ${d.peak} mg/dL (6–9am avg)`;
+            },
+            afterLabel: item => {
+              const d = dawnData[item.dataIndex];
+              return d.peak !== null ? `  Overall avg: ${d.avg} mg/dL` : '';
+            },
+          },
+        },
+      },
+      scales: {
+        x: {
+          ticks: { color: 'rgba(232,240,247,.45)', font: { family: 'Space Mono', size: 8, weight: '700' }, maxRotation: 25 },
+          grid: { color: 'rgba(255,255,255,.04)' },
+        },
+        y: {
+          min: 100, max: 240,
+          ticks: { color: 'rgba(232,240,247,.3)', font: { family: 'Space Mono', size: 9 }, stepSize: 20 },
+          grid: { color: 'rgba(255,255,255,.04)' },
+        },
+      },
+    },
+    plugins: [
+      // Target line at 180
+      {
+        id: 'dawnTargetLine',
+        afterDraw(chart) {
+          const { ctx: c, chartArea: { left, right }, scales: { y } } = chart;
+          c.save();
+          [{ val: 180, color: 'rgba(240,184,106,.5)', label: '180' },
+           { val: 200, color: 'rgba(240,82,82,.4)',   label: '200 (dawn target)' }].forEach(t => {
+            const yy = y.getPixelForValue(t.val);
+            c.strokeStyle = t.color; c.lineWidth = 1;
+            c.setLineDash([4, 4]);
+            c.beginPath(); c.moveTo(left, yy); c.lineTo(right, yy); c.stroke();
+            c.setLineDash([]);
+            c.fillStyle = t.color; c.font = '8px Space Mono';
+            c.textAlign = 'left';
+            c.fillText(t.label, left + 4, yy - 3);
+          });
+          c.restore();
+        },
+      },
+      // Value labels
+      {
+        id: 'dawnValLabels',
+        afterDraw(chart) {
+          const { ctx: c, scales: { y } } = chart;
+          const meta = chart.getDatasetMeta(0);
+          c.save();
+          meta.data.forEach((bar, i) => {
+            const val = peaks[i];
+            if (val === null) return;
+            c.fillStyle = borderColors[i];
+            c.font = '700 9px Space Mono';
+            c.textAlign = 'center';
+            c.fillText(val, bar.x, y.getPixelForValue(val) - 6);
+          });
+          c.restore();
+        },
+      },
+    ],
+  });
+}
+
+function renderDawnHourlySelector(hourlyPeriods) {
+  const sel = document.getElementById('dawnPeriodSel');
+  if (!sel) return;
+  sel.innerHTML = hourlyPeriods.map((p, i) =>
+    `<button class="ps-btn${i === 0 ? ' active' : ''}" onclick="selectDawnHourly(${i}, this)">${p.label.replace(/ \(\d+d\)/, '')}</button>`
+  ).join('');
+}
+
+function selectDawnHourly(idx, btn) {
+  activeDawnIdx = idx;
+  document.querySelectorAll('#dawnPeriodSel .ps-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderDawnHourlyChart(idx);
+}
+
+function renderDawnHourlyChart(idx) {
+  const hourlyPeriods = histData.hourly || [];
+  const noteEl = document.getElementById('dawnHourlyNote');
+  const ctx    = document.getElementById('dawnHourlyChart');
+  if (!ctx) return;
+
+  if (!hourlyPeriods[idx]) {
+    if (noteEl) noteEl.style.display = 'block';
+    if (dawnHourlyChart) { dawnHourlyChart.destroy(); dawnHourlyChart = null; }
+    return;
+  }
+  if (noteEl) noteEl.style.display = 'none';
+
+  const period = hourlyPeriods[idx];
+  // 5am–10am window = indices 5–10
+  const hourLabels = ['5am','6am','7am','8am','9am','10am'];
+  const means  = DAWN_HOURLY_IDXS.map(h => period.means[h]);
+  const tirHigh = DAWN_HOURLY_IDXS.map(h => period.tirHigh[h]);
+  const tirIn   = DAWN_HOURLY_IDXS.map(h => period.tirInRange[h]);
+
+  const bgColors = means.map(v =>
+    v > 200 ? 'rgba(240,82,82,.65)' :
+    v > 180 ? 'rgba(240,184,106,.7)' :
+              'rgba(61,220,132,.65)'
+  );
+
+  if (dawnHourlyChart) dawnHourlyChart.destroy();
+  dawnHourlyChart = new Chart(ctx.getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: hourLabels,
+      datasets: [
+        {
+          label: 'Avg Glucose',
+          data: means,
+          backgroundColor: bgColors,
+          borderColor: bgColors.map(c => c.replace(/[\d.]+\)$/, '1)')),
+          borderWidth: 1.5,
+          borderRadius: 6,
+          yAxisID: 'yGluc',
+          order: 2,
+        },
+        {
+          label: '% High (>180)',
+          data: tirHigh,
+          type: 'line',
+          borderColor: 'rgba(240,82,82,.7)',
+          backgroundColor: 'rgba(240,82,82,.0)',
+          borderWidth: 2,
+          pointBackgroundColor: 'rgba(240,82,82,.85)',
+          pointRadius: 4, pointHoverRadius: 6,
+          tension: 0.3, fill: false,
+          yAxisID: 'yTIR',
+          order: 1,
+        },
+      ],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      animation: { duration: 400 },
+      plugins: {
+        legend: {
+          display: true, position: 'top',
+          labels: { color: 'rgba(232,240,247,.4)', font: { family: 'Space Mono', size: 8 }, boxWidth: 10 },
+        },
+        tooltip: {
+          backgroundColor: 'rgba(5,8,12,.93)',
+          borderColor: 'rgba(255,255,255,.1)', borderWidth: 1,
+          titleFont: { family: 'Space Mono', size: 10 },
+          bodyFont:  { family: 'Space Mono', size: 11 },
+          callbacks: {
+            label: item => item.datasetIndex === 0
+              ? `  Avg: ${item.parsed.y} mg/dL`
+              : `  High >180: ${item.parsed.y}%`,
+          },
+        },
+      },
+      scales: {
+        x: {
+          ticks: { color: 'rgba(232,240,247,.5)', font: { family: 'Space Mono', size: 11, weight: '700' } },
+          grid: { color: 'rgba(255,255,255,.04)' },
+        },
+        yGluc: {
+          position: 'left', min: 80, max: 240,
+          ticks: { color: 'rgba(232,240,247,.3)', font: { family: 'Space Mono', size: 9 }, stepSize: 40 },
+          grid: { color: 'rgba(255,255,255,.04)' },
+        },
+        yTIR: {
+          position: 'right', min: 0, max: 100,
+          ticks: { color: 'rgba(232,240,247,.3)', font: { family: 'Space Mono', size: 9 }, callback: v => v + '%' },
+          grid: { display: false },
+        },
+      },
+    },
+    plugins: [{
+      id: 'dawnHourlyBand',
+      beforeDraw(chart) {
+        const { ctx: c, chartArea: { left, right }, scales: { yGluc } } = chart;
+        c.save();
+        c.fillStyle = 'rgba(61,220,132,.05)';
+        c.fillRect(left, yGluc.getPixelForValue(180), right - left, yGluc.getPixelForValue(70) - yGluc.getPixelForValue(180));
+        c.restore();
+      },
+    }, {
+      id: 'dawnHourlyLabels',
+      afterDraw(chart) {
+        const { ctx: c, scales: { yGluc } } = chart;
+        const meta = chart.getDatasetMeta(0);
+        c.save();
+        meta.data.forEach((bar, i) => {
+          c.fillStyle = 'rgba(232,240,247,.55)';
+          c.font = '700 9px Space Mono';
+          c.textAlign = 'center';
+          c.fillText(means[i], bar.x, yGluc.getPixelForValue(means[i]) - 6);
+        });
+        c.restore();
+      },
+    }],
+  });
 }
 
 /* ── 1. PERIOD SUMMARY CARDS ── */
