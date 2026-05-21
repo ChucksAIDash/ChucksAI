@@ -468,6 +468,75 @@
       color: var(--text-muted);
     }
 
+    /* ── READINGS PAGINATION ── */
+    .readings-pagination {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-top: .85rem; flex-wrap: wrap; gap: .5rem;
+    }
+    .pg-btn {
+      font-family: 'Space Mono', monospace; font-size: 10px; font-weight: 700;
+      letter-spacing: .06em; text-transform: uppercase;
+      padding: .3rem .75rem; background: none;
+      border: 1px solid var(--border); border-radius: var(--r-sm);
+      color: var(--text-muted); cursor: pointer; transition: all .15s;
+    }
+    .pg-btn:hover:not(:disabled) { border-color: var(--border-bright); color: var(--accent); }
+    .pg-btn:disabled { opacity: .3; cursor: default; }
+    .pg-info {
+      font-family: 'Space Mono', monospace; font-size: 10px;
+      color: var(--text-muted);
+    }
+    .pg-dots {
+      display: flex; gap: 5px; align-items: center;
+    }
+    .pg-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--border); cursor: pointer; transition: all .15s;
+    }
+    .pg-dot.active { background: var(--accent); }
+
+    /* ── PLACEHOLDER CARD ── */
+    .placeholder-card {
+      background: var(--bg-card);
+      border: 1px dashed rgba(127,217,184,.18);
+      border-radius: var(--r-lg);
+      padding: 1.5rem 1.25rem;
+      margin-bottom: 0;
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 1rem; flex-wrap: wrap;
+      opacity: .65;
+    }
+    .placeholder-card:hover { opacity: .85; border-color: rgba(127,217,184,.3); transition: all .2s; }
+    .placeholder-left { flex: 1; min-width: 180px; }
+    .placeholder-title {
+      font-family: 'Space Mono', monospace; font-size: 11px; font-weight: 700;
+      letter-spacing: .08em; text-transform: uppercase;
+      color: var(--text-secondary); margin-bottom: .35rem;
+      display: flex; align-items: center; gap: .5rem;
+    }
+    .placeholder-desc {
+      font-family: 'DM Sans', sans-serif; font-size: 12px;
+      color: var(--text-muted); line-height: 1.5;
+    }
+    .placeholder-badge {
+      font-family: 'Space Mono', monospace; font-size: 8px; font-weight: 700;
+      letter-spacing: .1em; text-transform: uppercase;
+      padding: 3px 8px; border-radius: 20px;
+      background: rgba(127,217,184,.08); border: 1px solid rgba(127,217,184,.2);
+      color: var(--accent); white-space: nowrap; flex-shrink: 0;
+    }
+    .placeholder-preview {
+      width: 100%; height: 4px; border-radius: 2px; margin-top: .75rem;
+      background: linear-gradient(90deg,
+        rgba(127,217,184,.12) 0%,
+        rgba(127,217,184,.06) 40%,
+        rgba(127,217,184,.12) 100%
+      );
+      background-size: 200% 100%;
+      animation: shimmer 2.5s ease-in-out infinite;
+    }
+    @keyframes shimmer { 0%,100%{background-position:0% 0} 50%{background-position:200% 0} }
+
     @media(max-width: 600px) {
       .gh-value { font-size: 52px; }
       .gh-trend { font-size: 40px; }
@@ -566,6 +635,16 @@
           <div class="stat-val is-normal" id="statTIR">—</div>
           <div class="stat-sub">70–180 mg/dL</div>
         </div>
+        <div class="stat-card">
+          <div class="stat-label">Above 200 (24h)</div>
+          <div class="stat-val" id="statAbove200">—</div>
+          <div class="stat-sub">% of readings</div>
+        </div>
+        <div class="stat-card" title="Consecutive days with avg glucose under 140">
+          <div class="stat-label">Good Day Streak</div>
+          <div class="stat-val" id="statStreak">—</div>
+          <div class="stat-sub">days &lt;140 avg</div>
+        </div>
       </div>
 
       <!-- Glucose chart -->
@@ -638,7 +717,10 @@
 
       <!-- Recent readings -->
       <div class="readings-card">
-        <div class="readings-title">Recent Readings</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:.5rem;">
+          <div class="readings-title" style="margin-bottom:0;">Recent Readings</div>
+          <div class="pg-info" id="readingsPgInfo">—</div>
+        </div>
         <table class="readings-table">
           <thead>
             <tr>
@@ -652,6 +734,11 @@
             <tr><td colspan="4"><span class="loading-text"><span class="spinner"></span>Loading…</span></td></tr>
           </tbody>
         </table>
+        <div class="readings-pagination">
+          <button class="pg-btn" id="pgPrev" onclick="readingsPage(-1)" disabled>← Prev</button>
+          <div class="pg-dots" id="pgDots"></div>
+          <button class="pg-btn" id="pgNext" onclick="readingsPage(1)">Next →</button>
+        </div>
       </div>
 
     </div><!-- /.dash-content -->
@@ -666,6 +753,73 @@
     </div>
 
     <div id="hist-content" style="display:none;">
+
+      <!-- ── COMING SOON: TOP 6 PRIORITY FEATURES ── -->
+      <div class="hist-section">
+        <div class="hist-section-title">In Development</div>
+
+        <!-- #1 Medication Timeline Overlay -->
+        <div style="margin-bottom:10px;">
+          <div class="placeholder-card">
+            <div class="placeholder-left">
+              <div class="placeholder-title">💊 Medication Timeline Overlay</div>
+              <div class="placeholder-desc">Visual markers showing Ozempic 0.5mg → 1.0mg → Mounjaro 5mg transitions overlaid on your glucose history chart. See exactly how each medication change impacted your numbers.</div>
+              <div class="placeholder-preview"></div>
+            </div>
+            <div class="placeholder-badge">Coming Soon</div>
+          </div>
+        </div>
+
+        <!-- #2 Dawn Phenomenon Tracker -->
+        <div style="margin-bottom:10px;">
+          <div class="placeholder-card">
+            <div class="placeholder-left">
+              <div class="placeholder-title">🌅 Dawn Phenomenon Tracker</div>
+              <div class="placeholder-desc">Charts your 6–10am average peak glucose across all periods. Directly tracks your #1 problem and will show Mounjaro's impact as doses accumulate (expect improvement around dose 4–6).</div>
+              <div class="placeholder-preview"></div>
+            </div>
+            <div class="placeholder-badge">Coming Soon</div>
+          </div>
+        </div>
+
+        <!-- #3 Time Above 200 (history view) -->
+        <div style="margin-bottom:10px;">
+          <div class="placeholder-card">
+            <div class="placeholder-left">
+              <div class="placeholder-title">📈 Time Above 200 — History View</div>
+              <div class="placeholder-desc">Tracks % of readings above 200 mg/dL by period — more relevant than the generic "High >180" bucket given your dawn spikes regularly hit 200–220+.</div>
+              <div class="placeholder-preview"></div>
+            </div>
+            <div class="placeholder-badge">Coming Soon</div>
+          </div>
+        </div>
+
+        <!-- #4 Rolling 7-Day Average -->
+        <div style="margin-bottom:10px;">
+          <div class="placeholder-card">
+            <div class="placeholder-left">
+              <div class="placeholder-title">📉 Rolling 7-Day Average Overlay</div>
+              <div class="placeholder-desc">A smoothed trend line overlaid on the main glucose chart showing your rolling weekly average. Makes the Mounjaro improvement story clearly visible through daily noise.</div>
+              <div class="placeholder-preview"></div>
+            </div>
+            <div class="placeholder-badge">Coming Soon</div>
+          </div>
+        </div>
+
+        <!-- #5 Custom Date Range -->
+        <div style="margin-bottom:10px;">
+          <div class="placeholder-card">
+            <div class="placeholder-left">
+              <div class="placeholder-title">📅 Custom Date Range Selector</div>
+              <div class="placeholder-desc">Pick any exact start and end date to analyze — rather than fixed 3h/7d/30d presets. Useful for isolating specific weeks or comparing before/after a medication change.</div>
+              <div class="placeholder-preview"></div>
+            </div>
+            <div class="placeholder-badge">Coming Soon</div>
+          </div>
+        </div>
+
+      </div>
+      <!-- ── END COMING SOON ── -->
 
       <!-- 1. PERIOD SUMMARY CARDS -->
       <div class="hist-section">
@@ -906,6 +1060,8 @@ async function loadData() {
     updateHero();
     updateStats();
     updateTIR();
+    updateAbove200();
+    updateStreak();
     updateChart(allData);
     updateReadings();
     loadAverages();
@@ -1124,13 +1280,32 @@ function updateChart(data) {
   });
 }
 
-/* ── READINGS TABLE ── */
+/* ── READINGS TABLE (PAGINATED) ── */
+const READINGS_PER_PAGE = 5;
+let readingsPage_current = 0;
+let readingsAll = [];
+
 function updateReadings() {
   if (!allData.length) return;
-  const recent = [...allData].reverse().slice(0, 20);
-  const tbody  = document.getElementById('readingsBody');
-  tbody.innerHTML = recent.map(r => {
-    const t = TREND_MAP[r.trend] || { arrow: '—', label: '—' };
+  readingsAll = [...allData].reverse(); // most recent first
+  readingsPage_current = 0;
+  renderReadingsPage();
+}
+
+function readingsPage(dir) {
+  const totalPages = Math.ceil(readingsAll.length / READINGS_PER_PAGE);
+  readingsPage_current = Math.max(0, Math.min(totalPages - 1, readingsPage_current + dir));
+  renderReadingsPage();
+}
+
+function renderReadingsPage() {
+  const totalPages = Math.ceil(readingsAll.length / READINGS_PER_PAGE);
+  const start = readingsPage_current * READINGS_PER_PAGE;
+  const page  = readingsAll.slice(start, start + READINGS_PER_PAGE);
+
+  const tbody = document.getElementById('readingsBody');
+  tbody.innerHTML = page.map(r => {
+    const t   = TREND_MAP[r.trend] || { arrow: '—', label: '—' };
     const cls = glucoseTdClass(r.value);
     const status = r.value < LOW ? 'Low' : r.value > HIGH ? 'High' : 'In Range';
     return `<tr>
@@ -1140,6 +1315,64 @@ function updateReadings() {
       <td class="${cls}">${status}</td>
     </tr>`;
   }).join('');
+
+  // Page info
+  const infoEl = document.getElementById('readingsPgInfo');
+  if (infoEl) infoEl.textContent = `Page ${readingsPage_current + 1} of ${totalPages}`;
+
+  // Prev / Next buttons
+  const prevBtn = document.getElementById('pgPrev');
+  const nextBtn = document.getElementById('pgNext');
+  if (prevBtn) prevBtn.disabled = readingsPage_current === 0;
+  if (nextBtn) nextBtn.disabled = readingsPage_current >= totalPages - 1;
+
+  // Dot indicators (up to 8 dots)
+  const dotsEl = document.getElementById('pgDots');
+  if (dotsEl) {
+    const maxDots = Math.min(totalPages, 8);
+    dotsEl.innerHTML = Array.from({ length: maxDots }, (_, i) =>
+      `<div class="pg-dot${i === readingsPage_current ? ' active' : ''}" onclick="readingsPage_current=${i};renderReadingsPage()"></div>`
+    ).join('');
+  }
+}
+
+/* ── ABOVE 200 STAT ── */
+function updateAbove200() {
+  if (!allData.length) return;
+  const vals = allData.map(r => r.value).filter(v => v > 0);
+  const above200 = vals.filter(v => v > 200).length;
+  const pct = Math.round((above200 / vals.length) * 100);
+  const el = document.getElementById('statAbove200');
+  if (el) {
+    el.textContent = pct + '%';
+    el.className = 'stat-val ' + (pct > 15 ? 'is-high' : pct > 5 ? '' : 'is-normal');
+  }
+}
+
+/* ── GOOD DAY STREAK ── */
+function updateStreak() {
+  if (!allData.length) return;
+  // Group readings by calendar date
+  const byDate = {};
+  allData.forEach(r => {
+    const d = new Date(r.systemTime).toLocaleDateString('en-US');
+    if (!byDate[d]) byDate[d] = [];
+    byDate[d].push(r.value);
+  });
+  const dates = Object.keys(byDate).sort((a, b) => new Date(b) - new Date(a)); // newest first
+  let streak = 0;
+  for (const date of dates) {
+    const vals = byDate[date].filter(v => v > 0);
+    if (!vals.length) break;
+    const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
+    if (avg < 140) streak++;
+    else break;
+  }
+  const el = document.getElementById('statStreak');
+  if (el) {
+    el.textContent = streak;
+    el.className = 'stat-val ' + (streak >= 3 ? 'is-normal' : streak >= 1 ? '' : 'is-high');
+  }
 }
 
 /* ── PERIOD AVERAGES (with history.json fallback for 60d/90d) ── */
