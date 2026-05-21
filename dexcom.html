@@ -1216,6 +1216,24 @@
         </div>
       </div>
 
+      <!-- 10. LOW FREQUENCY BY TIME OF DAY -->
+      <div class="hist-section" style="margin-top:1.25rem;" id="lowFreqSection">
+        <div class="hist-section-title">🔻 Low Frequency by Time of Day</div>
+        <div id="lowFreqInsightRow" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin-bottom:1rem;"></div>
+        <div class="chart-card" style="margin-bottom:0;">
+          <div class="chart-header">
+            <div class="chart-title">% Low Readings by Hour (All 24h)</div>
+            <div class="period-selector" id="lowFreqPeriodSel"><!-- filled by JS --></div>
+          </div>
+          <div class="hist-chart-wrap tall">
+            <canvas id="lowFreqChart"></canvas>
+          </div>
+          <div id="lowFreqNote" style="font-family:'DM Sans',sans-serif;font-size:11px;color:var(--text-muted);margin-top:.6rem;">
+            ℹ️ Readings below 70 mg/dL as % of readings at that hour · Red bars = problem hours
+          </div>
+        </div>
+      </div>
+
     </div><!-- /#hist-content -->
 
   </div><!-- /#panel-history -->
@@ -1257,6 +1275,8 @@ let dowChart         = null;
 let dawnSpikeChart   = null;
 let postMidnightChart = null;
 let activePostMidIdx  = 0;
+let lowFreqChart      = null;
+let activeLowFreqIdx  = 0;
 let activeHeatmapIdx = 0;
 let activeTirIdx     = 0;
 
@@ -2050,6 +2070,7 @@ function renderHistory() {
   renderDOWChart();
   renderDawnSpikeScore();
   renderPostMidnight();
+  renderLowFreq();
 }
 
 /* ── MOUNJARO DOSE TRACKER ── */
@@ -3805,6 +3826,168 @@ function renderPostMidnightChart(idx) {
   });
 }
 
+
+/* ══════════════════════════════════════
+   LOW FREQUENCY BY TIME OF DAY
+   tirLow[h] = % of readings below 70 at that hour
+══════════════════════════════════════ */
+const ALL_HOUR_LABELS = [
+  '12a','1a','2a','3a','4a','5a','6a','7a','8a','9a','10a','11a',
+  '12p','1p','2p','3p','4p','5p','6p','7p','8p','9p','10p','11p'
+];
+
+function renderLowFreq() {
+  const hourlyPeriods = histData.hourly;
+  renderLowFreqInsights(hourlyPeriods);
+
+  const sel = document.getElementById('lowFreqPeriodSel');
+  if (sel) {
+    sel.innerHTML = hourlyPeriods.map((p, i) =>
+      `<button class="ps-btn${i === hourlyPeriods.length - 1 ? ' active' : ''}" onclick="selectLowFreq(${i}, this)">${p.label.replace(/ \(\d+d\)/, '')}</button>`
+    ).join('');
+  }
+  activeLowFreqIdx = hourlyPeriods.length - 1;
+  renderLowFreqChart(activeLowFreqIdx);
+}
+
+function renderLowFreqInsights(periods) {
+  const wrap = document.getElementById('lowFreqInsightRow');
+  if (!wrap || !periods.length) return;
+
+  const summaries = periods.map(h => {
+    const maxLow    = Math.max(...h.tirLow);
+    const worstHour = h.tirLow.indexOf(maxLow);
+    const totalLow  = h.tirLow.reduce((a, b) => a + b, 0);
+    const lowHours  = h.tirLow.filter(v => v > 0).length;
+    return { label: h.label.replace(/ \(\d+d\)/, ''), maxLow, worstHour, totalLow, lowHours };
+  });
+
+  const latest   = summaries[summaries.length - 1];
+  const cleanest = summaries.reduce((b, s) => s.totalLow < b.totalLow ? s : b, summaries[0]);
+  const worst    = summaries.reduce((b, s) => s.totalLow > b.totalLow ? s : b, summaries[0]);
+
+  const riskClass  = v => v === 0 ? 'good' : v < 10 ? 'warn' : 'bad';
+  const riskBorder = v => v === 0 ? 'improving' : v < 10 ? 'warning' : 'alert';
+
+  wrap.innerHTML = [
+    `<div class="dawn-insight ${riskBorder(latest.maxLow)}">
+      <div class="dawn-insight-label">Peak Low Hour (Latest)</div>
+      <div class="dawn-insight-val ${riskClass(latest.maxLow)}">${latest.maxLow}%</div>
+      <div class="dawn-insight-sub">${ALL_HOUR_LABELS[latest.worstHour]} · ${latest.label}</div>
+      ${latest.maxLow === 0 ? '<div class="dawn-insight-delta pos">✓ No lows this period</div>' : '<div class="dawn-insight-delta neg">Worst hour of day</div>'}
+    </div>`,
+    `<div class="dawn-insight ${riskBorder(latest.lowHours)}">
+      <div class="dawn-insight-label">Hours With Lows</div>
+      <div class="dawn-insight-val ${latest.lowHours === 0 ? 'good' : latest.lowHours < 4 ? 'warn' : 'bad'}">${latest.lowHours}</div>
+      <div class="dawn-insight-sub">of 24 hours · ${latest.label}</div>
+      <div class="dawn-insight-sub" style="margin-top:2px">Hours w/ any low reading</div>
+    </div>`,
+    `<div class="dawn-insight improving">
+      <div class="dawn-insight-label">Cleanest Period</div>
+      <div class="dawn-insight-val good">${cleanest.totalLow}</div>
+      <div class="dawn-insight-sub">total low% sum · ${cleanest.label}</div>
+    </div>`,
+    `<div class="dawn-insight ${worst.totalLow > 20 ? 'alert' : 'warning'}">
+      <div class="dawn-insight-label">Most Lows Period</div>
+      <div class="dawn-insight-val ${worst.totalLow > 20 ? 'bad' : 'warn'}">${worst.totalLow}</div>
+      <div class="dawn-insight-sub">total low% sum · ${worst.label}</div>
+    </div>`,
+  ].join('');
+}
+
+function selectLowFreq(idx, btn) {
+  activeLowFreqIdx = idx;
+  document.querySelectorAll('#lowFreqPeriodSel .ps-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderLowFreqChart(idx);
+}
+
+function renderLowFreqChart(idx) {
+  const ctx = document.getElementById('lowFreqChart');
+  if (!ctx) return;
+
+  const period = histData.hourly[idx];
+  if (!period) return;
+
+  const lows   = period.tirLow;
+  const colors = lows.map(v =>
+    v === 0 ? 'rgba(127,217,184,.25)' :
+    v < 5   ? 'rgba(240,184,106,.65)' :
+    v < 15  ? 'rgba(240,82,82,.75)'   :
+              'rgba(240,82,82,1)'
+  );
+
+  if (lowFreqChart) lowFreqChart.destroy();
+  lowFreqChart = new Chart(ctx.getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: ALL_HOUR_LABELS,
+      datasets: [{
+        label: '% Low Readings',
+        data: lows,
+        backgroundColor: colors,
+        borderColor: colors.map(c => c.replace(/[\d.]+\)$/, '1)')),
+        borderWidth: 1,
+        borderRadius: 3,
+      }],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      animation: { duration: 350 },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(5,8,12,.92)',
+          borderColor: 'rgba(255,255,255,.1)', borderWidth: 1,
+          titleFont: { family: 'Space Mono', size: 10 },
+          bodyFont:  { family: 'Space Mono', size: 11 },
+          callbacks: {
+            title: items => ALL_HOUR_LABELS[items[0].dataIndex] + ' · ' + period.label.replace(/ \(\d+d\)/, ''),
+            label: item => {
+              const v   = item.parsed.y;
+              const avg = period.means[item.dataIndex];
+              return [
+                `  Low readings: ${v}%`,
+                `  Avg glucose: ${avg} mg/dL`,
+                v === 0 ? '  ✓ No lows at this hour' : v < 5 ? '  ⚠ Minor risk' : '  ⚠ Problem hour',
+              ];
+            },
+          },
+        },
+      },
+      scales: {
+        x: {
+          ticks: { color: 'rgba(232,240,247,.4)', font: { family: 'Space Mono', size: 9, weight: '700' } },
+          grid: { color: 'rgba(255,255,255,.03)' },
+        },
+        y: {
+          min: 0,
+          suggestedMax: Math.max(15, Math.max(...lows) + 3),
+          ticks: { color: 'rgba(232,240,247,.28)', font: { family: 'Space Mono', size: 9 }, callback: v => v + '%' },
+          grid: { color: 'rgba(255,255,255,.04)' },
+          title: { display: true, text: '% of readings < 70 mg/dL', color: 'rgba(232,240,247,.3)', font: { family: 'DM Sans', size: 10 } },
+        },
+      },
+    },
+    plugins: [{
+      id: 'lowFreqLabels',
+      afterDraw(chart) {
+        const { ctx: c, scales: { y } } = chart;
+        chart.data.datasets[0].data.forEach((val, i) => {
+          if (val === 0) return;
+          const meta = chart.getDatasetMeta(0);
+          const bar  = meta.data[i];
+          c.save();
+          c.fillStyle = 'rgba(240,82,82,.85)';
+          c.font      = '700 9px Space Mono';
+          c.textAlign = 'center';
+          c.fillText(val + '%', bar.x, y.getPixelForValue(val) - 5);
+          c.restore();
+        });
+      },
+    }],
+  });
+}
 
 function fmtTime(d) {
   return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
