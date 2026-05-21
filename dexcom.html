@@ -537,6 +537,114 @@
     }
     @keyframes shimmer { 0%,100%{background-position:0% 0} 50%{background-position:200% 0} }
 
+    /* ── MEDICATION TIMELINE ── */
+    .med-timeline-section {
+      margin-bottom: 1.5rem;
+    }
+
+    /* Dose tracker card */
+    .dose-tracker {
+      background: var(--bg-card);
+      border: 1px solid rgba(138,99,255,.3);
+      border-radius: var(--r-lg);
+      padding: 1.1rem 1.25rem;
+      margin-bottom: 1.25rem;
+      display: flex; align-items: center; gap: 1.25rem;
+      flex-wrap: wrap;
+      position: relative; overflow: hidden;
+    }
+    .dose-tracker::before {
+      content: ''; position: absolute; top: 0; left: 10%; right: 10%; height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(138,99,255,.4), transparent);
+    }
+    .dose-tracker-icon {
+      font-size: 2rem; flex-shrink: 0;
+    }
+    .dose-tracker-body { flex: 1; min-width: 160px; }
+    .dose-tracker-title {
+      font-family: 'Space Mono', monospace; font-size: 10px; font-weight: 700;
+      letter-spacing: .1em; text-transform: uppercase;
+      color: #a78bfa; margin-bottom: .5rem;
+    }
+    .dose-tracker-grid {
+      display: flex; gap: 1.25rem; flex-wrap: wrap;
+    }
+    .dose-stat { }
+    .dose-stat-val {
+      font-family: 'Space Mono', monospace; font-size: 22px; font-weight: 700;
+      color: var(--text-primary); line-height: 1;
+    }
+    .dose-stat-val.purple { color: #a78bfa; }
+    .dose-stat-lbl {
+      font-family: 'DM Sans', sans-serif; font-size: 11px;
+      color: var(--text-muted); margin-top: 2px;
+    }
+    .dose-progress-wrap {
+      width: 100%; margin-top: .75rem;
+    }
+    .dose-progress-label {
+      display: flex; justify-content: space-between;
+      font-family: 'Space Mono', monospace; font-size: 9px;
+      color: var(--text-muted); margin-bottom: 4px;
+    }
+    .dose-progress-bar {
+      height: 6px; border-radius: 3px;
+      background: rgba(138,99,255,.12);
+      overflow: hidden;
+    }
+    .dose-progress-fill {
+      height: 100%; border-radius: 3px;
+      background: linear-gradient(90deg, rgba(138,99,255,.6), rgba(138,99,255,.9));
+      transition: width .6s ease;
+    }
+    .dose-next-badge {
+      font-family: 'Space Mono', monospace; font-size: 10px; font-weight: 700;
+      letter-spacing: .06em;
+      padding: .4rem .85rem; border-radius: var(--r-sm);
+      background: rgba(138,99,255,.12); border: 1px solid rgba(138,99,255,.3);
+      color: #a78bfa; white-space: nowrap; flex-shrink: 0;
+      text-align: center;
+    }
+    .dose-next-badge .dnb-label {
+      font-size: 8px; letter-spacing: .1em; text-transform: uppercase;
+      color: rgba(167,139,250,.6); margin-bottom: 3px;
+    }
+    .dose-next-badge .dnb-date { font-size: 12px; }
+    .dose-next-badge .dnb-days { font-size: 10px; color: rgba(167,139,250,.7); margin-top: 2px; }
+
+    /* Timeline visual */
+    .med-timeline-chart-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      padding: 1.25rem 1.25rem 1rem;
+      margin-bottom: 0;
+    }
+    .timeline-scroll-wrap {
+      overflow-x: auto;
+      padding-bottom: .5rem;
+    }
+    .timeline-svg-wrap {
+      min-width: 560px;
+    }
+
+    /* Med phase legend */
+    .med-legend {
+      display: flex; gap: 1rem; flex-wrap: wrap; margin-top: .85rem;
+    }
+    .med-legend-item {
+      display: flex; align-items: center; gap: 6px;
+      font-family: 'DM Sans', sans-serif; font-size: 11px;
+      color: var(--text-muted);
+    }
+    .med-legend-dot {
+      width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0;
+    }
+
+    /* Timeline canvas wrap */
+    .timeline-chart-wrap { position: relative; height: 260px; }
+    .timeline-chart-wrap canvas { width: 100% !important; height: 100% !important; }
+
     @media(max-width: 600px) {
       .gh-value { font-size: 52px; }
       .gh-trend { font-size: 40px; }
@@ -715,6 +823,43 @@
         </div>
       </div>
 
+      <!-- Mounjaro dose tracker -->
+      <div class="dose-tracker" id="doseTracker">
+        <div class="dose-tracker-icon">💊</div>
+        <div class="dose-tracker-body">
+          <div class="dose-tracker-title">Mounjaro 5mg — Weekly Dose Tracker</div>
+          <div class="dose-tracker-grid">
+            <div class="dose-stat">
+              <div class="dose-stat-val purple" id="dtDoseNum">—</div>
+              <div class="dose-stat-lbl">Current dose #</div>
+            </div>
+            <div class="dose-stat">
+              <div class="dose-stat-val" id="dtWeeksIn">—</div>
+              <div class="dose-stat-lbl">Weeks on Mounjaro</div>
+            </div>
+            <div class="dose-stat">
+              <div class="dose-stat-val" id="dtDaysSince">—</div>
+              <div class="dose-stat-lbl">Days since last dose</div>
+            </div>
+          </div>
+          <div class="dose-progress-wrap">
+            <div class="dose-progress-label">
+              <span>Last dose</span>
+              <span id="dtProgressLabel">—</span>
+              <span>Next dose</span>
+            </div>
+            <div class="dose-progress-bar">
+              <div class="dose-progress-fill" id="dtProgressFill" style="width:0%"></div>
+            </div>
+          </div>
+        </div>
+        <div class="dose-next-badge" id="dtNextBadge">
+          <div class="dnb-label">Next Dose</div>
+          <div class="dnb-date" id="dtNextDate">—</div>
+          <div class="dnb-days" id="dtNextDays">—</div>
+        </div>
+      </div>
+
       <!-- Recent readings -->
       <div class="readings-card">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:.5rem;">
@@ -754,21 +899,36 @@
 
     <div id="hist-content" style="display:none;">
 
-      <!-- ── COMING SOON: TOP 6 PRIORITY FEATURES ── -->
-      <div class="hist-section">
-        <div class="hist-section-title">In Development</div>
+      <!-- ── MEDICATION TIMELINE OVERLAY ── -->
+      <div class="hist-section med-timeline-section">
+        <div class="hist-section-title">💊 Medication Timeline</div>
 
-        <!-- #1 Medication Timeline Overlay -->
-        <div style="margin-bottom:10px;">
-          <div class="placeholder-card">
-            <div class="placeholder-left">
-              <div class="placeholder-title">💊 Medication Timeline Overlay</div>
-              <div class="placeholder-desc">Visual markers showing Ozempic 0.5mg → 1.0mg → Mounjaro 5mg transitions overlaid on your glucose history chart. See exactly how each medication change impacted your numbers.</div>
-              <div class="placeholder-preview"></div>
-            </div>
-            <div class="placeholder-badge">Coming Soon</div>
+        <div class="med-timeline-chart-card">
+          <div class="chart-header">
+            <div class="chart-title">Avg Glucose &amp; TIR — With Medication Phases</div>
+            <div style="font-family:'DM Sans',sans-serif;font-size:11px;color:var(--text-muted);">Each bar = one tracked period · Shading shows medication phase</div>
+          </div>
+          <div class="timeline-chart-wrap">
+            <canvas id="medTimelineChart"></canvas>
+          </div>
+          <div class="med-legend">
+            <div class="med-legend-item"><div class="med-legend-dot" style="background:rgba(99,179,237,.5)"></div>Ozempic 0.5mg</div>
+            <div class="med-legend-item"><div class="med-legend-dot" style="background:rgba(72,187,120,.5)"></div>Ozempic 1.0mg</div>
+            <div class="med-legend-item"><div class="med-legend-dot" style="background:rgba(138,99,255,.55)"></div>Mounjaro 5mg</div>
+            <div class="med-legend-item"><div class="range-dot" style="background:rgba(127,217,184,.8);width:8px;height:8px;border-radius:50%"></div>Avg Glucose (mg/dL)</div>
+            <div class="med-legend-item"><div class="range-dot" style="background:rgba(240,184,106,.8);width:8px;height:8px;border-radius:50%"></div>TIR %</div>
           </div>
         </div>
+
+        <!-- Phase summary strip -->
+        <div id="medPhaseSummary" style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+          <!-- filled by JS -->
+        </div>
+      </div>
+
+      <!-- ── COMING SOON: REMAINING PRIORITY FEATURES ── -->
+      <div class="hist-section">
+        <div class="hist-section-title">In Development</div>
 
         <!-- #2 Dawn Phenomenon Tracker -->
         <div style="margin-bottom:10px;">
@@ -1477,6 +1637,7 @@ async function loadHistory() {
 }
 
 function renderHistory() {
+  renderMedTimeline();
   renderPeriodCards();
   renderProgressChart();
   renderCVChart();
@@ -1485,6 +1646,291 @@ function renderHistory() {
   renderHeatmap(0);
   renderTirHourly(0);
   renderDOWChart();
+}
+
+/* ── MOUNJARO DOSE TRACKER ── */
+function initDoseTracker() {
+  // Dose schedule: dose #1 = Apr 15, weekly thereafter
+  const dose1 = new Date('2026-04-15T12:00:00');
+  const now   = new Date();
+  const msPerWeek = 7 * 24 * 60 * 60 * 1000;
+
+  // How many doses have been taken (past or today)
+  const msSinceDose1 = now - dose1;
+  const dosesTaken   = Math.max(1, Math.floor(msSinceDose1 / msPerWeek) + 1);
+
+  // Date of last dose
+  const lastDose = new Date(dose1.getTime() + (dosesTaken - 1) * msPerWeek);
+  // Date of next dose
+  const nextDose = new Date(lastDose.getTime() + msPerWeek);
+
+  const daysSinceLast = Math.floor((now - lastDose) / (24 * 60 * 60 * 1000));
+  const daysUntilNext = Math.ceil((nextDose - now) / (24 * 60 * 60 * 1000));
+  const weeksIn       = Math.floor(msSinceDose1 / msPerWeek) + 1;
+  const progressPct   = Math.min(100, Math.round((daysSinceLast / 7) * 100));
+
+  const fmtDate = d => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+
+  set('dtDoseNum',    '#' + dosesTaken);
+  set('dtWeeksIn',    weeksIn);
+  set('dtDaysSince',  daysSinceLast);
+  set('dtProgressLabel', `Day ${daysSinceLast} of 7`);
+  set('dtNextDate',   fmtDate(nextDose));
+  set('dtNextDays',   daysUntilNext === 0 ? 'Today!' : daysUntilNext === 1 ? 'Tomorrow' : `In ${daysUntilNext} days`);
+
+  const fill = document.getElementById('dtProgressFill');
+  if (fill) fill.style.width = progressPct + '%';
+
+  // Color the progress bar based on proximity to next dose
+  if (fill) {
+    if (daysUntilNext <= 1) {
+      fill.style.background = 'linear-gradient(90deg, rgba(61,220,132,.6), rgba(61,220,132,.9))';
+    } else if (daysUntilNext <= 2) {
+      fill.style.background = 'linear-gradient(90deg, rgba(240,184,106,.6), rgba(240,184,106,.9))';
+    }
+  }
+}
+
+/* ── MEDICATION TIMELINE CHART ── */
+let medTimelineChart = null;
+
+function renderMedTimeline() {
+  if (!histData) return;
+
+  const periods = histData.periods;
+
+  // Med phase colors
+  const medColors = {
+    'Ozempic 0.5mg': { bg: 'rgba(99,179,237,.45)',  border: 'rgba(99,179,237,.8)',  label: 'rgba(99,179,237,1)'  },
+    'Ozempic 1.0mg': { bg: 'rgba(72,187,120,.4)',   border: 'rgba(72,187,120,.75)', label: 'rgba(72,187,120,1)'  },
+    'Mounjaro 5mg':  { bg: 'rgba(138,99,255,.45)',  border: 'rgba(138,99,255,.85)', label: 'rgba(167,139,250,1)' },
+  };
+
+  const labels      = periods.map(p => p.label);
+  const avgs        = periods.map(p => p.avg);
+  const tirs        = periods.map(p => p.tir);
+  const bgColors    = periods.map(p => (medColors[p.medication] || medColors['Ozempic 0.5mg']).bg);
+  const borderClrs  = periods.map(p => (medColors[p.medication] || medColors['Ozempic 0.5mg']).border);
+
+  const ctx = document.getElementById('medTimelineChart').getContext('2d');
+  if (medTimelineChart) medTimelineChart.destroy();
+
+  medTimelineChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Avg Glucose',
+          data: avgs,
+          backgroundColor: bgColors,
+          borderColor: borderClrs,
+          borderWidth: 1.5,
+          borderRadius: 5,
+          yAxisID: 'yGluc',
+          order: 2,
+        },
+        {
+          label: 'TIR %',
+          data: tirs,
+          type: 'line',
+          borderColor: 'rgba(240,184,106,.85)',
+          backgroundColor: 'rgba(240,184,106,.0)',
+          borderWidth: 2.5,
+          pointBackgroundColor: tirs.map(t => t >= 80 ? 'rgba(61,220,132,.9)' : t >= 70 ? 'rgba(240,184,106,.9)' : 'rgba(240,82,82,.9)'),
+          pointBorderColor: 'rgba(5,8,12,.8)',
+          pointBorderWidth: 1.5,
+          pointRadius: 6,
+          pointHoverRadius: 8,
+          tension: 0.35,
+          fill: false,
+          yAxisID: 'yTIR',
+          order: 1,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 600, easing: 'easeOutQuart' },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(5,8,12,.95)',
+          borderColor: 'rgba(255,255,255,.1)',
+          borderWidth: 1,
+          titleFont: { family: 'Space Mono', size: 10 },
+          bodyFont:  { family: 'Space Mono', size: 11 },
+          padding: 10,
+          callbacks: {
+            title: items => {
+              const idx = items[0].dataIndex;
+              return periods[idx].label + ' · ' + periods[idx].medication;
+            },
+            label: item => {
+              const idx = item.dataIndex;
+              const p   = periods[idx];
+              if (item.datasetIndex === 0) return `  Avg: ${p.avg} mg/dL   GMI: ${p.gmi ? p.gmi.toFixed(1)+'%' : 'N/A'}`;
+              return `  TIR: ${p.tir}%   CV: ${p.cv}%   SD: ${p.sd}`;
+            },
+            afterBody: items => {
+              const idx = items[0].dataIndex;
+              const p = periods[idx];
+              return [`  ${p.dateRange}  (${p.days}d)`];
+            },
+          },
+        },
+        // Medication phase background bands
+        annotation: null,
+      },
+      scales: {
+        x: {
+          ticks: {
+            color: 'rgba(232,240,247,.45)',
+            font: { family: 'Space Mono', size: 8, weight: '700' },
+            maxRotation: 25,
+          },
+          grid: { color: 'rgba(255,255,255,.04)' },
+        },
+        yGluc: {
+          position: 'left',
+          min: 100, max: 175,
+          title: { display: true, text: 'mg/dL', color: 'rgba(127,217,184,.45)', font: { family: 'Space Mono', size: 9 } },
+          ticks: { color: 'rgba(232,240,247,.3)', font: { family: 'Space Mono', size: 9 }, stepSize: 25 },
+          grid: { color: 'rgba(255,255,255,.04)' },
+        },
+        yTIR: {
+          position: 'right',
+          min: 50, max: 100,
+          title: { display: true, text: 'TIR %', color: 'rgba(240,184,106,.45)', font: { family: 'Space Mono', size: 9 } },
+          ticks: { color: 'rgba(232,240,247,.3)', font: { family: 'Space Mono', size: 9 }, callback: v => v + '%' },
+          grid: { display: false },
+        },
+      },
+    },
+    plugins: [
+      // Draw med phase background bands
+      {
+        id: 'medPhaseBands',
+        beforeDraw(chart) {
+          const { ctx: c, chartArea: { top, bottom, left, right }, scales: { x } } = chart;
+          if (!x) return;
+          c.save();
+          periods.forEach((p, i) => {
+            const col = medColors[p.medication] || medColors['Ozempic 0.5mg'];
+            const meta = chart.getDatasetMeta(0);
+            if (!meta.data[i]) return;
+            const barX  = meta.data[i].x;
+            const bw    = meta.data[i].width;
+            c.fillStyle = col.bg.replace(/[\d.]+\)$/, '0.09)');
+            c.fillRect(barX - bw * 0.55, top, bw * 1.1, bottom - top);
+          });
+          c.restore();
+        },
+      },
+      // Value labels above bars
+      {
+        id: 'avgLabels',
+        afterDraw(chart) {
+          const { ctx: c, scales: { yGluc } } = chart;
+          const meta = chart.getDatasetMeta(0);
+          c.save();
+          meta.data.forEach((bar, i) => {
+            const val = avgs[i];
+            const col = borderClrs[i];
+            c.fillStyle = col;
+            c.font = '700 9px Space Mono';
+            c.textAlign = 'center';
+            c.fillText(val, bar.x, yGluc.getPixelForValue(val) - 7);
+          });
+          c.restore();
+        },
+      },
+      // Transition marker lines between med phases
+      {
+        id: 'transitionLines',
+        afterDraw(chart) {
+          const { ctx: c, chartArea: { top, bottom }, scales: { yGluc } } = chart;
+          const meta = chart.getDatasetMeta(0);
+          c.save();
+          periods.forEach((p, i) => {
+            if (i === 0) return;
+            if (p.medication !== periods[i - 1].medication) {
+              const prev = meta.data[i - 1];
+              const curr = meta.data[i];
+              if (!prev || !curr) return;
+              const x = (prev.x + curr.x) / 2;
+              c.strokeStyle = 'rgba(255,255,255,.15)';
+              c.lineWidth = 1.5;
+              c.setLineDash([3, 4]);
+              c.beginPath(); c.moveTo(x, top); c.lineTo(x, bottom); c.stroke();
+              c.setLineDash([]);
+              // Label
+              const col = medColors[p.medication] || medColors['Ozempic 0.5mg'];
+              c.fillStyle = col.label;
+              c.font = '700 8px Space Mono';
+              c.textAlign = 'center';
+              c.fillText('▼ ' + p.medication, x, top + 10);
+            }
+          });
+          c.restore();
+        },
+      },
+    ],
+  });
+
+  // Phase summary strip
+  renderMedPhaseSummary(periods, medColors);
+}
+
+function renderMedPhaseSummary(periods, medColors) {
+  const wrap = document.getElementById('medPhaseSummary');
+  if (!wrap) return;
+
+  // Group by medication
+  const phases = {};
+  periods.forEach(p => {
+    if (!phases[p.medication]) phases[p.medication] = { totalDays: 0, avgs: [], tirs: [] };
+    phases[p.medication].totalDays += p.days;
+    phases[p.medication].avgs.push(p.avg);
+    phases[p.medication].tirs.push(p.tir);
+  });
+
+  wrap.innerHTML = Object.entries(phases).map(([med, d]) => {
+    const col    = medColors[med] || medColors['Ozempic 0.5mg'];
+    const avgAvg = Math.round(d.avgs.reduce((a, b) => a + b, 0) / d.avgs.length);
+    const avgTir = Math.round(d.tirs.reduce((a, b) => a + b, 0) / d.tirs.length);
+    return `
+      <div style="
+        flex:1; min-width:140px;
+        background:var(--bg-card);
+        border:1px solid ${col.border.replace(/[\d.]+\)$/, '0.35)')};
+        border-radius:var(--r-lg);
+        padding:.85rem 1rem;
+      ">
+        <div style="
+          font-family:'Space Mono',monospace;font-size:8px;font-weight:700;
+          letter-spacing:.1em;text-transform:uppercase;
+          color:${col.label};margin-bottom:.5rem;
+        ">${med}</div>
+        <div style="display:flex;gap:1rem;">
+          <div>
+            <div style="font-family:'Space Mono',monospace;font-size:20px;font-weight:700;color:var(--text-primary);line-height:1">${avgAvg}</div>
+            <div style="font-family:'DM Sans',sans-serif;font-size:10px;color:var(--text-muted)">avg mg/dL</div>
+          </div>
+          <div>
+            <div style="font-family:'Space Mono',monospace;font-size:20px;font-weight:700;color:${avgTir >= 80 ? 'var(--up)' : avgTir >= 70 ? 'var(--accent3)' : 'var(--down)'};line-height:1">${avgTir}%</div>
+            <div style="font-family:'DM Sans',sans-serif;font-size:10px;color:var(--text-muted)">avg TIR</div>
+          </div>
+          <div>
+            <div style="font-family:'Space Mono',monospace;font-size:20px;font-weight:700;color:var(--text-muted);line-height:1">${d.totalDays}d</div>
+            <div style="font-family:'DM Sans',sans-serif;font-size:10px;color:var(--text-muted)">tracked</div>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
 }
 
 /* ── 1. PERIOD SUMMARY CARDS ── */
@@ -1985,6 +2431,7 @@ function fmtDate(d) {
 
 /* ── BOOT ── */
 async function init() {
+  initDoseTracker();
   const authed = await checkStatus();
   if (authed) {
     showDash();
