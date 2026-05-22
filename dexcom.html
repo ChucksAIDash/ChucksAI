@@ -76,6 +76,182 @@
     .tab-panel { display: none; }
     .tab-panel.active { display: block; }
 
+    /* ── AI TAB ── */
+    .ai-hero {
+      background: linear-gradient(135deg, rgba(138,99,255,.08) 0%, rgba(127,217,184,.06) 100%);
+      border: 1px solid rgba(138,99,255,.25);
+      border-radius: var(--r-xl);
+      padding: 2rem 2rem 1.75rem;
+      margin-bottom: 1.25rem;
+      position: relative; overflow: hidden;
+      text-align: center;
+    }
+    .ai-hero::before {
+      content: ''; position: absolute; top: 0; left: 10%; right: 10%; height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(138,99,255,.4), transparent);
+    }
+    .ai-hero-icon { font-size: 2.25rem; margin-bottom: .6rem; }
+    .ai-hero-title {
+      font-family: 'Space Mono', monospace; font-size: 13px; font-weight: 700;
+      letter-spacing: .1em; text-transform: uppercase;
+      color: var(--text-primary); margin-bottom: .4rem;
+    }
+    .ai-hero-sub {
+      font-family: 'DM Sans', sans-serif; font-size: 13px;
+      color: var(--text-muted); line-height: 1.6; margin-bottom: 1.4rem;
+      max-width: 480px; margin-left: auto; margin-right: auto;
+    }
+    .ai-analyze-btn {
+      display: inline-flex; align-items: center; gap: .5rem;
+      font-family: 'Space Mono', monospace; font-size: 11px; font-weight: 700;
+      letter-spacing: .08em; text-transform: uppercase;
+      padding: .75rem 2rem;
+      background: rgba(138,99,255,.18);
+      border: 1px solid rgba(138,99,255,.45);
+      color: #b09fff;
+      border-radius: var(--r-md);
+      cursor: pointer; transition: all .18s;
+    }
+    .ai-analyze-btn:hover:not(:disabled) {
+      background: rgba(138,99,255,.28);
+      border-color: rgba(138,99,255,.7);
+      transform: translateY(-1px);
+    }
+    .ai-analyze-btn:disabled {
+      opacity: .55; cursor: not-allowed; transform: none;
+    }
+
+    .ai-scope-row {
+      display: flex; gap: 6px; justify-content: center; flex-wrap: wrap;
+      margin-bottom: 1.25rem;
+    }
+    .ai-scope-btn {
+      font-family: 'Space Mono', monospace; font-size: 10px; font-weight: 700;
+      padding: .3rem .75rem;
+      background: none; border: 1px solid var(--border); border-radius: var(--r-sm);
+      color: var(--text-muted); cursor: pointer; transition: all .15s;
+    }
+    .ai-scope-btn:hover { border-color: var(--border-bright); color: var(--text-secondary); }
+    .ai-scope-btn.active {
+      background: rgba(138,99,255,.14);
+      border-color: rgba(138,99,255,.45);
+      color: #b09fff;
+    }
+
+    /* Result card */
+    .ai-result-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      padding: 1.5rem;
+      margin-bottom: 1.25rem;
+      display: none;
+    }
+    .ai-result-card.visible { display: block; }
+    .ai-result-header {
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: .75rem;
+      margin-bottom: 1.25rem;
+      padding-bottom: .75rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .ai-result-title {
+      font-family: 'Space Mono', monospace; font-size: 11px; font-weight: 700;
+      letter-spacing: .1em; text-transform: uppercase; color: #b09fff;
+    }
+    .ai-result-ts {
+      font-family: 'Space Mono', monospace; font-size: 9px;
+      color: var(--text-muted);
+    }
+    .ai-narrative {
+      font-family: 'DM Sans', sans-serif; font-size: 14px;
+      color: var(--text-secondary); line-height: 1.7;
+      margin-bottom: 1.25rem;
+    }
+    .ai-bullets-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 10px;
+    }
+    .ai-bullet-card {
+      background: rgba(255,255,255,.025);
+      border: 1px solid var(--border);
+      border-radius: var(--r-md);
+      padding: .85rem 1rem;
+    }
+    .ai-bullet-category {
+      font-family: 'Space Mono', monospace; font-size: 9px; font-weight: 700;
+      letter-spacing: .12em; text-transform: uppercase;
+      margin-bottom: .4rem;
+    }
+    .ai-bullet-category.positive { color: var(--up); }
+    .ai-bullet-category.warning  { color: var(--accent3); }
+    .ai-bullet-category.neutral  { color: var(--text-muted); }
+    .ai-bullet-category.action   { color: #b09fff; }
+    .ai-bullet-text {
+      font-family: 'DM Sans', sans-serif; font-size: 13px;
+      color: var(--text-secondary); line-height: 1.55;
+    }
+
+    /* Loading shimmer */
+    .ai-loading {
+      display: none; text-align: center;
+      padding: 2.5rem 1rem;
+    }
+    .ai-loading.visible { display: block; }
+    .ai-loading-dots {
+      display: inline-flex; gap: 6px; margin-bottom: .75rem;
+    }
+    .ai-loading-dots span {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: rgba(138,99,255,.5);
+      animation: aiDotPulse 1.2s ease-in-out infinite;
+    }
+    .ai-loading-dots span:nth-child(2) { animation-delay: .2s; }
+    .ai-loading-dots span:nth-child(3) { animation-delay: .4s; }
+    @keyframes aiDotPulse {
+      0%, 80%, 100% { transform: scale(.7); opacity: .4; }
+      40%           { transform: scale(1);  opacity: 1; }
+    }
+    .ai-loading-text {
+      font-family: 'Space Mono', monospace; font-size: 10px;
+      color: var(--text-muted); letter-spacing: .08em;
+    }
+
+    /* Error state */
+    .ai-error {
+      display: none; background: rgba(240,82,82,.06);
+      border: 1px solid rgba(240,82,82,.25);
+      border-radius: var(--r-md);
+      padding: 1rem 1.25rem;
+      font-family: 'DM Sans', sans-serif; font-size: 13px;
+      color: var(--down); margin-bottom: 1.25rem;
+    }
+    .ai-error.visible { display: block; }
+
+    /* Context snapshot */
+    .ai-context-card {
+      background: rgba(255,255,255,.02);
+      border: 1px dashed rgba(255,255,255,.1);
+      border-radius: var(--r-md);
+      padding: .9rem 1.1rem;
+      margin-bottom: 1.25rem;
+    }
+    .ai-context-title {
+      font-family: 'Space Mono', monospace; font-size: 9px; font-weight: 700;
+      letter-spacing: .12em; text-transform: uppercase;
+      color: var(--text-muted); margin-bottom: .6rem;
+    }
+    .ai-context-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 6px;
+    }
+    .ai-ctx-item {
+      font-family: 'Space Mono', monospace; font-size: 10px;
+      color: var(--text-muted);
+    }
+    .ai-ctx-val { color: var(--text-secondary); font-weight: 700; }
+
     /* ── DASHBOARD CONTENT (hidden until authenticated) ── */
     .dash-content { display: none; }
     .dash-content.visible { display: block; }
@@ -773,6 +949,7 @@
   <div class="tab-nav">
     <button class="tab-btn active" id="tab-live" onclick="switchTab('live')">⚡ Live</button>
     <button class="tab-btn" id="tab-history" onclick="switchTab('history')">📊 History</button>
+    <button class="tab-btn" id="tab-ai" onclick="switchTab('ai')">🤖 AI</button>
   </div>
 
   <!-- ══ LIVE TAB ══ -->
@@ -1368,6 +1545,60 @@
 
   </div><!-- /#panel-history -->
 
+  <!-- ══ AI TAB ══ -->
+  <div class="tab-panel" id="panel-ai">
+
+    <!-- Hero / trigger -->
+    <div class="ai-hero">
+      <div class="ai-hero-icon">🤖</div>
+      <div class="ai-hero-title">AI Glucose Analyst</div>
+      <div class="ai-hero-sub">
+        Analyzes your real glucose data — live stats, historical trends, dawn spikes,
+        variability, and Mounjaro progress — then gives you a plain-English breakdown.
+      </div>
+
+      <!-- Scope selector -->
+      <div class="ai-scope-row">
+        <button class="ai-scope-btn active" id="aiScope-24h" onclick="setAIScope('24h')">Last 24h</button>
+        <button class="ai-scope-btn" id="aiScope-7d"  onclick="setAIScope('7d')">Last 7 Days</button>
+        <button class="ai-scope-btn" id="aiScope-all" onclick="setAIScope('all')">Full History</button>
+      </div>
+
+      <button class="ai-analyze-btn" id="aiAnalyzeBtn" onclick="analyzeWithAI()">
+        <span id="aiAnalyzeBtnIcon">✦</span>
+        <span id="aiAnalyzeBtnLabel">Analyze My Glucose</span>
+      </button>
+    </div>
+
+    <!-- Context snapshot (what we're sending) -->
+    <div class="ai-context-card" id="aiContextCard" style="display:none;">
+      <div class="ai-context-title">📋 Data Snapshot Sent to AI</div>
+      <div class="ai-context-grid" id="aiContextGrid"></div>
+    </div>
+
+    <!-- Loading -->
+    <div class="ai-loading" id="aiLoading">
+      <div class="ai-loading-dots">
+        <span></span><span></span><span></span>
+      </div>
+      <div class="ai-loading-text" id="aiLoadingText">ANALYZING YOUR GLUCOSE DATA…</div>
+    </div>
+
+    <!-- Error -->
+    <div class="ai-error" id="aiError"></div>
+
+    <!-- Result -->
+    <div class="ai-result-card" id="aiResult">
+      <div class="ai-result-header">
+        <div class="ai-result-title">✦ Analysis</div>
+        <div class="ai-result-ts" id="aiResultTs"></div>
+      </div>
+      <div class="ai-narrative" id="aiNarrative"></div>
+      <div class="ai-bullets-grid" id="aiBullets"></div>
+    </div>
+
+  </div><!-- /#panel-ai -->
+
 </div><!-- /container -->
 
 <footer>DEXCOM G7 · CLARITY · LIVE · AUTO-REFRESH 5m</footer>
@@ -1446,7 +1677,7 @@ function manualRefresh() {
 
 /* ── TAB SWITCHING ── */
 function switchTab(tab) {
-  ['live','history'].forEach(t => {
+  ['live','history','ai'].forEach(t => {
     document.getElementById(`tab-${t}`).classList.toggle('active', t === tab);
     document.getElementById(`panel-${t}`).classList.toggle('active', t === tab);
   });
@@ -5094,6 +5325,318 @@ async function init() {
     loadData();
   } else {
     showConnect();
+  }
+}
+
+/* ══════════════════════════════════════════
+   AI GLUCOSE ANALYST
+   Scope: 24h | 7d | all
+══════════════════════════════════════════ */
+
+let aiScope = '24h';
+
+function setAIScope(scope) {
+  aiScope = scope;
+  ['24h','7d','all'].forEach(s => {
+    document.getElementById(`aiScope-${s}`).classList.toggle('active', s === scope);
+  });
+}
+
+/* ── Build a compact data context object ── */
+function buildAIContext() {
+  const ctx = {};
+
+  // ── Live data (allData = last 24h from Dexcom API) ──
+  if (allData && allData.length) {
+    const vals24 = allData.map(r => r.value).filter(v => v > 0);
+    const avg24  = Math.round(vals24.reduce((a,b) => a+b,0) / vals24.length);
+    const sd24   = Math.round(Math.sqrt(vals24.map(v => (v-avg24)**2).reduce((a,b)=>a+b,0) / vals24.length));
+    const tir24  = Math.round(vals24.filter(v => v >= 70 && v <= 180).length / vals24.length * 100);
+    const high24 = Math.max(...vals24);
+    const low24  = Math.min(...vals24);
+    const above200 = Math.round(vals24.filter(v => v > 200).length / vals24.length * 100);
+
+    // Dawn window 6–10am — computed from timestamps
+    const dawnVals = allData
+      .filter(r => { const h = new Date(r.systemTime).getHours(); return h >= 6 && h < 10; })
+      .map(r => r.value).filter(v => v > 0);
+    const dawnAvg  = dawnVals.length ? Math.round(dawnVals.reduce((a,b)=>a+b,0)/dawnVals.length) : null;
+    const dawnPeak = dawnVals.length ? Math.max(...dawnVals) : null;
+
+    // Overnight window: midnight–6am
+    const overnightVals = allData
+      .filter(r => { const h = new Date(r.systemTime).getHours(); return h < 6; })
+      .map(r => r.value).filter(v => v > 0);
+    const overnightAvg = overnightVals.length
+      ? Math.round(overnightVals.reduce((a,b)=>a+b,0)/overnightVals.length) : null;
+    const overnightLow = overnightVals.length ? Math.min(...overnightVals) : null;
+
+    ctx.live = {
+      readingCount: vals24.length,
+      avg24h: avg24,
+      high24h: high24,
+      low24h: low24,
+      tir24h: tir24 + '%',
+      sd24h: sd24,
+      cv24h: Math.round((sd24/avg24)*100) + '%',
+      above200pct: above200 + '%',
+      dawnAvg: dawnAvg,
+      dawnPeak: dawnPeak,
+      overnightAvg: overnightAvg,
+      overnightLow: overnightLow,
+      latestReading: allData[allData.length-1]?.value,
+      latestTrend: allData[allData.length-1]?.trend,
+    };
+  }
+
+  // ── Dexcom 7-day data if loaded ──
+  if (aiScope !== '24h' && longData && longData['7d'] && longData['7d'].length) {
+    const vals7 = longData['7d'].map(r => r.value).filter(v => v > 0);
+    const avg7  = Math.round(vals7.reduce((a,b)=>a+b,0)/vals7.length);
+    const sd7   = Math.round(Math.sqrt(vals7.map(v=>(v-avg7)**2).reduce((a,b)=>a+b,0)/vals7.length));
+    const tir7  = Math.round(vals7.filter(v=>v>=70&&v<=180).length/vals7.length*100);
+    const gmi7  = ((avg7/18.01559 + 2.59) * 1).toFixed(1); // approx GMI
+
+    // Dawn spikes this week
+    const dawnVals7 = longData['7d']
+      .filter(r => { const h = new Date(r.systemTime).getHours(); return h >= 6 && h < 10; })
+      .map(r => r.value).filter(v => v > 0);
+    const dawnAvg7  = dawnVals7.length ? Math.round(dawnVals7.reduce((a,b)=>a+b,0)/dawnVals7.length) : null;
+    const dawnDaysAbove180 = longData['7d'] && (() => {
+      const days = {};
+      longData['7d'].forEach(r => {
+        const h = new Date(r.systemTime).getHours();
+        if (h >= 6 && h < 10 && r.value > 180) {
+          const d = r.systemTime.substring(0,10);
+          days[d] = true;
+        }
+      });
+      return Object.keys(days).length;
+    })();
+
+    ctx.week = {
+      avg7d: avg7, sd7d: sd7, cv7d: Math.round((sd7/avg7)*100) + '%',
+      tir7d: tir7 + '%', approxGMI: gmi7,
+      dawnAvg7d: dawnAvg7,
+      dawnDaysAbove180: dawnDaysAbove180,
+    };
+  }
+
+  // ── Historical periods from history.json ──
+  if (histData && histData.periods) {
+    const periods = histData.periods;
+    const latest  = periods[periods.length - 1];
+    const prev    = periods[periods.length - 2];
+    ctx.history = {
+      periods: periods.map(p => ({
+        label: p.label, medication: p.medication,
+        avg: p.avg, gmi: p.gmi, tir: p.tir + '%',
+        sd: p.sd, cv: p.cv + '%',
+      })),
+      latestPeriod: latest ? {
+        label: latest.label, avg: latest.avg,
+        gmi: latest.gmi, tir: latest.tir + '%',
+        sd: latest.sd, cv: latest.cv + '%',
+        medication: latest.medication,
+      } : null,
+      improvement: (latest && prev) ? {
+        avgDelta: latest.avg - prev.avg,
+        tirDelta: latest.tir - prev.tir,
+        sdDelta:  latest.sd  - prev.sd,
+      } : null,
+    };
+  }
+
+  // ── Patient context ──
+  ctx.patient = {
+    name: 'Chuck',
+    condition: 'Type 2 Diabetes',
+    cgm: 'Dexcom G7',
+    medications: [
+      'Mounjaro (Tirzepatide) 5mg weekly — dose 1 Apr 15 2026, currently dose 5-6 range',
+      'Metformin 1000mg twice daily',
+      'Glimepiride 4mg morning (skips evening dose when glucose < 140)',
+      'Atorvastatin 20mg daily',
+      'Lisinopril 10-12.5mg daily',
+      'Sertraline tapering ~12.5mg daily',
+    ],
+    knownPatterns: [
+      'Consistent dawn phenomenon spike 7–9am, often 200-220+ mg/dL',
+      'Afternoons and evenings generally well controlled (80–130)',
+      'Late evening hunger managed with protein bars / peanut butter',
+      'Glimepiride evening skip prevents overnight lows',
+      'Sunday tends to be worst glucose day',
+    ],
+    goals: 'Reduce dawn spike, maintain TIR > 85%, track Mounjaro progress',
+    dataNote: 'All analysis is pattern-spotting only, not medical advice.',
+    analysisScope: aiScope,
+  };
+
+  return ctx;
+}
+
+/* ── Show context snapshot chips ── */
+function showContextSnapshot(ctx) {
+  const card = document.getElementById('aiContextCard');
+  const grid = document.getElementById('aiContextGrid');
+  card.style.display = 'block';
+  const items = [];
+  if (ctx.live) {
+    items.push(['24h Avg', ctx.live.avg24h + ' mg/dL']);
+    items.push(['24h TIR', ctx.live.tir24h]);
+    items.push(['24h CV', ctx.live.cv24h]);
+    items.push(['Dawn Peak', ctx.live.dawnPeak ? ctx.live.dawnPeak + ' mg/dL' : '—']);
+    items.push(['Overnight Low', ctx.live.overnightLow ? ctx.live.overnightLow + ' mg/dL' : '—']);
+  }
+  if (ctx.week) {
+    items.push(['7d Avg', ctx.week.avg7d + ' mg/dL']);
+    items.push(['7d TIR', ctx.week.tir7d]);
+    items.push(['Est GMI', ctx.week.approxGMI + '%']);
+  }
+  if (ctx.history?.latestPeriod) {
+    items.push(['Latest Period', ctx.history.latestPeriod.label]);
+    items.push(['Period Avg', ctx.history.latestPeriod.avg + ' mg/dL']);
+  }
+  grid.innerHTML = items.map(([k,v]) =>
+    `<div class="ai-ctx-item">${k}: <span class="ai-ctx-val">${v}</span></div>`
+  ).join('');
+}
+
+/* ── Parse AI response into narrative + bullets ── */
+function parseAIResponse(text) {
+  // Expect JSON from the AI
+  try {
+    const clean = text.replace(/```json|```/g, '').trim();
+    return JSON.parse(clean);
+  } catch {
+    // Fallback: treat entire text as narrative
+    return { narrative: text, bullets: [] };
+  }
+}
+
+/* ── Render result ── */
+function renderAIResult(parsed) {
+  // Narrative
+  document.getElementById('aiNarrative').textContent = parsed.narrative || '';
+
+  // Bullets
+  const grid = document.getElementById('aiBullets');
+  if (parsed.bullets && parsed.bullets.length) {
+    grid.innerHTML = parsed.bullets.map(b => `
+      <div class="ai-bullet-card">
+        <div class="ai-bullet-category ${b.sentiment || 'neutral'}">${b.category || ''}</div>
+        <div class="ai-bullet-text">${b.text}</div>
+      </div>
+    `).join('');
+  } else {
+    grid.innerHTML = '';
+  }
+
+  // Timestamp
+  document.getElementById('aiResultTs').textContent =
+    'Generated ' + new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+
+  // Show result
+  document.getElementById('aiResult').classList.add('visible');
+}
+
+/* ── Main analyze function ── */
+async function analyzeWithAI() {
+  const btn      = document.getElementById('aiAnalyzeBtn');
+  const btnLabel = document.getElementById('aiAnalyzeBtnLabel');
+  const loading  = document.getElementById('aiLoading');
+  const loadingTxt = document.getElementById('aiLoadingText');
+  const errorEl  = document.getElementById('aiError');
+  const resultEl = document.getElementById('aiResult');
+
+  // Reset state
+  btn.disabled = true;
+  btnLabel.textContent = 'Analyzing…';
+  loading.classList.add('visible');
+  errorEl.classList.remove('visible');
+  resultEl.classList.remove('visible');
+  errorEl.textContent = '';
+
+  // If 7d scope and not loaded, try to load it
+  if (aiScope !== '24h' && (!longData['7d'] || !longData['7d'].length)) {
+    loadingTxt.textContent = 'LOADING 7-DAY DATA…';
+    try {
+      const res = await fetch(`${WORKER}/egvs?minutes=${7*1440}`);
+      const data = await res.json();
+      longData['7d'] = (data.records || []).sort((a,b) =>
+        new Date(a.systemTime) - new Date(b.systemTime)
+      );
+    } catch { /* proceed without it */ }
+  }
+
+  // Load history.json if not already loaded
+  if (!histData) {
+    loadingTxt.textContent = 'LOADING HISTORY…';
+    try {
+      const res = await fetch('history.json');
+      histData = await res.json();
+    } catch { /* proceed without it */ }
+  }
+
+  loadingTxt.textContent = 'ANALYZING YOUR GLUCOSE DATA…';
+
+  // Build context
+  const ctx = buildAIContext();
+  showContextSnapshot(ctx);
+
+  // Build prompt
+  const scopeLabel = aiScope === '24h' ? 'last 24 hours'
+                   : aiScope === '7d'  ? 'last 7 days'
+                   : 'full historical record';
+
+  const systemPrompt = `You are a glucose data analyst helping a Type 2 diabetic named Chuck review his Dexcom G7 CGM data. You provide clear, honest, pattern-based analysis — you never give medical advice, but you do speak plainly about what the data shows. Chuck is medically literate and prefers direct, no-sugarcoating insights.
+
+Respond ONLY with valid JSON (no markdown fences, no preamble). Use this exact schema:
+{
+  "narrative": "2-4 sentence plain-English summary paragraph covering overall status, biggest win, and biggest concern",
+  "bullets": [
+    { "category": "CATEGORY LABEL", "text": "1-2 sentence insight", "sentiment": "positive|warning|neutral|action" }
+  ]
+}
+
+Generate 4-7 bullets covering different aspects: TIR, dawn spike, variability, overnight stability, medication progress, trend vs history, and one actionable recommendation. sentiment must be one of: positive, warning, neutral, action.`;
+
+  const userPrompt = `Analyze Chuck's glucose data for the ${scopeLabel}. Here is the data context:\n\n${JSON.stringify(ctx, null, 2)}\n\nBe specific — reference actual numbers. Note the dawn phenomenon pattern, Mounjaro progress expectations, and how this period compares to prior ones. End the bullets with one concrete "action" item Chuck could bring up with his doctor.`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: userPrompt }],
+      }),
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData?.error?.message || `API error ${res.status}`);
+    }
+
+    const data = await res.json();
+    const text = data.content?.find(b => b.type === 'text')?.text || '';
+
+    if (!text) throw new Error('No response from AI');
+
+    const parsed = parseAIResponse(text);
+    renderAIResult(parsed);
+
+  } catch (err) {
+    errorEl.textContent = '⚠ Analysis failed: ' + err.message;
+    errorEl.classList.add('visible');
+    console.error('AI analyze error:', err);
+  } finally {
+    loading.classList.remove('visible');
+    btn.disabled = false;
+    btnLabel.textContent = 'Analyze Again';
+    document.getElementById('aiAnalyzeBtnIcon').textContent = '↺';
   }
 }
 
