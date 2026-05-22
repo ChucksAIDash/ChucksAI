@@ -252,6 +252,76 @@
     }
     .ai-ctx-val { color: var(--text-secondary); font-weight: 700; }
 
+    /* ── DOCTOR REPORT ── */
+    .dr-options-row {
+      display: flex; flex-wrap: wrap; gap: 8px 16px;
+      align-items: center; margin-bottom: 1.1rem;
+      padding: .75rem 1rem;
+      background: rgba(255,255,255,.02);
+      border: 1px solid var(--border);
+      border-radius: var(--r-md);
+    }
+    .dr-option-label {
+      font-family: 'Space Mono', monospace; font-size: 9px;
+      text-transform: uppercase; letter-spacing: .1em;
+      color: var(--text-muted); margin-right: .25rem;
+    }
+    .dr-checkbox-item {
+      display: flex; align-items: center; gap: 5px;
+      font-family: 'DM Sans', sans-serif; font-size: 12px;
+      color: var(--text-secondary); cursor: pointer;
+    }
+    .dr-checkbox-item input[type="checkbox"] {
+      accent-color: var(--up); cursor: pointer;
+    }
+    .dr-report-card {
+      display: none;
+      background: var(--bg-card);
+      border: 1px solid rgba(61,220,132,.2);
+      border-radius: var(--r-lg);
+      padding: 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+    .dr-report-card.visible { display: block; }
+    .dr-report-header {
+      display: flex; align-items: flex-start;
+      justify-content: space-between; gap: 1rem;
+      margin-bottom: 1rem;
+      padding-bottom: .75rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .dr-report-title {
+      font-family: 'Space Mono', monospace; font-size: 11px; font-weight: 700;
+      letter-spacing: .1em; text-transform: uppercase;
+      color: var(--up);
+    }
+    .dr-report-date {
+      font-family: 'Space Mono', monospace; font-size: 9px;
+      color: var(--text-muted); margin-top: 3px;
+    }
+    .dr-copy-btn {
+      display: flex; align-items: center; gap: 5px;
+      font-family: 'Space Mono', monospace; font-size: 10px; font-weight: 700;
+      letter-spacing: .07em;
+      padding: .35rem .85rem;
+      background: rgba(61,220,132,.1);
+      border: 1px solid rgba(61,220,132,.3);
+      border-radius: var(--r-sm);
+      color: var(--up); cursor: pointer; transition: all .15s;
+      flex-shrink: 0;
+    }
+    .dr-copy-btn:hover { background: rgba(61,220,132,.2); }
+    .dr-copy-btn.copied {
+      background: rgba(61,220,132,.25);
+      border-color: rgba(61,220,132,.6);
+    }
+    .dr-report-body {
+      font-family: 'DM Sans', sans-serif; font-size: 13px;
+      color: var(--text-secondary); line-height: 1.75;
+      white-space: pre-wrap; word-break: break-word;
+      margin: 0;
+    }
+
     /* ── Q&A ── */
     .qa-suggestions {
       display: flex; flex-wrap: wrap; gap: 6px;
@@ -1707,6 +1777,64 @@
 
     <!-- Q&A thread -->
     <div class="qa-thread" id="qaThread"></div>
+
+    <!-- ── DIVIDER ── -->
+    <div style="display:flex;align-items:center;gap:.75rem;margin:1.75rem 0 1.25rem;">
+      <div style="flex:1;height:1px;background:var(--border);"></div>
+      <div style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-muted);">Doctor Report</div>
+      <div style="flex:1;height:1px;background:var(--border);"></div>
+    </div>
+
+    <div style="font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text-muted);text-align:center;margin-bottom:1.25rem;line-height:1.6;">
+      Generates a concise, plain-language summary you can share with your doctor or read at your appointment.
+    </div>
+
+    <!-- Report options -->
+    <div class="dr-options-row">
+      <label class="dr-option-label">Include:</label>
+      <label class="dr-checkbox-item">
+        <input type="checkbox" id="drIncludeLive" checked> Live 24h stats
+      </label>
+      <label class="dr-checkbox-item">
+        <input type="checkbox" id="drIncludeHistory" checked> Historical trends
+      </label>
+      <label class="dr-checkbox-item">
+        <input type="checkbox" id="drIncludeMeds" checked> Medication notes
+      </label>
+      <label class="dr-checkbox-item">
+        <input type="checkbox" id="drIncludePatterns" checked> Key patterns
+      </label>
+    </div>
+
+    <div style="text-align:center;margin-bottom:1.25rem;">
+      <button class="ai-analyze-btn" id="drGenerateBtn" onclick="generateDoctorReport()" style="background:rgba(61,220,132,.1);border-color:rgba(61,220,132,.35);color:var(--up);">
+        <span id="drGenerateIcon">📋</span>
+        <span id="drGenerateLabel">Generate Report</span>
+      </button>
+    </div>
+
+    <!-- Loading -->
+    <div class="ai-loading" id="drLoading">
+      <div class="ai-loading-dots"><span></span><span></span><span></span></div>
+      <div class="ai-loading-text">GENERATING REPORT…</div>
+    </div>
+
+    <!-- Error -->
+    <div class="ai-error" id="drError"></div>
+
+    <!-- Report output -->
+    <div class="dr-report-card" id="drReport">
+      <div class="dr-report-header">
+        <div>
+          <div class="dr-report-title">📋 Glucose Summary Report</div>
+          <div class="dr-report-date" id="drReportDate"></div>
+        </div>
+        <button class="dr-copy-btn" id="drCopyBtn" onclick="copyReport()">
+          <span id="drCopyIcon">⎘</span> Copy
+        </button>
+      </div>
+      <pre class="dr-report-body" id="drReportBody"></pre>
+    </div>
 
   </div><!-- /#panel-ai -->
 
@@ -5893,6 +6021,139 @@ Patient context and full data: ${JSON.stringify(ctx)}`;
     inp.focus();
     document.getElementById('qaThread').scrollTop = 99999;
   }
+}
+
+/* ══════════════════════════════════════════
+   DOCTOR REPORT GENERATOR
+══════════════════════════════════════════ */
+
+async function generateDoctorReport() {
+  const btn       = document.getElementById('drGenerateBtn');
+  const btnLabel  = document.getElementById('drGenerateLabel');
+  const loading   = document.getElementById('drLoading');
+  const errorEl   = document.getElementById('drError');
+  const reportEl  = document.getElementById('drReport');
+
+  const inclLive     = document.getElementById('drIncludeLive').checked;
+  const inclHistory  = document.getElementById('drIncludeHistory').checked;
+  const inclMeds     = document.getElementById('drIncludeMeds').checked;
+  const inclPatterns = document.getElementById('drIncludePatterns').checked;
+
+  btn.disabled  = true;
+  btnLabel.textContent = 'Generating…';
+  loading.classList.add('visible');
+  errorEl.classList.remove('visible');
+  reportEl.classList.remove('visible');
+  errorEl.textContent = '';
+
+  // Ensure data loaded
+  if (!histData) {
+    try { const r = await fetch('history.json'); histData = await r.json(); }
+    catch { /* proceed */ }
+  }
+
+  // Build context
+  const savedScope = aiScope;
+  aiScope = 'all';
+  const ctx = buildAIContext();
+  aiScope = savedScope;
+
+  // Build sections list for the prompt
+  const sections = [];
+  if (inclLive)     sections.push('current 24-hour glucose stats (avg, TIR, CV, dawn peak, overnight low)');
+  if (inclHistory)  sections.push('historical period comparison across all tracked periods showing trend over time');
+  if (inclMeds)     sections.push('current medication list and any relevant observations about medication impact on glucose');
+  if (inclPatterns) sections.push('key identified patterns (dawn phenomenon, time-of-day trends, best/worst days)');
+  sections.push('one or two discussion points or questions worth raising with the doctor');
+
+  const today = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+  const systemPrompt = `You are generating a concise glucose summary report for a Type 2 diabetic named Chuck (Charles Wilson, DOB Sep 19 1990) to share with his doctor. Write in clear, clinical but plain language. No markdown formatting — use plain text with spacing and dashes only. Structure with clear labeled sections. Be specific with numbers. Keep the entire report under 500 words.`;
+
+  const userPrompt = `Generate a glucose summary report for Chuck's upcoming doctor appointment. Today is ${today}.
+
+Include these sections: ${sections.join('; ')}.
+
+Data context:
+${JSON.stringify(ctx, null, 2)}
+
+Format as plain text with this structure:
+GLUCOSE SUMMARY REPORT
+Patient: Charles Wilson  |  Date: ${today}
+CGM: Dexcom G7  |  Condition: Type 2 Diabetes
+─────────────────────────────────────────
+
+[Then each section with a short ALL-CAPS label, a blank line, content, and a blank line between sections]
+
+End with:
+─────────────────────────────────────────
+Note: This summary was generated from Dexcom CGM data for discussion purposes only.`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: userPrompt }],
+      }),
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData?.error?.message || 'API error ' + res.status);
+    }
+
+    const data = await res.json();
+    const text = data.content?.find(b => b.type === 'text')?.text || '';
+    if (!text) throw new Error('No response from AI');
+
+    document.getElementById('drReportBody').textContent = text;
+    document.getElementById('drReportDate').textContent = 'Generated ' +
+      new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    reportEl.classList.add('visible');
+    reportEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  } catch (err) {
+    errorEl.textContent = '⚠ Report failed: ' + err.message;
+    errorEl.classList.add('visible');
+  } finally {
+    loading.classList.remove('visible');
+    btn.disabled = false;
+    btnLabel.textContent = 'Regenerate Report';
+    document.getElementById('drGenerateIcon').textContent = '↺';
+  }
+}
+
+function copyReport() {
+  const body = document.getElementById('drReportBody').textContent;
+  if (!body) return;
+  const copyBtn = document.getElementById('drCopyBtn');
+  navigator.clipboard.writeText(body).then(() => {
+    document.getElementById('drCopyIcon').textContent = '✓';
+    copyBtn.classList.add('copied');
+    copyBtn.querySelector('span:last-child') && (copyBtn.innerHTML =
+      '<span id="drCopyIcon">✓</span> Copied!');
+    setTimeout(() => {
+      copyBtn.classList.remove('copied');
+      copyBtn.innerHTML = '<span id="drCopyIcon">⎘</span> Copy';
+    }, 2000);
+  }).catch(() => {
+    // Fallback for browsers without clipboard API
+    const ta = document.createElement('textarea');
+    ta.value = body;
+    ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    copyBtn.innerHTML = '<span id="drCopyIcon">✓</span> Copied!';
+    setTimeout(() => {
+      copyBtn.innerHTML = '<span id="drCopyIcon">⎘</span> Copy';
+    }, 2000);
+  });
 }
 
 /* ── NAV INJECT ── */
