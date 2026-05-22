@@ -989,6 +989,17 @@
         </div>
       </div>
 
+      <!-- This Week vs Best Week Ever -->
+      <div class="tir-card" id="bestWeekCard">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem;margin-bottom:1rem;">
+          <div class="tir-title" style="margin-bottom:0;">🏆 This Week vs Best Week Ever</div>
+          <div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--text-muted);" id="bestWeekMeta">Loading…</div>
+        </div>
+        <div id="bestWeekGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;">
+          <div class="loading-text"><span class="spinner"></span>Loading…</div>
+        </div>
+      </div>
+
       <!-- Recent readings -->
       <div class="readings-card">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:.5rem;">
@@ -1488,6 +1499,7 @@ async function loadData() {
     updateReadings();
     loadAverages();
     loadWoW();
+    loadBestWeek();
   } catch(err) {
     console.error('loadData error:', err);
   }
@@ -4596,6 +4608,136 @@ function updateMornStreak(records) {
   el.textContent = streak;
   el.className   = 'stat-val ' + (streak === 0 ? 'is-normal' : streak <= 2 ? '' : 'is-high');
   if (subEl) subEl.textContent = `${highDays} of last ${totalDays}d had ≥200`;
+}
+
+/* ══════════════════════════════════════
+   THIS WEEK VS BEST WEEK EVER
+   Scans 90d of data in 7-day windows to
+   find the best week by avg glucose.
+   Compares it to the current 7 days.
+══════════════════════════════════════ */
+async function loadBestWeek() {
+  const grid   = document.getElementById('bestWeekGrid');
+  const metaEl = document.getElementById('bestWeekMeta');
+  if (!grid) return;
+
+  try {
+    // Get this week (7d) — reuse cache
+    let week7 = longData['7d'];
+    if (!week7) {
+      const res = await fetch(`${WORKER}/egvs?minutes=${7 * 1440}`);
+      const d   = await res.json();
+      week7 = (d.records || []).sort((a, b) => new Date(a.systemTime) - new Date(b.systemTime));
+      longData['7d'] = week7;
+    }
+
+    // Get 90d data — reuse cache
+    let data90 = longData['90d'];
+    if (!data90) {
+      const res = await fetch(`${WORKER}/egvs?minutes=${90 * 1440}`);
+      const d   = await res.json();
+      data90 = (d.records || []).sort((a, b) => new Date(a.systemTime) - new Date(b.systemTime));
+      longData['90d'] = data90;
+    }
+
+    const vals90 = data90.filter(r => r.value > 0);
+    const vals7  = week7.filter(r => r.value > 0);
+
+    if (!vals7.length || !vals90.length) {
+      grid.innerHTML = '<div style="font-family:\'DM Sans\',sans-serif;font-size:12px;color:var(--text-muted);">Not enough data</div>';
+      return;
+    }
+
+    // Compute stats for any array of values
+    function calcStats(vals) {
+      const avg  = Math.round(vals.reduce((a, b) => a + b, 0) / vals.length);
+      const tir  = Math.round((vals.filter(v => v >= LOW && v <= HIGH).length / vals.length) * 100);
+      const high = Math.round((vals.filter(v => v > HIGH).length / vals.length) * 100);
+      const low  = Math.round((vals.filter(v => v < LOW).length  / vals.length) * 100);
+      const mean = vals.reduce((a, b) => a + b, 0) / vals.length;
+      const sd   = Math.round(Math.sqrt(vals.reduce((s, x) => s + (x - mean) ** 2, 0) / vals.length));
+      const cv   = Math.round((sd / mean) * 100 * 10) / 10;
+      return { avg, tir, high, low, sd, cv };
+    }
+
+    // Slide 7-day windows across 90d data to find best avg
+    const WIN_MS  = 7 * 24 * 60 * 60 * 1000;
+    const earliest = new Date(vals90[0].systemTime).getTime();
+    const latest90 = new Date(vals90[vals90.length - 1].systemTime).getTime();
+
+    let bestStats     = null;
+    let bestAvg       = Infinity;
+    let bestWindowEnd = null;
+
+    // Step through in 1-day increments
+    const STEP_MS = 24 * 60 * 60 * 1000;
+    for (let end = latest90; end >= earliest + WIN_MS; end -= STEP_MS) {
+      const start  = end - WIN_MS;
+      const window = vals90.filter(r => {
+        const t = new Date(r.systemTime).getTime();
+        return t >= start && t <= end;
+      });
+      if (window.length < 48) continue; // need at least 2 days worth of readings
+      const wVals = window.map(r => r.value);
+      const stats = calcStats(wVals);
+      if (stats.avg < bestAvg) {
+        bestAvg       = stats.avg;
+        bestStats     = stats;
+        bestWindowEnd = new Date(end);
+      }
+    }
+
+    if (!bestStats) {
+      grid.innerHTML = '<div style="font-family:\'DM Sans\',sans-serif;font-size:12px;color:var(--text-muted);">Not enough history</div>';
+      return;
+    }
+
+    const thisStats = calcStats(vals7.map(r => r.value));
+
+    // Date label for best week
+    const bestStart = new Date(bestWindowEnd.getTime() - WIN_MS);
+    const fmt = d => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    if (metaEl) metaEl.textContent = `Best: ${fmt(bestStart)} – ${fmt(bestWindowEnd)}`;
+
+    const metrics = [
+      { key: 'avg',  label: 'Avg Glucose', unit: 'mg/dL', lowerBetter: true  },
+      { key: 'tir',  label: 'Time in Range', unit: '%',   lowerBetter: false },
+      { key: 'cv',   label: 'CV%',          unit: '%',    lowerBetter: true  },
+      { key: 'sd',   label: 'Std Dev',      unit: 'mg/dL', lowerBetter: true },
+      { key: 'high', label: 'High%',        unit: '%',    lowerBetter: true  },
+      { key: 'low',  label: 'Low%',         unit: '%',    lowerBetter: true  },
+    ];
+
+    grid.innerHTML = metrics.map(m => {
+      const vThis  = thisStats[m.key];
+      const vBest  = bestStats[m.key];
+      const delta  = Math.round((vThis - vBest) * 10) / 10;
+      const atBest = delta === 0;
+      const better = m.lowerBetter ? delta < 0 : delta > 0; // this week is better than best?
+      const worse  = m.lowerBetter ? delta > 0 : delta < 0;
+      const sign   = delta > 0 ? '+' : '';
+      const unit   = m.unit === '%' ? '%' : ' mg/dL';
+
+      // Special case: if this week IS the best week
+      const isBest = atBest || better;
+      const cls    = isBest ? 'pos' : worse ? 'neg' : 'neu';
+      const arrow  = atBest ? '=' : better ? '★' : worse ? '▲' : '→';
+      const note   = better ? 'New best!' : atBest ? 'Matches best' : `${sign}${delta} from best`;
+
+      return `<div class="wow-stat">
+        <div class="wow-stat-label">${m.label}</div>
+        <div class="wow-stat-row">
+          <span class="wow-this" style="color:rgba(127,217,184,.9)">${vThis}${unit}</span>
+          <span class="wow-last">best: ${vBest}${unit}</span>
+        </div>
+        <div class="wow-delta ${cls}">${arrow} ${note}</div>
+      </div>`;
+    }).join('');
+
+  } catch(e) {
+    console.error('bestWeek error:', e);
+    if (grid) grid.innerHTML = '<div style="font-family:\'DM Sans\',sans-serif;font-size:12px;color:var(--text-muted);">Could not load data</div>';
+  }
 }
 
 function fmtTime(d) {
