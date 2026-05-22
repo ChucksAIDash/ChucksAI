@@ -843,6 +843,11 @@
           <div class="stat-val" id="statStreak">—</div>
           <div class="stat-sub">days &lt;140 avg</div>
         </div>
+        <div class="stat-card" title="Distinct glucose excursions above 180 or below 70 in the last 24h">
+          <div class="stat-label">Excursions (24h)</div>
+          <div class="stat-val" id="statExcursions">—</div>
+          <div class="stat-sub" id="statExcursionsSub">high + low events</div>
+        </div>
       </div>
 
       <!-- Glucose chart -->
@@ -1299,6 +1304,21 @@
         </div>
       </div>
 
+      <!-- 12. GLUCOSE EXCURSION COUNT -->
+      <div class="hist-section" style="margin-top:1.25rem;" id="excursionSection">
+        <div class="hist-section-title">⚡ Glucose Excursion Count</div>
+        <div id="excursionInsightRow" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin-bottom:1rem;"></div>
+        <div class="chart-card" style="margin-bottom:0;">
+          <div class="chart-header">
+            <div class="chart-title">High + Low Excursions per Period</div>
+            <div style="font-family:'DM Sans',sans-serif;font-size:11px;color:var(--text-muted);">Each bar = distinct out-of-range event · hourly periods only</div>
+          </div>
+          <div class="hist-chart-wrap">
+            <canvas id="excursionChart"></canvas>
+          </div>
+        </div>
+      </div>
+
     </div><!-- /#hist-content -->
 
   </div><!-- /#panel-history -->
@@ -1343,6 +1363,7 @@ let activePostMidIdx  = 0;
 let lowFreqChart      = null;
 let activeLowFreqIdx  = 0;
 let periodCompChart   = null;
+let excursionChart    = null;
 let activeHeatmapIdx = 0;
 let activeTirIdx     = 0;
 
@@ -1457,6 +1478,7 @@ async function loadData() {
     updateTIR();
     updateAbove200();
     updateStreak();
+    updateExcursions();
     updateChart(allData);
     updateReadings();
     loadAverages();
@@ -2139,6 +2161,7 @@ function renderHistory() {
   renderPostMidnight();
   renderLowFreq();
   renderPeriodCompInit();
+  renderExcursions();
 }
 
 /* ── MOUNJARO DOSE TRACKER ── */
@@ -4310,6 +4333,210 @@ async function loadWoW() {
     console.error('WoW error:', e);
     if (grid) grid.innerHTML = '<div style="font-family:\'DM Sans\',sans-serif;font-size:12px;color:var(--text-muted);">Could not load comparison</div>';
   }
+}
+
+/* ══════════════════════════════════════
+   GLUCOSE EXCURSION COUNT
+   An excursion = contiguous run of readings
+   above 180 (high) or below 70 (low).
+   For hourly history data we use hourly
+   means to estimate excursion events.
+   For live 24h data we use actual readings.
+══════════════════════════════════════ */
+
+// Count excursions from an array of values
+// Returns { high, low, total }
+function countExcursions(values, highThresh, lowThresh) {
+  let high = 0, low = 0;
+  let inHigh = false, inLow = false;
+  for (const v of values) {
+    if (v > highThresh) {
+      if (!inHigh) { high++; inHigh = true; }
+      inLow = false;
+    } else if (v < lowThresh) {
+      if (!inLow) { low++; inLow = true; }
+      inHigh = false;
+    } else {
+      inHigh = false;
+      inLow  = false;
+    }
+  }
+  return { high, low, total: high + low };
+}
+
+/* ── LIVE TAB: 24h excursion stat card ── */
+function updateExcursions() {
+  const el    = document.getElementById('statExcursions');
+  const subEl = document.getElementById('statExcursionsSub');
+  if (!el || !allData.length) return;
+
+  const vals = allData.map(r => r.value).filter(v => v > 0);
+  const exc  = countExcursions(vals, HIGH, LOW);
+
+  el.textContent  = exc.total;
+  el.className    = 'stat-val ' + (exc.total === 0 ? 'is-normal' : exc.total <= 2 ? '' : 'is-high');
+  if (subEl) subEl.textContent = `${exc.high} high · ${exc.low} low`;
+}
+
+/* ── HISTORY TAB: excursion count per period ── */
+function renderExcursions() {
+  const hourlyPeriods = histData.hourly;
+  if (!hourlyPeriods.length) return;
+
+  // For each period, run countExcursions over the 24 hourly means
+  const excData = hourlyPeriods.map(h => {
+    const exc = countExcursions(h.means, 180, 70);
+    return {
+      label: h.label.replace(/ \(\d+d\)/, ''),
+      high: exc.high,
+      low:  exc.low,
+      total: exc.total,
+    };
+  });
+
+  renderExcursionInsights(excData);
+  renderExcursionChart(excData);
+}
+
+function renderExcursionInsights(data) {
+  const wrap = document.getElementById('excursionInsightRow');
+  if (!wrap || !data.length) return;
+
+  const latest  = data[data.length - 1];
+  const best    = data.reduce((b, d) => d.total < b.total ? d : b, data[0]);
+  const worst   = data.reduce((b, d) => d.total > b.total ? d : b, data[0]);
+  const delta   = data.length >= 2 ? latest.total - data[data.length - 2].total : null;
+
+  const cls    = t => t <= 2 ? 'good' : t <= 5 ? 'warn' : 'bad';
+  const border = t => t <= 2 ? 'improving' : t <= 5 ? 'warning' : 'alert';
+  const dCls   = v => v < 0 ? 'pos' : v > 0 ? 'neg' : 'neu';
+  const dStr   = v => (v > 0 ? '↑' : v < 0 ? '↓' : '→') + Math.abs(v) + ' vs prev';
+
+  wrap.innerHTML = [
+    `<div class="dawn-insight ${border(latest.total)}">
+      <div class="dawn-insight-label">Latest Excursions</div>
+      <div class="dawn-insight-val ${cls(latest.total)}">${latest.total}</div>
+      <div class="dawn-insight-sub">${latest.label}</div>
+      <div class="dawn-insight-sub" style="margin-top:2px">${latest.high} high · ${latest.low} low</div>
+      ${delta !== null ? `<div class="dawn-insight-delta ${dCls(delta)}">${dStr(delta)}</div>` : ''}
+    </div>`,
+    `<div class="dawn-insight improving">
+      <div class="dawn-insight-label">Best Period</div>
+      <div class="dawn-insight-val good">${best.total}</div>
+      <div class="dawn-insight-sub">${best.label}</div>
+      <div class="dawn-insight-sub" style="margin-top:2px">${best.high} high · ${best.low} low</div>
+    </div>`,
+    `<div class="dawn-insight ${border(worst.total)}">
+      <div class="dawn-insight-label">Most Excursions</div>
+      <div class="dawn-insight-val ${cls(worst.total)}">${worst.total}</div>
+      <div class="dawn-insight-sub">${worst.label}</div>
+      <div class="dawn-insight-sub" style="margin-top:2px">${worst.high} high · ${worst.low} low</div>
+    </div>`,
+    `<div class="dawn-insight warning">
+      <div class="dawn-insight-label">Scale</div>
+      <div class="dawn-insight-val warn" style="font-size:15px;line-height:1.4">0–2 = Good</div>
+      <div class="dawn-insight-sub">3–5 = moderate</div>
+      <div class="dawn-insight-sub">6+ = significant</div>
+    </div>`,
+  ].join('');
+}
+
+function renderExcursionChart(data) {
+  const ctx = document.getElementById('excursionChart');
+  if (!ctx) return;
+
+  const labels    = data.map(d => d.label);
+  const highVals  = data.map(d => d.high);
+  const lowVals   = data.map(d => d.low);
+
+  if (excursionChart) excursionChart.destroy();
+  excursionChart = new Chart(ctx.getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'High Excursions (>180)',
+          data: highVals,
+          backgroundColor: 'rgba(240,184,106,.65)',
+          borderColor: 'rgba(240,184,106,.9)',
+          borderWidth: 1,
+          borderRadius: 4,
+          stack: 'exc',
+        },
+        {
+          label: 'Low Excursions (<70)',
+          data: lowVals,
+          backgroundColor: 'rgba(240,82,82,.65)',
+          borderColor: 'rgba(240,82,82,.9)',
+          borderWidth: 1,
+          borderRadius: 4,
+          stack: 'exc',
+        },
+      ],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      animation: { duration: 350 },
+      plugins: {
+        legend: {
+          display: true,
+          labels: { color: 'rgba(232,240,247,.5)', font: { family: 'Space Mono', size: 9 }, boxWidth: 12 },
+        },
+        tooltip: {
+          backgroundColor: 'rgba(5,8,12,.92)',
+          borderColor: 'rgba(255,255,255,.1)', borderWidth: 1,
+          titleFont: { family: 'Space Mono', size: 10 },
+          bodyFont:  { family: 'Space Mono', size: 11 },
+          callbacks: {
+            title: items => labels[items[0].dataIndex],
+            footer: items => {
+              const i = items[0].dataIndex;
+              return `  Total: ${highVals[i] + lowVals[i]} excursions`;
+            },
+          },
+        },
+      },
+      scales: {
+        x: {
+          stacked: true,
+          ticks: { color: 'rgba(232,240,247,.4)', font: { family: 'Space Mono', size: 9, weight: '700' } },
+          grid: { color: 'rgba(255,255,255,.03)' },
+        },
+        y: {
+          stacked: true,
+          min: 0,
+          ticks: {
+            stepSize: 1,
+            color: 'rgba(232,240,247,.28)', font: { family: 'Space Mono', size: 9 },
+            callback: v => Number.isInteger(v) ? v : '',
+          },
+          grid: { color: 'rgba(255,255,255,.04)' },
+          title: { display: true, text: 'Excursion Events', color: 'rgba(232,240,247,.3)', font: { family: 'DM Sans', size: 10 } },
+        },
+      },
+    },
+    plugins: [{
+      id: 'excursionTotals',
+      afterDraw(chart) {
+        const { ctx: c, scales: { y } } = chart;
+        const meta0 = chart.getDatasetMeta(0);
+        const meta1 = chart.getDatasetMeta(1);
+        data.forEach((d, i) => {
+          const total = d.total;
+          if (total === 0) return;
+          // Position label above the stacked bar top
+          const bar = meta1.data[i] || meta0.data[i];
+          c.save();
+          c.fillStyle = 'rgba(232,240,247,.65)';
+          c.font = '700 10px Space Mono';
+          c.textAlign = 'center';
+          c.fillText(total, bar.x, y.getPixelForValue(total) - 6);
+          c.restore();
+        });
+      },
+    }],
+  });
 }
 
 function fmtTime(d) {
