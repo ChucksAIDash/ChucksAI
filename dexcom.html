@@ -848,6 +848,11 @@
           <div class="stat-val" id="statExcursions">—</div>
           <div class="stat-sub" id="statExcursionsSub">high + low events</div>
         </div>
+        <div class="stat-card" title="Consecutive days with a morning reading ≥200 between 7–9am">
+          <div class="stat-label">Morning High Streak</div>
+          <div class="stat-val" id="statMornStreak">—</div>
+          <div class="stat-sub" id="statMornStreakSub">days ≥200 by 9am</div>
+        </div>
       </div>
 
       <!-- Glucose chart -->
@@ -4252,6 +4257,9 @@ async function loadWoW() {
     }
 
     const vals = records.filter(r => r.value > 0);
+
+    // Morning high streak uses same 14d data
+    updateMornStreak(records);
     if (!vals.length) {
       grid.innerHTML = '<div style="font-family:\'DM Sans\',sans-serif;font-size:12px;color:var(--text-muted);">No data available</div>';
       return;
@@ -4537,6 +4545,57 @@ function renderExcursionChart(data) {
       },
     }],
   });
+}
+
+/* ══════════════════════════════════════
+   MORNING HIGH STREAK (Live tab)
+   Consecutive days with max reading ≥200
+   between 7am–9am (hours 7, 8, 9).
+   Uses 14d longData cache from loadWoW.
+══════════════════════════════════════ */
+function updateMornStreak(records) {
+  const el    = document.getElementById('statMornStreak');
+  const subEl = document.getElementById('statMornStreakSub');
+  if (!el) return;
+
+  const vals = (records || []).filter(r => r.value > 0);
+  if (!vals.length) return;
+
+  // Group readings by local date, keep only 7–9am window
+  const byDate = {};
+  vals.forEach(r => {
+    const d    = new Date(r.systemTime);
+    const hour = d.getHours();
+    if (hour < 7 || hour > 9) return;
+    const key = d.toLocaleDateString('en-US');
+    if (!byDate[key]) byDate[key] = [];
+    byDate[key].push(r.value);
+  });
+
+  const dates = Object.keys(byDate).sort((a, b) => new Date(b) - new Date(a)); // newest first
+
+  let streak    = 0;
+  let totalHigh = 0;
+
+  for (const date of dates) {
+    const morning = byDate[date];
+    const peaked  = morning.some(v => v >= 200);
+    if (peaked) {
+      streak++;
+      totalHigh++;
+    } else {
+      if (streak === 0) totalHigh++; // count past days for sub-label even after streak breaks
+      else break; // streak ends at first non-high morning
+    }
+  }
+
+  // Count total high mornings in the 14d window (for sub-label)
+  const totalDays  = dates.length;
+  const highDays   = dates.filter(d => byDate[d].some(v => v >= 200)).length;
+
+  el.textContent = streak;
+  el.className   = 'stat-val ' + (streak === 0 ? 'is-normal' : streak <= 2 ? '' : 'is-high');
+  if (subEl) subEl.textContent = `${highDays} of last ${totalDays}d had ≥200`;
 }
 
 function fmtTime(d) {
