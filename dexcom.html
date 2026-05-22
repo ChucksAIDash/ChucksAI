@@ -1000,6 +1000,17 @@
         </div>
       </div>
 
+      <!-- Meal Impact Estimator (Live) -->
+      <div class="tir-card" id="mealImpactLiveCard">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem;margin-bottom:1rem;">
+          <div class="tir-title" style="margin-bottom:0;">🍽️ Meal Impact Events (24h)</div>
+          <div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--text-muted);" id="mealImpactLiveMeta">Rapid rises ≥25 mg/dL in 30 min</div>
+        </div>
+        <div id="mealImpactLiveGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;">
+          <div class="loading-text"><span class="spinner"></span>Loading…</div>
+        </div>
+      </div>
+
       <!-- Recent readings -->
       <div class="readings-card">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:.5rem;">
@@ -1335,6 +1346,24 @@
         </div>
       </div>
 
+      <!-- 13. MEAL IMPACT ESTIMATOR (History) -->
+      <div class="hist-section" style="margin-top:1.25rem;" id="mealImpactSection">
+        <div class="hist-section-title">🍽️ Meal Impact Estimator</div>
+        <div id="mealImpactInsightRow" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin-bottom:1rem;"></div>
+        <div class="chart-card" style="margin-bottom:0;">
+          <div class="chart-header">
+            <div class="chart-title">Avg Hourly Glucose Rise by Hour</div>
+            <div class="period-selector" id="mealImpactPeriodSel"></div>
+          </div>
+          <div class="hist-chart-wrap">
+            <canvas id="mealImpactChart"></canvas>
+          </div>
+          <div style="font-family:'DM Sans',sans-serif;font-size:11px;color:var(--text-muted);margin-top:.6rem;">
+            ℹ️ Positive bars = glucose rising that hour · Likely meal windows shown in gold · Based on hourly averages
+          </div>
+        </div>
+      </div>
+
     </div><!-- /#hist-content -->
 
   </div><!-- /#panel-history -->
@@ -1380,6 +1409,8 @@ let lowFreqChart      = null;
 let activeLowFreqIdx  = 0;
 let periodCompChart   = null;
 let excursionChart    = null;
+let mealImpactChart   = null;
+let activeMealIdx     = 0;
 let activeHeatmapIdx = 0;
 let activeTirIdx     = 0;
 
@@ -1495,6 +1526,7 @@ async function loadData() {
     updateAbove200();
     updateStreak();
     updateExcursions();
+    updateMealImpactLive();
     updateChart(allData);
     updateReadings();
     loadAverages();
@@ -2179,6 +2211,7 @@ function renderHistory() {
   renderLowFreq();
   renderPeriodCompInit();
   renderExcursions();
+  renderMealImpact();
 }
 
 /* ── MOUNJARO DOSE TRACKER ── */
@@ -4772,6 +4805,277 @@ async function loadBestWeek() {
     console.error('bestWeek error:', e);
     if (grid) grid.innerHTML = '<div style="font-family:\'DM Sans\',sans-serif;font-size:12px;color:var(--text-muted);">Could not load data</div>';
   }
+}
+
+/* ══════════════════════════════════════
+   MEAL IMPACT ESTIMATOR
+   History tab: hourly delta chart
+   Live tab: rapid rise event detector
+══════════════════════════════════════ */
+
+/* ── HISTORY TAB: hourly rise chart ── */
+function renderMealImpact() {
+  const hourlyPeriods = histData.hourly;
+  if (!hourlyPeriods.length) return;
+
+  renderMealImpactInsights(hourlyPeriods);
+
+  const sel = document.getElementById('mealImpactPeriodSel');
+  if (sel) {
+    sel.innerHTML = hourlyPeriods.map((p, i) =>
+      `<button class="ps-btn${i === hourlyPeriods.length - 1 ? ' active' : ''}" onclick="selectMealImpact(${i}, this)">${p.label.replace(/ \(\d+d\)/, '')}</button>`
+    ).join('');
+  }
+  activeMealIdx = hourlyPeriods.length - 1;
+  renderMealImpactChart(activeMealIdx);
+}
+
+function renderMealImpactInsights(periods) {
+  const wrap = document.getElementById('mealImpactInsightRow');
+  if (!wrap || !periods.length) return;
+
+  // For the most recent period, find top 3 meal impact windows
+  const latest = periods[periods.length - 1];
+  const deltas = latest.means.map((v, i) =>
+    i === 0 ? 0 : Math.round(v - latest.means[i - 1])
+  );
+
+  // Top positive delta hours (likely meal windows)
+  const sorted = deltas
+    .map((d, i) => ({ hour: i, delta: d }))
+    .filter(x => x.delta > 0)
+    .sort((a, b) => b.delta - a.delta);
+
+  const top3 = sorted.slice(0, 3);
+  const hourStr = h => ALL_HOUR_LABELS[h];
+
+  // Biggest single-hour rise across all periods
+  let biggestRise = 0, biggestPeriod = '', biggestHour = 0;
+  periods.forEach(p => {
+    p.means.forEach((v, i) => {
+      if (i === 0) return;
+      const d = v - p.means[i - 1];
+      if (d > biggestRise) {
+        biggestRise   = Math.round(d);
+        biggestPeriod = p.label.replace(/ \(\d+d\)/, '');
+        biggestHour   = i;
+      }
+    });
+  });
+
+  wrap.innerHTML = [
+    top3[0] ? `<div class="dawn-insight warning">
+      <div class="dawn-insight-label">Biggest Rise Hour</div>
+      <div class="dawn-insight-val warn">+${top3[0].delta}</div>
+      <div class="dawn-insight-sub">mg/dL at ${hourStr(top3[0].hour)} · ${latest.label.replace(/ \(\d+d\)/, '')}</div>
+      <div class="dawn-insight-sub" style="margin-top:2px">Likely meal/snack window</div>
+    </div>` : '',
+    top3[1] ? `<div class="dawn-insight warning">
+      <div class="dawn-insight-label">2nd Rise Window</div>
+      <div class="dawn-insight-val warn">+${top3[1].delta}</div>
+      <div class="dawn-insight-sub">mg/dL at ${hourStr(top3[1].hour)}</div>
+    </div>` : '',
+    top3[2] ? `<div class="dawn-insight warning">
+      <div class="dawn-insight-label">3rd Rise Window</div>
+      <div class="dawn-insight-val warn">+${top3[2].delta}</div>
+      <div class="dawn-insight-sub">mg/dL at ${hourStr(top3[2].hour)}</div>
+    </div>` : '',
+    `<div class="dawn-insight alert">
+      <div class="dawn-insight-label">Biggest Ever Rise</div>
+      <div class="dawn-insight-val bad">+${biggestRise}</div>
+      <div class="dawn-insight-sub">mg/dL at ${hourStr(biggestHour)}</div>
+      <div class="dawn-insight-sub" style="margin-top:2px">${biggestPeriod}</div>
+    </div>`,
+  ].filter(Boolean).join('');
+}
+
+function selectMealImpact(idx, btn) {
+  activeMealIdx = idx;
+  document.querySelectorAll('#mealImpactPeriodSel .ps-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderMealImpactChart(idx);
+}
+
+function renderMealImpactChart(idx) {
+  const ctx = document.getElementById('mealImpactChart');
+  if (!ctx) return;
+
+  const period = histData.hourly[idx];
+  if (!period) return;
+
+  // Compute hour-to-hour deltas
+  const deltas = period.means.map((v, i) =>
+    i === 0 ? 0 : Math.round(v - period.means[i - 1])
+  );
+
+  // Find top 3 positive windows to highlight as likely meal hours
+  const top3Hours = new Set(
+    deltas
+      .map((d, i) => ({ hour: i, delta: d }))
+      .filter(x => x.delta > 0)
+      .sort((a, b) => b.delta - a.delta)
+      .slice(0, 3)
+      .map(x => x.hour)
+  );
+
+  const colors = deltas.map((d, i) =>
+    d <= 0
+      ? 'rgba(127,217,184,.35)'          // drop/flat — green dim
+      : top3Hours.has(i)
+        ? 'rgba(240,184,106,.8)'          // top rise — gold
+        : 'rgba(240,184,106,.35)'         // minor rise — gold dim
+  );
+
+  if (mealImpactChart) mealImpactChart.destroy();
+  mealImpactChart = new Chart(ctx.getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: ALL_HOUR_LABELS,
+      datasets: [{
+        label: 'Hourly Glucose Change',
+        data: deltas,
+        backgroundColor: colors,
+        borderColor: colors.map(c => c.replace(/[\d.]+\)$/, '1)')),
+        borderWidth: 1,
+        borderRadius: 3,
+      }],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      animation: { duration: 350 },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(5,8,12,.92)',
+          borderColor: 'rgba(255,255,255,.1)', borderWidth: 1,
+          titleFont: { family: 'Space Mono', size: 10 },
+          bodyFont:  { family: 'Space Mono', size: 11 },
+          callbacks: {
+            title: items => `${ALL_HOUR_LABELS[items[0].dataIndex]} → ${ALL_HOUR_LABELS[Math.min(items[0].dataIndex + 1, 23)]}`,
+            label: item => {
+              const d   = item.parsed.y;
+              const avg = period.means[item.dataIndex];
+              return [
+                `  Change: ${d > 0 ? '+' : ''}${d} mg/dL`,
+                `  Avg at this hour: ${avg} mg/dL`,
+                top3Hours.has(item.dataIndex) ? '  ★ Likely meal window' : '',
+              ].filter(Boolean);
+            },
+          },
+        },
+      },
+      scales: {
+        x: {
+          ticks: { color: 'rgba(232,240,247,.4)', font: { family: 'Space Mono', size: 9, weight: '700' } },
+          grid: { color: 'rgba(255,255,255,.03)' },
+        },
+        y: {
+          ticks: { color: 'rgba(232,240,247,.28)', font: { family: 'Space Mono', size: 9 }, callback: v => (v > 0 ? '+' : '') + v },
+          grid: { color: 'rgba(255,255,255,.04)' },
+          title: { display: true, text: 'mg/dL change vs prior hour', color: 'rgba(232,240,247,.3)', font: { family: 'DM Sans', size: 10 } },
+        },
+      },
+    },
+    plugins: [{
+      id: 'zeroLine',
+      beforeDraw(chart) {
+        const { ctx: c, chartArea: { left, right }, scales: { y } } = chart;
+        const yZero = y.getPixelForValue(0);
+        c.save();
+        c.strokeStyle = 'rgba(232,240,247,.2)';
+        c.lineWidth = 1;
+        c.beginPath(); c.moveTo(left, yZero); c.lineTo(right, yZero); c.stroke();
+        c.restore();
+      },
+    }],
+  });
+}
+
+/* ── LIVE TAB: rapid rise event detector ── */
+function updateMealImpactLive() {
+  const grid   = document.getElementById('mealImpactLiveGrid');
+  const metaEl = document.getElementById('mealImpactLiveMeta');
+  if (!grid || !allData.length) return;
+
+  const RISE_THRESHOLD = 25;  // mg/dL rise to count as meal event
+  const WINDOW_MINS    = 30;  // minutes to look for that rise
+  const COOLDOWN_MINS  = 60;  // min gap between events
+
+  const readings = allData.filter(r => r.value > 0);
+  if (readings.length < 4) {
+    grid.innerHTML = '<div style="font-family:\'DM Sans\',sans-serif;font-size:12px;color:var(--text-muted);">Not enough data</div>';
+    return;
+  }
+
+  const events = [];
+  let lastEventTime = -Infinity;
+
+  for (let i = 1; i < readings.length; i++) {
+    const r0   = readings[i - 1];
+    const r1   = readings[i];
+    const tDiff = (new Date(r1.systemTime) - new Date(r0.systemTime)) / 60000;
+    if (tDiff > WINDOW_MINS) continue;
+
+    const rise = r1.value - r0.value;
+    const tMs  = new Date(r1.systemTime).getTime();
+
+    if (rise >= RISE_THRESHOLD && tMs - lastEventTime > COOLDOWN_MINS * 60000) {
+      // Find peak after this rise start
+      let peak     = r1.value;
+      let peakIdx  = i;
+      for (let j = i + 1; j < readings.length; j++) {
+        const gap = (new Date(readings[j].systemTime) - new Date(r1.systemTime)) / 60000;
+        if (gap > 120) break; // look up to 2h after rise starts
+        if (readings[j].value > peak) { peak = readings[j].value; peakIdx = j; }
+      }
+
+      // Find recovery time (return to within 20 of rise start value)
+      const baseline   = r0.value;
+      let recoveryMins = null;
+      for (let j = peakIdx + 1; j < readings.length; j++) {
+        const gap = (new Date(readings[j].systemTime) - new Date(r1.systemTime)) / 60000;
+        if (gap > 240) break;
+        if (readings[j].value <= baseline + 20) {
+          recoveryMins = Math.round((new Date(readings[j].systemTime) - new Date(r1.systemTime)) / 60000);
+          break;
+        }
+      }
+
+      events.push({
+        time:         new Date(r0.systemTime),
+        startVal:     r0.value,
+        peak,
+        rise:         peak - r0.value,
+        recoveryMins,
+      });
+      lastEventTime = tMs;
+    }
+  }
+
+  if (!events.length) {
+    grid.innerHTML = '<div style="font-family:\'DM Sans\',sans-serif;font-size:12px;color:var(--text-muted);">No rapid rise events detected in last 24h — nice flat day 👍</div>';
+    if (metaEl) metaEl.textContent = '0 events detected';
+    return;
+  }
+
+  if (metaEl) metaEl.textContent = `${events.length} event${events.length > 1 ? 's' : ''} detected · rise ≥${RISE_THRESHOLD} mg/dL in ${WINDOW_MINS}min`;
+
+  const riseClass = r => r < 40 ? 'warn' : r < 70 ? 'bad' : 'bad';
+  const riseBorder = r => r < 40 ? 'warning' : 'alert';
+
+  grid.innerHTML = events.map(e => {
+    const timeStr  = fmtTime(e.time);
+    const recStr   = e.recoveryMins !== null
+      ? `${e.recoveryMins}min to recover`
+      : 'Still elevated / no recovery';
+
+    return `<div class="dawn-insight ${riseBorder(e.rise)}">
+      <div class="dawn-insight-label">${timeStr}</div>
+      <div class="dawn-insight-val ${riseClass(e.rise)}">+${e.rise}</div>
+      <div class="dawn-insight-sub">mg/dL rise · peak ${e.peak}</div>
+      <div class="dawn-insight-sub" style="margin-top:2px">${recStr}</div>
+    </div>`;
+  }).join('');
 }
 
 function fmtTime(d) {
