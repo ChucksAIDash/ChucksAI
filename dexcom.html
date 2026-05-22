@@ -4661,6 +4661,10 @@ async function loadBestWeek() {
     let bestStats     = null;
     let bestWindowEnd = null;
 
+    // Faulty sensor period — exclude any window overlapping this range
+    const FAULTY_START = new Date('2026-03-25T00:00:00').getTime();
+    const FAULTY_END   = new Date('2026-04-04T23:59:59').getTime();
+
     if (vals90.length >= 14) { // need at least 2 weeks of API data
       const WIN_MS  = 7 * 24 * 60 * 60 * 1000;
       const STEP_MS = 24 * 60 * 60 * 1000;
@@ -4670,6 +4674,8 @@ async function loadBestWeek() {
 
       for (let end = latest90; end >= earliest + WIN_MS; end -= STEP_MS) {
         const start  = end - WIN_MS;
+        // Skip any window that overlaps the faulty sensor period
+        if (start <= FAULTY_END && end >= FAULTY_START) continue;
         const window = vals90.filter(r => {
           const t = new Date(r.systemTime).getTime();
           return t >= start && t <= end;
@@ -4700,7 +4706,10 @@ async function loadBestWeek() {
       } catch {}
 
       if (periods.length) {
-        const best = periods.reduce((b, p) => p.avg < b.avg ? p : b, periods[0]);
+        // Exclude the faulty sensor period (Mar 25 – Apr 4, 2026) from best period search
+        const valid = periods.filter(p => p.id !== 'mar-apr-2026') ;
+        const pool  = valid.length ? valid : periods; // safety fallback
+        const best  = pool.reduce((b, p) => p.avg < b.avg ? p : b, pool[0]);
         bestStats = {
           avg: best.avg, tir: best.tir, sd: best.sd,
           cv: best.cv, high: best.high || 0, low: best.low || 0,
