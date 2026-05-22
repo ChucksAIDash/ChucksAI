@@ -252,6 +252,78 @@
     }
     .ai-ctx-val { color: var(--text-secondary); font-weight: 700; }
 
+    /* ── Q&A ── */
+    .qa-suggestions {
+      display: flex; flex-wrap: wrap; gap: 6px;
+      margin-bottom: 1rem; justify-content: center;
+    }
+    .qa-chip {
+      font-family: 'DM Sans', sans-serif; font-size: 12px;
+      padding: .35rem .85rem;
+      background: rgba(138,99,255,.07);
+      border: 1px solid rgba(138,99,255,.22);
+      border-radius: 20px;
+      color: var(--text-muted); cursor: pointer; transition: all .15s;
+    }
+    .qa-chip:hover {
+      background: rgba(138,99,255,.16);
+      border-color: rgba(138,99,255,.4);
+      color: var(--text-secondary);
+    }
+    .qa-input-row {
+      display: flex; gap: 8px; align-items: center;
+    }
+    .qa-input {
+      flex: 1;
+      font-family: 'DM Sans', sans-serif; font-size: 14px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--r-md);
+      color: var(--text-primary);
+      padding: .7rem 1rem;
+      outline: none; transition: border-color .15s;
+    }
+    .qa-input:focus { border-color: rgba(138,99,255,.45); }
+    .qa-input::placeholder { color: var(--text-muted); }
+    .qa-send-btn {
+      width: 40px; height: 40px; flex-shrink: 0;
+      background: rgba(138,99,255,.18);
+      border: 1px solid rgba(138,99,255,.4);
+      border-radius: var(--r-md);
+      color: #b09fff; font-size: 16px;
+      cursor: pointer; transition: all .15s;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .qa-send-btn:hover:not(:disabled) { background: rgba(138,99,255,.3); }
+    .qa-send-btn:disabled { opacity: .45; cursor: not-allowed; }
+    .qa-thread {
+      display: flex; flex-direction: column; gap: 12px;
+      margin-bottom: 1.5rem;
+    }
+    .qa-bubble {
+      max-width: 100%; border-radius: var(--r-md);
+      padding: .85rem 1.1rem;
+      font-family: 'DM Sans', sans-serif; font-size: 14px; line-height: 1.65;
+    }
+    .qa-bubble.user {
+      background: rgba(138,99,255,.12); border: 1px solid rgba(138,99,255,.25);
+      color: var(--text-secondary); align-self: flex-end;
+      max-width: 85%; font-size: 13px;
+    }
+    .qa-bubble.assistant {
+      background: var(--bg-card); border: 1px solid var(--border);
+      color: var(--text-secondary); align-self: flex-start;
+    }
+    .qa-bubble.thinking {
+      background: var(--bg-card); border: 1px solid var(--border);
+      color: var(--text-muted); font-style: italic; font-size: 12px;
+    }
+    .qa-bubble-meta {
+      font-family: 'Space Mono', monospace; font-size: 9px;
+      color: var(--text-muted); margin-bottom: .4rem;
+      text-transform: uppercase; letter-spacing: .1em;
+    }
+
     /* ── DASHBOARD CONTENT (hidden until authenticated) ── */
     .dash-content { display: none; }
     .dash-content.visible { display: block; }
@@ -1596,6 +1668,45 @@
       <div class="ai-narrative" id="aiNarrative"></div>
       <div class="ai-bullets-grid" id="aiBullets"></div>
     </div>
+
+    <!-- ── DIVIDER ── -->
+    <div style="display:flex;align-items:center;gap:.75rem;margin:1.75rem 0 1.25rem;">
+      <div style="flex:1;height:1px;background:var(--border);"></div>
+      <div style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-muted);">Pattern Q&amp;A</div>
+      <div style="flex:1;height:1px;background:var(--border);"></div>
+    </div>
+
+    <!-- Q&A intro -->
+    <div style="font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text-muted);text-align:center;margin-bottom:1rem;line-height:1.6;">
+      Ask anything about your glucose patterns. Uses your live data + full history.
+    </div>
+
+    <!-- Suggested questions -->
+    <div class="qa-suggestions" id="qaSuggestions">
+      <button class="qa-chip" onclick="askSuggestion(this)">Why is my morning glucose so high?</button>
+      <button class="qa-chip" onclick="askSuggestion(this)">How is Mounjaro affecting my numbers?</button>
+      <button class="qa-chip" onclick="askSuggestion(this)">What's my best time of day for glucose?</button>
+      <button class="qa-chip" onclick="askSuggestion(this)">Compare my Ozempic vs Mounjaro periods</button>
+      <button class="qa-chip" onclick="askSuggestion(this)">How are my overnight lows doing?</button>
+      <button class="qa-chip" onclick="askSuggestion(this)">What should I tell my doctor?</button>
+    </div>
+
+    <!-- Input row -->
+    <div class="qa-input-row">
+      <input type="text" class="qa-input" id="qaInput"
+        placeholder="Ask a question about your glucose patterns&#8230;"
+        onkeydown="if(event.key==='Enter' && !event.shiftKey){ event.preventDefault(); askQuestion(); }"
+        maxlength="300" />
+      <button class="qa-send-btn" id="qaSendBtn" onclick="askQuestion()">
+        <span id="qaSendIcon">&#8593;</span>
+      </button>
+    </div>
+    <div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--text-muted);text-align:right;margin-top:.3rem;margin-bottom:1rem;">
+      Enter to send &middot; <span id="qaCharCount">0</span>/300
+    </div>
+
+    <!-- Q&A thread -->
+    <div class="qa-thread" id="qaThread"></div>
 
   </div><!-- /#panel-ai -->
 
@@ -5637,6 +5748,150 @@ Generate 4-7 bullets covering different aspects: TIR, dawn spike, variability, o
     btn.disabled = false;
     btnLabel.textContent = 'Analyze Again';
     document.getElementById('aiAnalyzeBtnIcon').textContent = '↺';
+  }
+}
+
+/* ══════════════════════════════════════════
+   PATTERN Q&A
+   Free-form questions against live + history data
+══════════════════════════════════════════ */
+
+let qaHistory = []; // conversation turns {role, content}
+
+/* ── Char counter ── */
+document.addEventListener('DOMContentLoaded', () => {
+  const inp = document.getElementById('qaInput');
+  if (inp) {
+    inp.addEventListener('input', () => {
+      const cc = document.getElementById('qaCharCount');
+      if (cc) cc.textContent = inp.value.length;
+    });
+  }
+});
+
+function askSuggestion(btn) {
+  const inp = document.getElementById('qaInput');
+  if (inp) {
+    inp.value = btn.textContent;
+    const cc = document.getElementById('qaCharCount');
+    if (cc) cc.textContent = inp.value.length;
+    inp.focus();
+  }
+  askQuestion();
+}
+
+function appendBubble(role, text) {
+  const thread = document.getElementById('qaThread');
+  const div = document.createElement('div');
+  div.className = 'qa-bubble ' + role;
+  if (role === 'assistant') {
+    div.innerHTML = '<div class="qa-bubble-meta">&#10022; GLUCOSE AI</div>' +
+      text.replace(/\n/g, '<br>');
+  } else if (role === 'thinking') {
+    div.innerHTML = '<div class="qa-bubble-meta">THINKING&hellip;</div>' +
+      '<div class="ai-loading-dots" style="display:inline-flex;gap:5px;vertical-align:middle;">' +
+      '<span style="width:6px;height:6px;border-radius:50%;background:rgba(138,99,255,.5);display:inline-block;animation:aiDotPulse 1.2s ease-in-out infinite;"></span>' +
+      '<span style="width:6px;height:6px;border-radius:50%;background:rgba(138,99,255,.5);display:inline-block;animation:aiDotPulse 1.2s ease-in-out infinite;animation-delay:.2s;"></span>' +
+      '<span style="width:6px;height:6px;border-radius:50%;background:rgba(138,99,255,.5);display:inline-block;animation:aiDotPulse 1.2s ease-in-out infinite;animation-delay:.4s;"></span>' +
+      '</div>';
+  } else {
+    div.textContent = text;
+  }
+  thread.appendChild(div);
+  thread.scrollTop = thread.scrollHeight;
+  return div;
+}
+
+async function askQuestion() {
+  const inp   = document.getElementById('qaInput');
+  const btn   = document.getElementById('qaSendBtn');
+  const question = inp.value.trim();
+  if (!question) return;
+
+  // Ensure data is loaded
+  if (!histData) {
+    try {
+      const r = await fetch('history.json');
+      histData = await r.json();
+    } catch { /* proceed */ }
+  }
+
+  // Show user bubble
+  appendBubble('user', question);
+  inp.value = '';
+  const cc = document.getElementById('qaCharCount');
+  if (cc) cc.textContent = '0';
+
+  // Hide suggestions after first question
+  const sugg = document.getElementById('qaSuggestions');
+  if (sugg) sugg.style.display = 'none';
+
+  // Add to history
+  qaHistory.push({ role: 'user', content: question });
+
+  // Thinking bubble
+  btn.disabled = true;
+  const thinkBubble = appendBubble('thinking', '');
+
+  // Build context (same as analyze but always full)
+  const savedScope = aiScope;
+  aiScope = 'all';
+  const ctx = buildAIContext();
+  aiScope = savedScope;
+
+  const systemPrompt = `You are a knowledgeable glucose data assistant helping Chuck, a Type 2 diabetic, understand his Dexcom G7 CGM patterns. You have access to his full glucose history and current live data.
+
+Rules:
+- Answer conversationally but precisely — reference actual numbers from the data when relevant
+- Be direct and honest, no sugarcoating
+- Never give medical advice; you identify patterns and observations only
+- Keep answers focused — 2-5 sentences for simple questions, more for complex comparisons
+- If you don't have enough data to answer confidently, say so clearly
+- Do NOT use markdown headers or bullet formatting — write in plain flowing prose
+
+Patient context and full data: ${JSON.stringify(ctx)}`;
+
+  // Build messages array with history (cap at last 6 turns to keep tokens reasonable)
+  const recentHistory = qaHistory.slice(-6);
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: systemPrompt,
+        messages: recentHistory,
+      }),
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData?.error?.message || 'API error ' + res.status);
+    }
+
+    const data = await res.json();
+    const answer = data.content?.find(b => b.type === 'text')?.text || 'No response.';
+
+    // Add assistant turn to history
+    qaHistory.push({ role: 'assistant', content: answer });
+
+    // Replace thinking bubble with answer
+    thinkBubble.className = 'qa-bubble assistant';
+    thinkBubble.innerHTML = '<div class="qa-bubble-meta">&#10022; GLUCOSE AI</div>' +
+      answer.replace(/\n/g, '<br>');
+
+  } catch (err) {
+    thinkBubble.className = 'qa-bubble assistant';
+    thinkBubble.innerHTML = '<div class="qa-bubble-meta">ERROR</div>' +
+      '&#9888; ' + err.message + ' (Note: direct API calls are blocked by CORS — deploy via Worker to enable)';
+    // Remove failed turn from history
+    qaHistory.pop();
+  } finally {
+    btn.disabled = false;
+    inp.focus();
+    document.getElementById('qaThread').scrollTop = 99999;
   }
 }
 
