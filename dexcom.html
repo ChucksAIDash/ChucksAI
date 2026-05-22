@@ -422,6 +422,34 @@
       color: var(--accent);
     }
 
+    .comp-select {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      font-family: 'Space Mono', monospace;
+      font-size: 10px;
+      padding: .3rem .5rem;
+      border-radius: 6px;
+      cursor: pointer;
+      outline: none;
+    }
+    .comp-select:focus { border-color: var(--border-bright); }
+
+    .wow-stat {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: .75rem;
+    }
+    .wow-stat-label { font-family:'DM Sans',sans-serif; font-size:10px; color:var(--text-muted); margin-bottom:.35rem; }
+    .wow-stat-row   { display:flex; align-items:baseline; gap:.5rem; flex-wrap:wrap; }
+    .wow-this       { font-family:'Space Mono',monospace; font-size:18px; font-weight:700; }
+    .wow-last       { font-family:'Space Mono',monospace; font-size:12px; color:var(--text-muted); }
+    .wow-delta      { font-family:'Space Mono',monospace; font-size:10px; margin-top:.25rem; }
+    .wow-delta.pos  { color: rgba(61,220,132,.8); }
+    .wow-delta.neg  { color: rgba(240,82,82,.8); }
+    .wow-delta.neu  { color: var(--text-muted); }
+
     /* Best/Worst day cards */
     .bestworst-grid {
       display: grid; grid-template-columns: 1fr 1fr;
@@ -940,6 +968,17 @@
         </div>
       </div>
 
+      <!-- Week-over-Week comparison -->
+      <div class="tir-card" id="wowCard">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem;margin-bottom:1rem;">
+          <div class="tir-title" style="margin-bottom:0;">📊 This Week vs Last Week</div>
+          <div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--text-muted);" id="wowDateRange">Loading…</div>
+        </div>
+        <div id="wowGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;">
+          <div class="loading-text"><span class="spinner"></span>Loading…</div>
+        </div>
+      </div>
+
       <!-- Recent readings -->
       <div class="readings-card">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:.5rem;">
@@ -1234,6 +1273,32 @@
         </div>
       </div>
 
+      <!-- 11. PERIOD COMPARISON -->
+      <div class="hist-section" style="margin-top:1.25rem;" id="periodCompSection">
+        <div class="hist-section-title">⚖️ Period Comparison</div>
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:1rem;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-family:'Space Mono',monospace;font-size:10px;color:rgba(127,217,184,.7);">A:</span>
+            <select id="compSelA" class="comp-select" onchange="renderPeriodComp()"></select>
+          </div>
+          <div style="font-family:'Space Mono',monospace;font-size:12px;color:var(--text-muted);">vs</div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-family:'Space Mono',monospace;font-size:10px;color:rgba(240,184,106,.7);">B:</span>
+            <select id="compSelB" class="comp-select" onchange="renderPeriodComp()"></select>
+          </div>
+        </div>
+        <div id="periodCompGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px;margin-bottom:1rem;"></div>
+        <div class="chart-card" style="margin-bottom:0;">
+          <div class="chart-header">
+            <div class="chart-title">Side-by-Side Metrics</div>
+            <div style="font-family:'DM Sans',sans-serif;font-size:11px;color:var(--text-muted);" id="compChartSubtitle">—</div>
+          </div>
+          <div class="hist-chart-wrap">
+            <canvas id="periodCompChart"></canvas>
+          </div>
+        </div>
+      </div>
+
     </div><!-- /#hist-content -->
 
   </div><!-- /#panel-history -->
@@ -1277,6 +1342,7 @@ let postMidnightChart = null;
 let activePostMidIdx  = 0;
 let lowFreqChart      = null;
 let activeLowFreqIdx  = 0;
+let periodCompChart   = null;
 let activeHeatmapIdx = 0;
 let activeTirIdx     = 0;
 
@@ -1394,6 +1460,7 @@ async function loadData() {
     updateChart(allData);
     updateReadings();
     loadAverages();
+    loadWoW();
   } catch(err) {
     console.error('loadData error:', err);
   }
@@ -2071,6 +2138,7 @@ function renderHistory() {
   renderDawnSpikeScore();
   renderPostMidnight();
   renderLowFreq();
+  renderPeriodCompInit();
 }
 
 /* ── MOUNJARO DOSE TRACKER ── */
@@ -3987,6 +4055,261 @@ function renderLowFreqChart(idx) {
       },
     }],
   });
+}
+/* ══════════════════════════════════════
+   PERIOD COMPARISON (History tab)
+   Compare any two periods side by side
+══════════════════════════════════════ */
+function renderPeriodCompInit() {
+  const periods = histData.periods;
+  const selA    = document.getElementById('compSelA');
+  const selB    = document.getElementById('compSelB');
+  if (!selA || !selB || !periods.length) return;
+
+  const opts = periods.map((p, i) =>
+    `<option value="${i}">${p.label} (${p.medication})</option>`
+  ).join('');
+  selA.innerHTML = opts;
+  selB.innerHTML = opts;
+
+  // Default: A = second-to-last period, B = last period
+  selA.value = Math.max(0, periods.length - 2);
+  selB.value = periods.length - 1;
+
+  renderPeriodComp();
+}
+
+function renderPeriodComp() {
+  const periods = histData.periods;
+  const selA    = document.getElementById('compSelA');
+  const selB    = document.getElementById('compSelB');
+  if (!selA || !selB) return;
+
+  const pA = periods[parseInt(selA.value)];
+  const pB = periods[parseInt(selB.value)];
+  if (!pA || !pB) return;
+
+  // Subtitle
+  const sub = document.getElementById('compChartSubtitle');
+  if (sub) sub.textContent = `${pA.label} vs ${pB.label}`;
+
+  // Metrics to compare
+  const metrics = [
+    { key: 'avg',  label: 'Avg Glucose', unit: 'mg/dL', lowerBetter: true  },
+    { key: 'tir',  label: 'Time in Range', unit: '%',   lowerBetter: false },
+    { key: 'sd',   label: 'Std Deviation', unit: 'mg/dL', lowerBetter: true },
+    { key: 'cv',   label: 'CV%',          unit: '%',    lowerBetter: true  },
+    { key: 'high', label: 'High%',        unit: '%',    lowerBetter: true  },
+    { key: 'low',  label: 'Low%',         unit: '%',    lowerBetter: true  },
+    { key: 'gmi',  label: 'GMI',          unit: '%',    lowerBetter: true  },
+  ];
+
+  // Insight cards
+  const grid = document.getElementById('periodCompGrid');
+  if (grid) {
+    grid.innerHTML = metrics
+      .filter(m => pA[m.key] != null && pB[m.key] != null)
+      .map(m => {
+        const vA    = pA[m.key];
+        const vB    = pB[m.key];
+        const delta = Math.round((vB - vA) * 10) / 10;
+        const improved = m.lowerBetter ? delta < 0 : delta > 0;
+        const same     = delta === 0;
+        const sign     = delta > 0 ? '+' : '';
+        const cls      = same ? 'neu' : improved ? 'pos' : 'neg';
+        const arrow    = same ? '→' : improved ? '▼' : '▲';
+
+        return `<div class="wow-stat">
+          <div class="wow-stat-label">${m.label}</div>
+          <div class="wow-stat-row">
+            <span class="wow-this" style="color:rgba(127,217,184,.9)">${vA}${m.unit === '%' && m.key !== 'gmi' ? '%' : ' ' + m.unit}</span>
+            <span class="wow-last">${vB}${m.unit === '%' && m.key !== 'gmi' ? '%' : ' ' + m.unit}</span>
+          </div>
+          <div class="wow-delta ${cls}">${arrow} ${sign}${delta} · A→B</div>
+          <div style="font-family:'DM Sans',sans-serif;font-size:9px;color:var(--text-muted);margin-top:2px;">
+            <span style="color:rgba(127,217,184,.6)">●</span> ${pA.label.replace(' 2026','').replace(' 2025','')}
+            <span style="color:rgba(240,184,106,.6);margin-left:4px">●</span> ${pB.label.replace(' 2026','').replace(' 2025','')}
+          </div>
+        </div>`;
+      }).join('');
+  }
+
+  // Bar chart
+  renderPeriodCompChart(pA, pB, metrics);
+}
+
+function renderPeriodCompChart(pA, pB, metrics) {
+  const ctx = document.getElementById('periodCompChart');
+  if (!ctx) return;
+
+  const validMetrics = metrics.filter(m => pA[m.key] != null && pB[m.key] != null);
+  const labels  = validMetrics.map(m => m.label);
+  const dataA   = validMetrics.map(m => pA[m.key]);
+  const dataB   = validMetrics.map(m => pB[m.key]);
+
+  if (periodCompChart) periodCompChart.destroy();
+  periodCompChart = new Chart(ctx.getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: pA.label,
+          data: dataA,
+          backgroundColor: 'rgba(127,217,184,.55)',
+          borderColor: 'rgba(127,217,184,.9)',
+          borderWidth: 1,
+          borderRadius: 4,
+        },
+        {
+          label: pB.label,
+          data: dataB,
+          backgroundColor: 'rgba(240,184,106,.55)',
+          borderColor: 'rgba(240,184,106,.9)',
+          borderWidth: 1,
+          borderRadius: 4,
+        },
+      ],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      animation: { duration: 350 },
+      plugins: {
+        legend: {
+          display: true,
+          labels: { color: 'rgba(232,240,247,.5)', font: { family: 'Space Mono', size: 9 }, boxWidth: 12 },
+        },
+        tooltip: {
+          backgroundColor: 'rgba(5,8,12,.92)',
+          borderColor: 'rgba(255,255,255,.1)', borderWidth: 1,
+          titleFont: { family: 'Space Mono', size: 10 },
+          bodyFont:  { family: 'Space Mono', size: 11 },
+          callbacks: {
+            label: item => {
+              const m = validMetrics[item.dataIndex];
+              const unit = m.unit === '%' && m.key !== 'gmi' ? '%' : ' ' + m.unit;
+              return `  ${item.dataset.label}: ${item.parsed.y}${unit}`;
+            },
+          },
+        },
+      },
+      scales: {
+        x: {
+          ticks: { color: 'rgba(232,240,247,.4)', font: { family: 'DM Sans', size: 10 } },
+          grid: { color: 'rgba(255,255,255,.03)' },
+        },
+        y: {
+          ticks: { color: 'rgba(232,240,247,.28)', font: { family: 'Space Mono', size: 9 } },
+          grid: { color: 'rgba(255,255,255,.04)' },
+        },
+      },
+    },
+  });
+}
+
+/* ══════════════════════════════════════
+   WEEK-OVER-WEEK (Live tab)
+   Current 7 days vs prior 7 days from API
+══════════════════════════════════════ */
+async function loadWoW() {
+  const grid    = document.getElementById('wowGrid');
+  const dateEl  = document.getElementById('wowDateRange');
+  if (!grid) return;
+
+  try {
+    // Fetch 14 days — reuse longData cache if available
+    let records = longData['14d'];
+    if (!records) {
+      const res = await fetch(`${WORKER}/egvs?minutes=${14 * 1440}`);
+      const data = await res.json();
+      records = (data.records || []).sort((a, b) =>
+        new Date(a.systemTime) - new Date(b.systemTime)
+      );
+      longData['14d'] = records;
+    }
+
+    const vals = records.filter(r => r.value > 0);
+    if (!vals.length) {
+      grid.innerHTML = '<div style="font-family:\'DM Sans\',sans-serif;font-size:12px;color:var(--text-muted);">No data available</div>';
+      return;
+    }
+
+    // Split at 7-day mark from most recent reading
+    const latest = new Date(vals[vals.length - 1].systemTime);
+    const cutoff = new Date(latest.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+    const thisWeek = vals.filter(r => new Date(r.systemTime) >= cutoff);
+    const lastWeek = vals.filter(r => new Date(r.systemTime) <  cutoff);
+
+    if (!thisWeek.length) {
+      grid.innerHTML = '<div style="font-family:\'DM Sans\',sans-serif;font-size:12px;color:var(--text-muted);">Not enough data for comparison</div>';
+      return;
+    }
+
+    // Compute stats for a set of readings
+    function weekStats(readings) {
+      const v     = readings.map(r => r.value);
+      const avg   = Math.round(v.reduce((a, b) => a + b, 0) / v.length);
+      const tir   = Math.round((v.filter(x => x >= LOW && x <= HIGH).length / v.length) * 100);
+      const high  = Math.round((v.filter(x => x > HIGH).length / v.length) * 100);
+      const low   = Math.round((v.filter(x => x < LOW).length  / v.length) * 100);
+      const mean  = v.reduce((a, b) => a + b, 0) / v.length;
+      const sd    = Math.round(Math.sqrt(v.reduce((s, x) => s + (x - mean) ** 2, 0) / v.length));
+      const cv    = Math.round((sd / mean) * 100 * 10) / 10;
+      const above200 = Math.round((v.filter(x => x > 200).length / v.length) * 100);
+      return { avg, tir, high, low, sd, cv, above200, n: v.length };
+    }
+
+    const tw = weekStats(thisWeek);
+    const lw = lastWeek.length >= 24 ? weekStats(lastWeek) : null; // need at least a day of data
+
+    // Date range label
+    if (dateEl) {
+      const twStart = new Date(thisWeek[0].systemTime);
+      const lwEnd   = lw ? new Date(lastWeek[lastWeek.length - 1].systemTime) : null;
+      const fmt = d => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      dateEl.textContent = lw
+        ? `${fmt(twStart)} – ${fmt(latest)} vs prior 7d`
+        : `${fmt(twStart)} – ${fmt(latest)} · no prior week data`;
+    }
+
+    const wowMetrics = [
+      { key: 'avg',      label: 'Avg Glucose', unit: 'mg/dL', lowerBetter: true  },
+      { key: 'tir',      label: 'Time in Range', unit: '%',   lowerBetter: false },
+      { key: 'sd',       label: 'Std Deviation', unit: 'mg/dL', lowerBetter: true },
+      { key: 'cv',       label: 'CV%',          unit: '%',    lowerBetter: true  },
+      { key: 'above200', label: 'Above 200',    unit: '%',    lowerBetter: true  },
+      { key: 'low',      label: 'Low%',         unit: '%',    lowerBetter: true  },
+    ];
+
+    grid.innerHTML = wowMetrics.map(m => {
+      const vThis = tw[m.key];
+      const vLast = lw ? lw[m.key] : null;
+      const delta  = vLast !== null ? Math.round((vThis - vLast) * 10) / 10 : null;
+      const improved = delta !== null ? (m.lowerBetter ? delta < 0 : delta > 0) : false;
+      const same     = delta === 0;
+      const sign     = delta !== null && delta > 0 ? '+' : '';
+      const cls      = delta === null ? 'neu' : same ? 'neu' : improved ? 'pos' : 'neg';
+      const arrow    = delta === null ? '' : same ? '→' : improved ? '▼' : '▲';
+      const unit     = m.unit === '%' ? '%' : ' mg/dL';
+
+      return `<div class="wow-stat">
+        <div class="wow-stat-label">${m.label}</div>
+        <div class="wow-stat-row">
+          <span class="wow-this" style="color:rgba(127,217,184,.9)">${vThis}${unit}</span>
+          ${vLast !== null ? `<span class="wow-last">${vLast}${unit}</span>` : ''}
+        </div>
+        ${delta !== null
+          ? `<div class="wow-delta ${cls}">${arrow} ${sign}${delta} vs last week</div>`
+          : '<div class="wow-delta neu">No prior week data</div>'
+        }
+      </div>`;
+    }).join('');
+
+  } catch(e) {
+    console.error('WoW error:', e);
+    if (grid) grid.innerHTML = '<div style="font-family:\'DM Sans\',sans-serif;font-size:12px;color:var(--text-muted);">Could not load comparison</div>';
+  }
 }
 
 function fmtTime(d) {
