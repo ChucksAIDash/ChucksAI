@@ -4686,13 +4686,27 @@ async function loadBestWeek() {
     }
 
     // Fallback: use best Clarity period from history.json if API didn't have enough
-    if (!bestStats && histData && histData.periods && histData.periods.length) {
-      const best = histData.periods.reduce((b, p) => p.avg < b.avg ? p : b, histData.periods[0]);
-      bestStats = {
-        avg: best.avg, tir: best.tir, sd: best.sd,
-        cv: best.cv, high: best.high || 0, low: best.low || 0,
-      };
-      if (metaEl) metaEl.textContent = `Best period: ${best.label} (Clarity)`;
+    if (!bestStats) {
+      let periods = [];
+      try {
+        // histData may not be loaded yet if user hasn't visited History tab
+        if (histData && histData.periods && histData.periods.length) {
+          periods = histData.periods;
+        } else {
+          const hr = await fetch('history.json');
+          const hd = await hr.json();
+          periods = hd.periods || [];
+        }
+      } catch {}
+
+      if (periods.length) {
+        const best = periods.reduce((b, p) => p.avg < b.avg ? p : b, periods[0]);
+        bestStats = {
+          avg: best.avg, tir: best.tir, sd: best.sd,
+          cv: best.cv, high: best.high || 0, low: best.low || 0,
+        };
+        if (metaEl) metaEl.textContent = `Best period: ${best.label} (Clarity)`;
+      }
     }
 
     if (!bestStats) {
