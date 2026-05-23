@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Glucose Widget</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:      #05080c;
+      --card:    #0d1117;
+      --border:  rgba(255,255,255,.08);
+      --up:      #3ddc84;
+      --down:    #f05252;
+      --warn:    #f0b86a;
+      --muted:   rgba(255,255,255,.35);
+      --text:    rgba(255,255,255,.88);
+    }
+
+    body {
+      background: var(--bg);
+      display: flex; align-items: center; justify-content: center;
+      min-height: 100vh;
+      font-family: 'Space Mono', monospace;
+    }
+
+    .widget {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.1rem 1.4rem 1rem;
+      width: 200px;
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+      transition: border-color .2s;
+      text-decoration: none;
+      display: block;
+    }
+    .widget::before {
+      content: '';
+      position: absolute; top: 0; left: 15%; right: 15%; height: 1px;
+      background: linear-gradient(90deg, transparent, var(--accent-glow, rgba(61,220,132,.3)), transparent);
+      transition: background .3s;
+    }
+    .widget:hover { border-color: rgba(255,255,255,.16); }
+
+    /* Status-driven accent colors */
+    .widget.is-low   { border-color: rgba(240,82,82,.4);  --accent-glow: rgba(240,82,82,.4); }
+    .widget.is-high  { border-color: rgba(240,184,106,.4); --accent-glow: rgba(240,184,106,.4); }
+    .widget.is-good  { border-color: rgba(61,220,132,.25); --accent-glow: rgba(61,220,132,.3); }
+
+    /* Top row: label + refresh dot */
+    .w-top {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: .55rem;
+    }
+    .w-label {
+      font-size: 8px; letter-spacing: .14em; text-transform: uppercase;
+      color: var(--muted);
+    }
+    .w-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--up);
+      animation: pulse 2.5s ease-in-out infinite;
+    }
+    .w-dot.stale { background: var(--warn); animation: none; }
+    .w-dot.error { background: var(--down); animation: none; }
+    @keyframes pulse {
+      0%, 100% { opacity: .4; transform: scale(.85); }
+      50%       { opacity: 1;  transform: scale(1); }
+    }
+
+    /* Main reading */
+    .w-main {
+      display: flex; align-items: baseline; gap: .35rem;
+      margin-bottom: .3rem;
+    }
+    .w-value {
+      font-size: 48px; font-weight: 700; line-height: 1;
+      color: var(--text);
+      transition: color .3s;
+    }
+    .widget.is-low  .w-value { color: var(--down); text-shadow: 0 0 20px rgba(240,82,82,.4); }
+    .widget.is-high .w-value { color: var(--warn); text-shadow: 0 0 20px rgba(240,184,106,.4); }
+    .widget.is-good .w-value { color: var(--up);   text-shadow: 0 0 20px rgba(61,220,132,.35); }
+
+    .w-trend { font-size: 26px; line-height: 1; }
+
+    /* Unit + time row */
+    .w-sub {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: .75rem;
+    }
+    .w-unit  { font-size: 9px; color: var(--muted); }
+    .w-time  { font-size: 9px; color: var(--muted); }
+
+    /* Mini stats bar */
+    .w-stats {
+      display: grid; grid-template-columns: 1fr 1fr 1fr;
+      gap: 4px;
+      padding-top: .65rem;
+      border-top: 1px solid var(--border);
+    }
+    .w-stat { text-align: center; }
+    .w-stat-val {
+      font-size: 12px; font-weight: 700;
+      color: var(--text); display: block;
+    }
+    .w-stat-lbl {
+      font-size: 7px; letter-spacing: .1em; text-transform: uppercase;
+      color: var(--muted); display: block; margin-top: 1px;
+    }
+
+    /* Spinner for loading */
+    .w-spinner {
+      display: inline-block; width: 28px; height: 28px;
+      border: 2px solid rgba(255,255,255,.1);
+      border-top-color: rgba(255,255,255,.4);
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+      margin: .5rem auto; display: block;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Error state */
+    .w-error {
+      font-size: 10px; color: var(--down);
+      text-align: center; padding: .5rem 0;
+      line-height: 1.5;
+    }
+
+    /* Mini TIR bar */
+    .w-tir-bar {
+      height: 3px; border-radius: 2px;
+      background: rgba(255,255,255,.06);
+      margin-bottom: .55rem; overflow: hidden;
+      display: flex;
+    }
+    .w-tir-seg-low  { background: var(--down);  height: 100%; transition: width .4s; }
+    .w-tir-seg-norm { background: var(--up);    height: 100%; transition: width .4s; }
+    .w-tir-seg-high { background: var(--warn);  height: 100%; transition: width .4s; }
+  </style>
+</head>
+<body>
+
+<a class="widget" id="widget" href="https://chucksai.com/dexcom.html" target="_blank">
+  <div class="w-top">
+    <span class="w-label">Glucose</span>
+    <span class="w-dot" id="wDot"></span>
+  </div>
+
+  <div id="wBody">
+    <span class="w-spinner"></span>
+  </div>
+</a>
+
+<script>
+const WORKER = 'https://dexcom-proxy.infiniti306.workers.dev';
+const LOW    = 70;
+const HIGH   = 180;
+
+const TREND_MAP = {
+  doubleUp:      '⇈', singleUp:      '↑', fortyFiveUp:   '↗',
+  flat:          '→', fortyFiveDown: '↘', singleDown:    '↓',
+  doubleDown:    '⇊', notComputable: '?', rateOutOfRange:'!',
+};
+
+async function refresh() {
+  const widget = document.getElementById('widget');
+  const dot    = document.getElementById('wDot');
+  const body   = document.getElementById('wBody');
+
+  try {
+    const res  = await fetch(`${WORKER}/egvs?minutes=60`);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+
+    const records = (data.records || []).sort((a,b) =>
+      new Date(a.systemTime) - new Date(b.systemTime)
+    );
+
+    if (!records.length) throw new Error('No data');
+
+    const latest = records[records.length - 1];
+    const val    = latest.value;
+    const trend  = TREND_MAP[latest.trend] || '—';
+
+    // Stale check: > 12 minutes old
+    const ageMin = (Date.now() - new Date(latest.systemTime)) / 60000;
+    const isStale = ageMin > 12;
+
+    // Compute 24h stats from last 288 readings (approx)
+    const vals = records.map(r => r.value).filter(v => v > 0);
+    const avg  = vals.length ? Math.round(vals.reduce((a,b)=>a+b,0)/vals.length) : null;
+    const tir  = vals.length ? Math.round(vals.filter(v=>v>=LOW&&v<=HIGH).length/vals.length*100) : null;
+    const lowPct  = vals.length ? Math.round(vals.filter(v=>v<LOW).length/vals.length*100) : 0;
+    const highPct = vals.length ? Math.round(vals.filter(v=>v>HIGH).length/vals.length*100) : 0;
+    const normPct = 100 - lowPct - highPct;
+
+    // Time string
+    const t = new Date(latest.systemTime);
+    const timeStr = t.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    const agoStr  = ageMin < 2 ? 'just now'
+                  : ageMin < 60 ? Math.round(ageMin) + 'm ago'
+                  : Math.round(ageMin/60) + 'h ago';
+
+    // Status class
+    widget.className = 'widget ' + (val < LOW ? 'is-low' : val > HIGH ? 'is-high' : 'is-good');
+    dot.className    = 'w-dot' + (isStale ? ' stale' : '');
+
+    body.innerHTML = `
+      <div class="w-main">
+        <span class="w-value">${val}</span>
+        <span class="w-trend">${trend}</span>
+      </div>
+      <div class="w-sub">
+        <span class="w-unit">mg/dL</span>
+        <span class="w-time">${agoStr}</span>
+      </div>
+      <div class="w-tir-bar">
+        <div class="w-tir-seg-low"  style="width:${lowPct}%"></div>
+        <div class="w-tir-seg-norm" style="width:${normPct}%"></div>
+        <div class="w-tir-seg-high" style="width:${highPct}%"></div>
+      </div>
+      <div class="w-stats">
+        <div class="w-stat">
+          <span class="w-stat-val">${avg ?? '—'}</span>
+          <span class="w-stat-lbl">Avg</span>
+        </div>
+        <div class="w-stat">
+          <span class="w-stat-val">${tir != null ? tir + '%' : '—'}</span>
+          <span class="w-stat-lbl">TIR</span>
+        </div>
+        <div class="w-stat">
+          <span class="w-stat-val">${val < LOW ? '🔴' : val > HIGH ? '🟡' : '🟢'}</span>
+          <span class="w-stat-lbl">Status</span>
+        </div>
+      </div>`;
+
+  } catch (err) {
+    document.getElementById('widget').className = 'widget';
+    dot.className = 'w-dot error';
+    body.innerHTML = `<div class="w-error">Unable to load<br>${err.message}</div>`;
+  }
+}
+
+// Initial load + auto-refresh every 5 minutes
+refresh();
+setInterval(refresh, 5 * 60 * 1000);
+</script>
+</body>
+</html>
