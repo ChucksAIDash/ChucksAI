@@ -5877,7 +5877,7 @@ Generate 4-7 bullets covering different aspects: TIR, dawn spike, variability, o
   const userPrompt = `Analyze Chuck's glucose data for the ${scopeLabel}. Here is the data context:\n\n${JSON.stringify(ctx, null, 2)}\n\nBe specific — reference actual numbers. Note the dawn phenomenon pattern, Mounjaro progress expectations, and how this period compares to prior ones. End the bullets with one concrete "action" item Chuck could bring up with his doctor.`;
 
   try {
-    const res = await fetch('https://dexcom-proxy.infiniti306.workers.dev/ai', {
+    const res = await fetch('https://anthropic.infiniti306.workers.dev', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -6017,7 +6017,7 @@ Patient context and full data: ${JSON.stringify(ctx)}`;
   const recentHistory = qaHistory.slice(-6);
 
   try {
-    const res = await fetch('https://dexcom-proxy.infiniti306.workers.dev/ai', {
+    const res = await fetch('https://anthropic.infiniti306.workers.dev', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -6124,7 +6124,7 @@ End with:
 Note: This summary was generated from Dexcom CGM data for discussion purposes only.`;
 
   try {
-    const res = await fetch('https://dexcom-proxy.infiniti306.workers.dev/ai', {
+    const res = await fetch('https://anthropic.infiniti306.workers.dev', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
