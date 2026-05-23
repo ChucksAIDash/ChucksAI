@@ -2,6 +2,14 @@
   "_note": "Dexcom Clarity historical data for Chuck's glucose dashboard. Add new periods here when uploading new Clarity exports.",
   "_schema": "periods[] = period summaries | hourly[] = hourly stats per period | dow = day-of-week averages",
 
+  "faultySensorWindows": [
+    {
+      "start": "2026-03-25",
+      "end": "2026-04-04",
+      "note": "Sensor miscalibration — readings ~20–35 mg/dL lower than actual for most of this window. Data is unreliable. Exclude from Best Week calculations and flag in UI when this date range is selected."
+    }
+  ],
+
   "periods": [
     {
       "id": "jun-sep-2025",
@@ -97,6 +105,25 @@
       "veryLow": 0,
       "daysWithData": 8,
       "timeActive": 99
+    },
+    {
+      "id": "apr27-may3-2026",
+      "label": "Apr 27–May 3",
+      "dateRange": "Apr 27 – May 3, 2026",
+      "days": 7,
+      "medication": "Mounjaro 5mg",
+      "avg": 122,
+      "gmi": 6.2,
+      "tir": 92,
+      "sd": 35,
+      "cv": 29.0,
+      "veryHigh": 0,
+      "high": 6,
+      "inRange": 92,
+      "low": 2,
+      "veryLow": 0,
+      "daysWithData": 7,
+      "timeActive": 100
     },
     {
       "id": "apr30-may4-2026",

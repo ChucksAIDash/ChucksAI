@@ -1217,6 +1217,10 @@
           <div class="range-item"><div class="range-dot" style="background:rgba(61,220,132,.7)"></div>Normal 70–180</div>
           <div class="range-item"><div class="range-dot" style="background:rgba(240,184,106,.7)"></div>High &gt;180</div>
         </div>
+        <!-- Faulty sensor warning banner -->
+        <div id="faultySensorBanner" style="display:none;margin-top:.75rem;padding:.6rem .9rem;border-radius:8px;background:rgba(240,184,106,.08);border:1px solid rgba(240,184,106,.35);font-family:'DM Sans',sans-serif;font-size:12px;color:rgba(240,184,106,.9);line-height:1.5;">
+          ⚠️ <strong>Faulty sensor data in view.</strong> <span id="faultySensorMsg"></span>
+        </div>
       </div>
 
       <!-- Time in range -->
@@ -2102,6 +2106,37 @@ function updateTIR() {
 }
 
 /* ── CHART TIMEFRAME ── */
+/* ── FAULTY SENSOR BANNER ── */
+let _faultySensorWindows = null;
+async function getFaultySensorWindows() {
+  if (_faultySensorWindows !== null) return _faultySensorWindows;
+  try {
+    const r = await fetch('history.json');
+    const d = await r.json();
+    _faultySensorWindows = (d.faultySensorWindows || []).map(w => ({
+      start: new Date(w.start + 'T00:00:00').getTime(),
+      end:   new Date(w.end   + 'T23:59:59').getTime(),
+      note:  w.note || '',
+    }));
+  } catch { _faultySensorWindows = []; }
+  return _faultySensorWindows;
+}
+
+async function checkFaultySensorBanner(viewStart, viewEnd) {
+  const banner = document.getElementById('faultySensorBanner');
+  const msg    = document.getElementById('faultySensorMsg');
+  if (!banner) return;
+  const windows = await getFaultySensorWindows();
+  const hit = windows.find(w => viewStart <= w.end && viewEnd >= w.start);
+  if (hit) {
+    const fmt = ts => new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    if (msg) msg.textContent = `This view includes ${fmt(hit.start)}–${fmt(hit.end)}, when the sensor was reading ~20–35 mg/dL lower than actual. Glucose values during this period are unreliable.`;
+    banner.style.display = 'block';
+  } else {
+    banner.style.display = 'none';
+  }
+}
+
 async function setTF(tf) {
   chartTF = tf;
 
@@ -2249,12 +2284,13 @@ function clearCustomRange() {
   if (btn) btn.classList.remove('active');
   if (startEl) startEl.value = '';
   if (endEl)   endEl.value   = '';
-  // Restore default view
+  // Restore default view (banner will re-check inside setTF → updateChart)
   setTF(chartTF);
 }
 
 function updateChartCustom(data, start, end) {
   // Same as updateChart but with custom date range — no cutoff filtering
+  checkFaultySensorBanner(start.getTime ? start.getTime() : start, end.getTime ? end.getTime() : end);
   let points = data;
   if (points.length > 300) {
     const step = Math.ceil(points.length / 300);
@@ -2378,6 +2414,9 @@ function updateChart(data) {
   const def     = TF_DEFS[chartTF];
   const cutoff  = Date.now() - def.minutes * 60 * 1000;
   const visible = data.filter(r => new Date(r.systemTime) >= cutoff);
+
+  // Check faulty sensor banner
+  checkFaultySensorBanner(cutoff, Date.now());
 
   let points = visible;
   if (visible.length > 200) {
@@ -5198,9 +5237,22 @@ async function loadBestWeek() {
     let bestStats     = null;
     let bestWindowEnd = null;
 
-    // Faulty sensor period — exclude any window overlapping this range
-    const FAULTY_START = new Date('2026-03-25T00:00:00').getTime();
-    const FAULTY_END   = new Date('2026-04-04T23:59:59').getTime();
+    // Faulty sensor period — loaded from history.json faultySensorWindows
+    let FAULTY_START = new Date('2026-03-25T00:00:00').getTime();
+    let FAULTY_END   = new Date('2026-04-04T23:59:59').getTime();
+    try {
+      if (histData && histData.faultySensorWindows && histData.faultySensorWindows.length) {
+        FAULTY_START = new Date(histData.faultySensorWindows[0].start + 'T00:00:00').getTime();
+        FAULTY_END   = new Date(histData.faultySensorWindows[0].end   + 'T23:59:59').getTime();
+      } else {
+        const _fhr = await fetch('history.json');
+        const _fhd = await _fhr.json();
+        if (_fhd.faultySensorWindows && _fhd.faultySensorWindows.length) {
+          FAULTY_START = new Date(_fhd.faultySensorWindows[0].start + 'T00:00:00').getTime();
+          FAULTY_END   = new Date(_fhd.faultySensorWindows[0].end   + 'T23:59:59').getTime();
+        }
+      }
+    } catch {}
 
     if (vals90.length >= 14) { // need at least 2 weeks of API data
       const WIN_MS  = 7 * 24 * 60 * 60 * 1000;
