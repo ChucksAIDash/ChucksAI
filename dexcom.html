@@ -5881,7 +5881,7 @@ Generate 4-7 bullets covering different aspects: TIR, dawn spike, variability, o
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-5-20250929',
         max_tokens: 1000,
         system: systemPrompt,
         messages: [{ role: 'user', content: userPrompt }],
@@ -6021,7 +6021,7 @@ Patient context and full data: ${JSON.stringify(ctx)}`;
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-5-20250929',
         max_tokens: 1000,
         system: systemPrompt,
         messages: recentHistory,
@@ -6128,7 +6128,7 @@ Note: This summary was generated from Dexcom CGM data for discussion purposes on
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-5-20250929',
         max_tokens: 1000,
         system: systemPrompt,
         messages: [{ role: 'user', content: userPrompt }],
