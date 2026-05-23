@@ -1217,10 +1217,6 @@
           <div class="range-item"><div class="range-dot" style="background:rgba(61,220,132,.7)"></div>Normal 70–180</div>
           <div class="range-item"><div class="range-dot" style="background:rgba(240,184,106,.7)"></div>High &gt;180</div>
         </div>
-        <!-- Faulty sensor warning banner -->
-        <div id="faultySensorBanner" style="display:none;margin-top:.75rem;padding:.6rem .9rem;border-radius:8px;background:rgba(240,184,106,.08);border:1px solid rgba(240,184,106,.35);font-family:'DM Sans',sans-serif;font-size:12px;color:rgba(240,184,106,.9);line-height:1.5;">
-          ⚠️ <strong>Faulty sensor data in view.</strong> <span id="faultySensorMsg"></span>
-        </div>
       </div>
 
       <!-- Time in range -->
@@ -1400,12 +1396,44 @@
         </div>
       </div>
 
-      <!-- ── COMING SOON: REMAINING PRIORITY FEATURES ── -->
-      <div class="hist-section">
-        <div class="hist-section-title">In Development</div>
+      <!-- ── MOUNJARO PROGRESS TRACKER ── -->
+      <div class="hist-section" id="mounjaroProgressSection">
+        <div class="hist-section-title">💉 Mounjaro Progress</div>
 
+        <!-- Insight cards -->
+        <div id="mounjaroInsightRow" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin-bottom:1rem;"></div>
+
+        <!-- Metric selector tabs -->
+        <div style="display:flex;gap:6px;margin-bottom:.75rem;flex-wrap:wrap;">
+          <button class="ps-btn active" id="mjTab-avg"  onclick="selectMJTab('avg')" >Avg Glucose</button>
+          <button class="ps-btn"        id="mjTab-tir"  onclick="selectMJTab('tir')" >Time in Range</button>
+          <button class="ps-btn"        id="mjTab-cv"   onclick="selectMJTab('cv')"  >Variability (CV)</button>
+        </div>
+
+        <div class="chart-card" style="margin-bottom:0;">
+          <div class="chart-header">
+            <div class="chart-title" id="mjChartTitle">Avg Glucose — Week by Week on Mounjaro</div>
+            <div style="font-family:'DM Sans',sans-serif;font-size:11px;color:var(--text-muted);">Dose #1 = Apr 15, 2026 · Each bar = one tracked period</div>
+          </div>
+          <div class="hist-chart-wrap tall">
+            <canvas id="mounjaroProgressChart"></canvas>
+          </div>
+          <div id="mjGoalLine" style="font-family:'Space Mono',monospace;font-size:9px;color:var(--text-muted);margin-top:.5rem;text-align:right;"></div>
+        </div>
+
+        <!-- Dawn spike trend inside this section -->
+        <div class="chart-card" style="margin-top:1rem;margin-bottom:0;">
+          <div class="chart-header">
+            <div class="chart-title">Dawn Spike — Week by Week Trend</div>
+            <div style="font-family:'DM Sans',sans-serif;font-size:11px;color:var(--text-muted);">7–9am peak vs midnight baseline · Lower = better</div>
+          </div>
+          <div class="hist-chart-wrap tall">
+            <canvas id="mjDawnTrendChart"></canvas>
+          </div>
+          <div style="font-family:'DM Sans',sans-serif;font-size:11px;color:var(--text-muted);margin-top:.5rem;" id="mjDawnNote">Watching for the dawn spike to shrink as Mounjaro builds — expect improvement around dose 4–6.</div>
+        </div>
       </div>
-      <!-- ── END COMING SOON ── -->
+      <!-- ── END MOUNJARO PROGRESS ── -->
 
       <!-- ── DAWN PHENOMENON TRACKER ── -->
       <div class="hist-section" id="dawnSection">
@@ -2106,37 +2134,6 @@ function updateTIR() {
 }
 
 /* ── CHART TIMEFRAME ── */
-/* ── FAULTY SENSOR BANNER ── */
-let _faultySensorWindows = null;
-async function getFaultySensorWindows() {
-  if (_faultySensorWindows !== null) return _faultySensorWindows;
-  try {
-    const r = await fetch('history.json');
-    const d = await r.json();
-    _faultySensorWindows = (d.faultySensorWindows || []).map(w => ({
-      start: new Date(w.start + 'T00:00:00').getTime(),
-      end:   new Date(w.end   + 'T23:59:59').getTime(),
-      note:  w.note || '',
-    }));
-  } catch { _faultySensorWindows = []; }
-  return _faultySensorWindows;
-}
-
-async function checkFaultySensorBanner(viewStart, viewEnd) {
-  const banner = document.getElementById('faultySensorBanner');
-  const msg    = document.getElementById('faultySensorMsg');
-  if (!banner) return;
-  const windows = await getFaultySensorWindows();
-  const hit = windows.find(w => viewStart <= w.end && viewEnd >= w.start);
-  if (hit) {
-    const fmt = ts => new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-    if (msg) msg.textContent = `This view includes ${fmt(hit.start)}–${fmt(hit.end)}, when the sensor was reading ~20–35 mg/dL lower than actual. Glucose values during this period are unreliable.`;
-    banner.style.display = 'block';
-  } else {
-    banner.style.display = 'none';
-  }
-}
-
 async function setTF(tf) {
   chartTF = tf;
 
@@ -2284,13 +2281,12 @@ function clearCustomRange() {
   if (btn) btn.classList.remove('active');
   if (startEl) startEl.value = '';
   if (endEl)   endEl.value   = '';
-  // Restore default view (banner will re-check inside setTF → updateChart)
+  // Restore default view
   setTF(chartTF);
 }
 
 function updateChartCustom(data, start, end) {
   // Same as updateChart but with custom date range — no cutoff filtering
-  checkFaultySensorBanner(start.getTime ? start.getTime() : start, end.getTime ? end.getTime() : end);
   let points = data;
   if (points.length > 300) {
     const step = Math.ceil(points.length / 300);
@@ -2414,9 +2410,6 @@ function updateChart(data) {
   const def     = TF_DEFS[chartTF];
   const cutoff  = Date.now() - def.minutes * 60 * 1000;
   const visible = data.filter(r => new Date(r.systemTime) >= cutoff);
-
-  // Check faulty sensor banner
-  checkFaultySensorBanner(cutoff, Date.now());
 
   let points = visible;
   if (visible.length > 200) {
@@ -2755,6 +2748,266 @@ function renderHistory() {
   renderPeriodCompInit();
   renderExcursions();
   renderMealImpact();
+  renderMounjaroProgress();
+}
+
+/* ══════════════════════════════════════
+   MOUNJARO PROGRESS TRACKER
+══════════════════════════════════════ */
+let mounjaroProgressChart = null;
+let mjDawnTrendChart = null;
+let mjActiveTab = 'avg';
+
+const MJ_START = new Date('2026-04-15T00:00:00');
+
+function renderMounjaroProgress() {
+  if (!histData || !histData.periods) return;
+
+  // Filter to Mounjaro periods only
+  const mjPeriods = histData.periods.filter(p => p.medication === 'Mounjaro 5mg');
+  if (!mjPeriods.length) return;
+
+  renderMJInsights(mjPeriods);
+  renderMJChart(mjPeriods, mjActiveTab);
+  renderMJDawnTrend(mjPeriods);
+}
+
+function selectMJTab(tab) {
+  mjActiveTab = tab;
+  ['avg','tir','cv'].forEach(t => {
+    const btn = document.getElementById(`mjTab-${t}`);
+    if (btn) btn.classList.toggle('active', t === tab);
+  });
+  const mjPeriods = histData.periods.filter(p => p.medication === 'Mounjaro 5mg');
+  renderMJChart(mjPeriods, tab);
+}
+
+function renderMJInsights(periods) {
+  const wrap = document.getElementById('mounjaroInsightRow');
+  if (!wrap) return;
+
+  const now = new Date();
+  const weeksIn = Math.floor((now - MJ_START) / (7 * 24 * 60 * 60 * 1000)) + 1;
+
+  // Best period on Mounjaro (lowest avg)
+  const best = periods.reduce((b, p) => p.avg < b.avg ? p : b, periods[0]);
+
+  // Most recent period
+  const latest = periods[periods.length - 1];
+  const prev   = periods.length >= 2 ? periods[periods.length - 2] : null;
+
+  // Trend arrow for avg
+  const trendAvg = prev ? latest.avg - prev.avg : null;
+  const trendTIR = prev ? latest.tir - prev.tir : null;
+  const trendStr = (val, lower) => {
+    if (val === null) return '—';
+    if (lower) return val < -2 ? '▼ Improving' : val > 2 ? '▲ Rising' : '→ Stable';
+    return val >  2 ? '▲ Improving' : val < -2 ? '▼ Declining' : '→ Stable';
+  };
+
+  const card = (icon, val, lbl, sub, color) => `
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r-lg);padding:1rem .9rem;">
+      <div style="font-size:18px;margin-bottom:.4rem;">${icon}</div>
+      <div style="font-family:'Space Mono',monospace;font-size:22px;font-weight:700;color:${color};line-height:1;">${val}</div>
+      <div style="font-family:'Space Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--text-muted);margin-top:.3rem;">${lbl}</div>
+      ${sub ? `<div style="font-family:'DM Sans',sans-serif;font-size:11px;color:var(--text-secondary);margin-top:.25rem;">${sub}</div>` : ''}
+    </div>`;
+
+  wrap.innerHTML = [
+    card('💉', `Week ${weeksIn}`, 'On Mounjaro', `Dose #${weeksIn} · Since Apr 15`, 'rgba(138,99,255,.9)'),
+    card('📊', `${latest.avg}`, 'Latest Avg', `${trendStr(trendAvg, true)} vs prior`, trendAvg !== null && trendAvg < 0 ? 'var(--up)' : trendAvg > 2 ? 'var(--accent3)' : 'var(--text-primary)'),
+    card('🎯', `${latest.tir}%`, 'Latest TIR', `${trendStr(trendTIR, false)} vs prior`, latest.tir >= 85 ? 'var(--up)' : latest.tir >= 70 ? 'var(--accent3)' : 'var(--down)'),
+    card('🏆', `${best.avg} avg`, 'Best Period', best.label, 'rgba(240,184,106,.9)'),
+    card('📉', `${latest.cv}%`, 'CV (Variability)', latest.cv < 30 ? 'Goal met (<36%)' : 'Target <36%', latest.cv < 30 ? 'var(--up)' : 'var(--text-secondary)'),
+  ].join('');
+}
+
+function renderMJChart(periods, tab) {
+  const titleMap = {
+    avg: 'Avg Glucose — Week by Week on Mounjaro',
+    tir: 'Time in Range (%) — Week by Week on Mounjaro',
+    cv:  'Coefficient of Variation (%) — Variability by Period',
+  };
+  const goalMap = {
+    avg: { val: 154, label: '← Goal: <154 mg/dL', color: 'rgba(61,220,132,.6)', lower: true },
+    tir: { val: 70,  label: '← Goal: >70% TIR',   color: 'rgba(61,220,132,.6)', lower: false },
+    cv:  { val: 36,  label: '← Goal: <36% CV',    color: 'rgba(61,220,132,.6)', lower: true },
+  };
+  const dataKey = { avg: 'avg', tir: 'tir', cv: 'cv' };
+  const unitMap  = { avg: ' mg/dL', tir: '%', cv: '%' };
+
+  const titleEl = document.getElementById('mjChartTitle');
+  if (titleEl) titleEl.textContent = titleMap[tab];
+
+  const labels = periods.map(p => p.label);
+  const vals   = periods.map(p => p[dataKey[tab]]);
+  const goal   = goalMap[tab];
+
+  // Color bars: green if better than goal, amber if close, dim if not
+  const barColors = vals.map(v => {
+    if (tab === 'avg') return v < 130 ? 'rgba(61,220,132,.85)' : v < 154 ? 'rgba(127,217,184,.7)' : 'rgba(240,184,106,.7)';
+    if (tab === 'tir') return v >= 85 ? 'rgba(61,220,132,.85)' : v >= 70 ? 'rgba(127,217,184,.7)' : 'rgba(240,184,106,.7)';
+    if (tab === 'cv')  return v < 27 ? 'rgba(61,220,132,.85)' : v < 33 ? 'rgba(127,217,184,.7)' : 'rgba(240,184,106,.7)';
+    return 'rgba(138,99,255,.65)';
+  });
+
+  const ctx = document.getElementById('mounjaroProgressChart');
+  if (!ctx) return;
+  if (mounjaroProgressChart) mounjaroProgressChart.destroy();
+
+  const goalAnnotation = {
+    id: 'goalLine',
+    beforeDraw(chart) {
+      const { ctx: c, chartArea: { left, right }, scales: { y } } = chart;
+      const yPx = y.getPixelForValue(goal.val);
+      c.save();
+      c.strokeStyle = goal.color;
+      c.lineWidth = 1.5;
+      c.setLineDash([5, 4]);
+      c.beginPath(); c.moveTo(left, yPx); c.lineTo(right, yPx); c.stroke();
+      c.restore();
+    },
+  };
+
+  mounjaroProgressChart = new Chart(ctx.getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: titleMap[tab],
+        data: vals,
+        backgroundColor: barColors,
+        borderColor: barColors.map(c => c.replace(/[\d.]+\)$/, '1)')),
+        borderWidth: 1,
+        borderRadius: 4,
+      }],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      animation: { duration: 400 },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(5,8,12,.92)',
+          borderColor: 'rgba(255,255,255,.1)', borderWidth: 1,
+          titleFont: { family: 'Space Mono', size: 10 },
+          bodyFont:  { family: 'Space Mono', size: 12 },
+          callbacks: {
+            label: ctx => `${ctx.parsed.y}${unitMap[tab]}`,
+          },
+        },
+      },
+      scales: {
+        x: {
+          ticks: { color: 'rgba(232,240,247,.4)', font: { family: 'Space Mono', size: 9 }, maxRotation: 25 },
+          grid:  { color: 'rgba(255,255,255,.04)' },
+        },
+        y: {
+          ticks: { color: 'rgba(232,240,247,.4)', font: { family: 'Space Mono', size: 9 } },
+          grid:  { color: 'rgba(255,255,255,.05)' },
+          suggestedMin: tab === 'avg' ? 80  : tab === 'tir' ? 50 : 20,
+          suggestedMax: tab === 'avg' ? 180 : tab === 'tir' ? 100 : 45,
+        },
+      },
+    },
+    plugins: [goalAnnotation],
+  });
+
+  const goalEl = document.getElementById('mjGoalLine');
+  if (goalEl) goalEl.textContent = goal.label;
+}
+
+function renderMJDawnTrend(periods) {
+  // Build dawn spike score per period using hourly data
+  // Dawn spike = (avg of 7am + 8am + 9am hours) - (avg of 0am + 1am hours)
+  const hourly = histData.hourly || [];
+  const mjHourly = hourly.filter(h => {
+    const p = periods.find(p => p.id === h.periodId);
+    return p && p.medication === 'Mounjaro 5mg';
+  });
+
+  if (!mjHourly.length) {
+    const note = document.getElementById('mjDawnNote');
+    if (note) note.textContent = 'Dawn trend data requires hourly exports — upload more Clarity PDFs with hourly breakdowns.';
+    return;
+  }
+
+  const labels = mjHourly.map(h => h.label.replace(/ \(\d+d\)/, ''));
+  const spikes = mjHourly.map(h => {
+    const m = h.means;
+    if (!m || m.length < 10) return null;
+    const midnight = (m[0] + m[1]) / 2;          // 12am–2am avg
+    const peak     = (m[7] + m[8] + m[9]) / 3;  // 7am–9am avg
+    return Math.round(peak - midnight);
+  }).filter(v => v !== null);
+
+  const ctx = document.getElementById('mjDawnTrendChart');
+  if (!ctx) return;
+  if (mjDawnTrendChart) mjDawnTrendChart.destroy();
+
+  const barColors = spikes.map(v =>
+    v < 40  ? 'rgba(61,220,132,.8)' :
+    v < 70  ? 'rgba(127,217,184,.7)' :
+    v < 100 ? 'rgba(240,184,106,.7)' :
+              'rgba(240,82,82,.7)'
+  );
+
+  mjDawnTrendChart = new Chart(ctx.getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: labels.slice(0, spikes.length),
+      datasets: [{
+        label: 'Dawn Spike (mg/dL)',
+        data: spikes,
+        backgroundColor: barColors,
+        borderColor: barColors.map(c => c.replace(/[\d.]+\)$/, '1)')),
+        borderWidth: 1,
+        borderRadius: 4,
+      }],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      animation: { duration: 400 },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(5,8,12,.92)',
+          borderColor: 'rgba(255,255,255,.1)', borderWidth: 1,
+          titleFont: { family: 'Space Mono', size: 10 },
+          bodyFont:  { family: 'Space Mono', size: 12 },
+          callbacks: { label: ctx => `+${ctx.parsed.y} mg/dL spike` },
+        },
+      },
+      scales: {
+        x: {
+          ticks: { color: 'rgba(232,240,247,.4)', font: { family: 'Space Mono', size: 9 }, maxRotation: 25 },
+          grid: { color: 'rgba(255,255,255,.04)' },
+        },
+        y: {
+          suggestedMin: 0,
+          suggestedMax: 150,
+          ticks: { color: 'rgba(232,240,247,.4)', font: { family: 'Space Mono', size: 9 } },
+          grid: { color: 'rgba(255,255,255,.05)' },
+        },
+      },
+    },
+    plugins: [{
+      id: 'dawnGoal',
+      beforeDraw(chart) {
+        const { ctx: c, chartArea: { left, right }, scales: { y } } = chart;
+        const yPx = y.getPixelForValue(50);
+        c.save();
+        c.strokeStyle = 'rgba(61,220,132,.4)';
+        c.lineWidth = 1.5;
+        c.setLineDash([5, 4]);
+        c.beginPath(); c.moveTo(left, yPx); c.lineTo(right, yPx); c.stroke();
+        c.fillStyle = 'rgba(61,220,132,.5)';
+        c.font = '9px Space Mono';
+        c.fillText('← target zone', right - 90, yPx - 4);
+        c.restore();
+      },
+    }],
+  });
 }
 
 /* ── MOUNJARO DOSE TRACKER ── */
@@ -5237,22 +5490,9 @@ async function loadBestWeek() {
     let bestStats     = null;
     let bestWindowEnd = null;
 
-    // Faulty sensor period — loaded from history.json faultySensorWindows
-    let FAULTY_START = new Date('2026-03-25T00:00:00').getTime();
-    let FAULTY_END   = new Date('2026-04-04T23:59:59').getTime();
-    try {
-      if (histData && histData.faultySensorWindows && histData.faultySensorWindows.length) {
-        FAULTY_START = new Date(histData.faultySensorWindows[0].start + 'T00:00:00').getTime();
-        FAULTY_END   = new Date(histData.faultySensorWindows[0].end   + 'T23:59:59').getTime();
-      } else {
-        const _fhr = await fetch('history.json');
-        const _fhd = await _fhr.json();
-        if (_fhd.faultySensorWindows && _fhd.faultySensorWindows.length) {
-          FAULTY_START = new Date(_fhd.faultySensorWindows[0].start + 'T00:00:00').getTime();
-          FAULTY_END   = new Date(_fhd.faultySensorWindows[0].end   + 'T23:59:59').getTime();
-        }
-      }
-    } catch {}
+    // Faulty sensor period — exclude any window overlapping this range
+    const FAULTY_START = new Date('2026-03-25T00:00:00').getTime();
+    const FAULTY_END   = new Date('2026-04-04T23:59:59').getTime();
 
     if (vals90.length >= 14) { // need at least 2 weeks of API data
       const WIN_MS  = 7 * 24 * 60 * 60 * 1000;
