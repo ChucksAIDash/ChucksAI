@@ -1791,7 +1791,12 @@
 
     <!-- Suggested questions -->
     <div class="qa-suggestions" id="qaSuggestions">
-      <!-- dynamically populated by refreshQAChips() -->
+      <button class="qa-chip" onclick="askSuggestion(this)">Why is my morning glucose so high?</button>
+      <button class="qa-chip" onclick="askSuggestion(this)">How is Mounjaro affecting my numbers?</button>
+      <button class="qa-chip" onclick="askSuggestion(this)">What's my best time of day for glucose?</button>
+      <button class="qa-chip" onclick="askSuggestion(this)">Compare my Ozempic vs Mounjaro periods</button>
+      <button class="qa-chip" onclick="askSuggestion(this)">How are my overnight lows doing?</button>
+      <button class="qa-chip" onclick="askSuggestion(this)">What should I tell my doctor?</button>
     </div>
 
     <!-- Input row -->
@@ -1993,9 +1998,6 @@ function switchTab(tab) {
   if (tab === 'history' && !histData) {
     loadHistory();
   }
-  if (tab === 'ai') {
-    refreshQAChips();
-  }
 }
 
 /* ── TREND ARROWS ── */
@@ -2075,7 +2077,6 @@ async function loadData() {
     loadAverages();
     loadWoW();
     loadBestWeek();
-    refreshQAChips();
   } catch(err) {
     console.error('loadData error:', err);
   }
@@ -3949,15 +3950,19 @@ function renderAbove200TrendChart(data) {
 function renderPeriodCards() {
   const grid = document.getElementById('periodGrid');
   grid.innerHTML = histData.periods.map(p => {
-    const isMounjaro = p.medication.includes('Mounjaro');
+    const isMounjaro   = p.medication.includes('Mounjaro');
+    const isFingerstick = p.dataSource === 'fingerstick';
     const tirColor = p.tir >= 70 ? 'good' : p.tir >= 55 ? 'warn' : 'bad';
     const avgColor = p.avg < 140 ? 'good' : p.avg < 160 ? 'warn' : 'bad';
     const gmiStr = p.gmi ? p.gmi.toFixed(1) + '%' : 'N/A';
+    const fingerstickNote = isFingerstick
+      ? `<div style="font-family:'DM Sans',sans-serif;font-size:11px;color:rgba(240,184,106,.8);margin-top:.5rem;line-height:1.4;">✦ Fingerstick only — CGM sensor miscalibrated this window</div>`
+      : '';
 
-    return `<div class="period-card fade-in">
+    return `<div class="period-card fade-in" style="${isFingerstick ? 'border-color:rgba(240,184,106,.25);' : ''}">
       <div class="period-card-header">
         <div>
-          <div class="period-card-label">${p.label}</div>
+          <div class="period-card-label">${p.label}${isFingerstick ? ' <span style="font-size:10px;color:rgba(240,184,106,.7);">✦</span>' : ''}</div>
           <div class="period-card-date">${p.dateRange}</div>
         </div>
         <div class="med-badge ${isMounjaro ? 'mounjaro' : ''}">${p.medication}</div>
@@ -3985,6 +3990,7 @@ function renderPeriodCards() {
         <div class="pc-tir-seg" style="width:${p.inRange}%;background:rgba(61,220,132,.75)"></div>
         <div class="pc-tir-seg" style="width:${p.high+p.veryHigh}%;background:rgba(240,184,106,.75)"></div>
       </div>
+      ${fingerstickNote}
     </div>`;
   }).join('');
 }
@@ -6230,107 +6236,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 });
-
-/* ── DYNAMIC Q&A CHIP GENERATOR ── */
-function refreshQAChips() {
-  const wrap = document.getElementById('qaSuggestions');
-  if (!wrap) return;
-
-  // Pool of possible questions, each with a condition function
-  // Conditions use live allData + histData — gracefully handle missing data
-  const pool = [];
-
-  const vals24 = allData.map(r => r.value).filter(v => v > 0);
-  const avg24  = vals24.length ? Math.round(vals24.reduce((a,b)=>a+b,0)/vals24.length) : null;
-
-  // Dawn spike — always relevant for Chuck
-  const dawnVals = allData.filter(r => { const h = new Date(r.systemTime).getHours(); return h>=6&&h<10; }).map(r=>r.value).filter(v=>v>0);
-  const dawnPeak = dawnVals.length ? Math.max(...dawnVals) : null;
-
-  // Overnight lows
-  const overnightVals = allData.filter(r => { const h = new Date(r.systemTime).getHours(); return h<6; }).map(r=>r.value).filter(v=>v>0);
-  const overnightLow  = overnightVals.length ? Math.min(...overnightVals) : null;
-
-  // Mounjaro week
-  const mjWeek = Math.floor((Date.now() - new Date('2026-04-15').getTime()) / (7*24*60*60*1000)) + 1;
-
-  // History data
-  const periods    = histData && histData.periods ? histData.periods : [];
-  const mjPeriods  = periods.filter(p => p.medication === 'Mounjaro 5mg');
-  const latest     = mjPeriods.length ? mjPeriods[mjPeriods.length-1] : null;
-  const prev       = mjPeriods.length >= 2 ? mjPeriods[mjPeriods.length-2] : null;
-  const avgTrend   = latest && prev ? latest.avg - prev.avg : null;
-  const tirLatest  = latest ? latest.tir : null;
-
-  // TIR today
-  const tir24 = vals24.length ? Math.round(vals24.filter(v=>v>=70&&v<=180).length/vals24.length*100) : null;
-
-  // Highs today
-  const highCount = vals24.filter(v=>v>180).length;
-
-  // --- Build pool based on data conditions ---
-
-  // Always include Mounjaro progress — it's the main story
-  pool.push({ q: `How is Mounjaro week ${mjWeek} going compared to earlier weeks?`, priority: 10 });
-
-  // Dawn spike — always relevant
-  if (dawnPeak && dawnPeak > 180) {
-    pool.push({ q: `My dawn peak was ${dawnPeak} mg/dL this morning — is that improving?`, priority: 9 });
-  } else {
-    pool.push({ q: 'How has my dawn phenomenon changed since starting Mounjaro?', priority: 8 });
-  }
-
-  // TIR — flag if low or celebrate if high
-  if (tir24 !== null && tir24 < 75) {
-    pool.push({ q: `My TIR is ${tir24}% today — what's dragging it down?`, priority: 9 });
-  } else if (tir24 !== null && tir24 >= 90) {
-    pool.push({ q: `TIR is ${tir24}% today — what's working well?`, priority: 7 });
-  }
-
-  // Avg trend vs prior period
-  if (avgTrend !== null && avgTrend > 5) {
-    pool.push({ q: `My avg is up ${avgTrend} mg/dL vs last period — why?`, priority: 9 });
-  } else if (avgTrend !== null && avgTrend < -5) {
-    pool.push({ q: `My avg dropped ${Math.abs(avgTrend)} mg/dL vs last period — what helped?`, priority: 8 });
-  }
-
-  // Overnight lows
-  if (overnightLow !== null && overnightLow < 75) {
-    pool.push({ q: `I had a ${overnightLow} mg/dL reading overnight — should I be concerned?`, priority: 9 });
-  } else {
-    pool.push({ q: 'How are my overnight readings trending since adjusting Glimepiride?', priority: 6 });
-  }
-
-  // High readings today
-  if (highCount > 5) {
-    pool.push({ q: `I had ${highCount} high readings today — what time of day is worst?`, priority: 8 });
-  }
-
-  // Ozempic vs Mounjaro comparison — always useful
-  pool.push({ q: 'Compare my best Ozempic weeks to my best Mounjaro weeks', priority: 7 });
-
-  // Doctor prep
-  pool.push({ q: 'What are the 3 most important things to tell my doctor?', priority: 6 });
-
-  // Best time of day
-  pool.push({ q: 'What time of day am I most in range right now?', priority: 5 });
-
-  // CV / variability
-  if (latest && latest.cv) {
-    pool.push({ q: `My CV is ${latest.cv}% — what does that mean for my control?`, priority: 5 });
-  }
-
-  // Sort by priority, take top 6, shuffle the lower-priority ones slightly
-  pool.sort((a, b) => b.priority - a.priority);
-  const top3    = pool.slice(0, 3);
-  const rest    = pool.slice(3).sort(() => Math.random() - 0.5);
-  const chosen  = [...top3, ...rest].slice(0, 6);
-
-  // Render
-  wrap.innerHTML = chosen.map(item =>
-    `<button class="qa-chip" onclick="askSuggestion(this)">${item.q}</button>`
-  ).join('');
-}
 
 function askSuggestion(btn) {
   const inp = document.getElementById('qaInput');

@@ -6,7 +6,32 @@
     {
       "start": "2026-03-25",
       "end": "2026-04-04",
-      "note": "Sensor miscalibration — readings ~20–35 mg/dL lower than actual for most of this window. Data is unreliable. Exclude from Best Week calculations and flag in UI when this date range is selected."
+      "note": "Sensor miscalibration — readings ~20–35 mg/dL lower than actual for most of this window. Data is unreliable. Exclude from Best Week calculations and flag in UI when this date range is selected.",
+      "fingerstickData": {
+        "note": "Manual fingerstick BG readings taken during faulty sensor window. Mar 25–28 had no manual entries — sensor may have seemed okay those first days. Mar 29–Apr 4 have reliable fingerstick values.",
+        "days": [
+          { "date": "2026-03-29", "readings": [147, 190] },
+          { "date": "2026-03-30", "readings": [138, 192, 166, 184, 146, 123, 106, 104, 97] },
+          { "date": "2026-03-31", "readings": [148, 181, 185, 167, 84, 79, 80, 102, 95, 139, 122] },
+          { "date": "2026-04-01", "readings": [191, 229, 283, 277, 176, 93, 115, 105, 88] },
+          { "date": "2026-04-02", "readings": [165, 178, 138, 88, 105, 127, 124, 82, 175, 140] },
+          { "date": "2026-04-03", "readings": [157, 178, 141, 122, 116, 111, 122, 64, 151] },
+          { "date": "2026-04-04", "readings": [196, 114, 73, 64, 138, 164, 142, 104] }
+        ],
+        "summary": {
+          "days": 7,
+          "readingCount": 58,
+          "avg": 138,
+          "sd": 47,
+          "cv": 34.1,
+          "tir": 79,
+          "high": 17,
+          "low": 3,
+          "veryHigh": 3,
+          "min": 64,
+          "max": 283
+        }
+      }
     }
   ],
 
@@ -67,6 +92,27 @@
       "veryLow": 0,
       "daysWithData": 83,
       "timeActive": 93
+    },
+    {
+      "id": "mar29-apr4-2026",
+      "label": "Mar 29–Apr 4 ✦",
+      "dateRange": "Mar 29 – Apr 4, 2026",
+      "days": 7,
+      "medication": "Ozempic 1.0mg",
+      "avg": 138,
+      "gmi": null,
+      "tir": 79,
+      "sd": 47,
+      "cv": 34.1,
+      "veryHigh": 3,
+      "high": 17,
+      "inRange": 79,
+      "low": 3,
+      "veryLow": 0,
+      "daysWithData": 7,
+      "timeActive": null,
+      "dataSource": "fingerstick",
+      "dataSourceNote": "Manual fingerstick BG only — CGM sensor was miscalibrated ~20–35 mg/dL low during this window. 58 readings across 7 days. Apr 1 morning showed 191→229→283→277 mg/dL spike. Last Ozempic period before switching to Mounjaro Apr 15."
     },
     {
       "id": "mar-apr-2026",
