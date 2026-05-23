@@ -1836,6 +1836,9 @@
       <label class="dr-checkbox-item">
         <input type="checkbox" id="drIncludePatterns" checked> Key patterns
       </label>
+      <label class="dr-checkbox-item">
+        <input type="checkbox" id="drIncludeMounjaro" checked> Mounjaro transition
+      </label>
     </div>
 
     <div style="text-align:center;margin-bottom:1.25rem;">
@@ -6360,10 +6363,11 @@ async function generateDoctorReport() {
   const errorEl   = document.getElementById('drError');
   const reportEl  = document.getElementById('drReport');
 
-  const inclLive     = document.getElementById('drIncludeLive').checked;
-  const inclHistory  = document.getElementById('drIncludeHistory').checked;
-  const inclMeds     = document.getElementById('drIncludeMeds').checked;
-  const inclPatterns = document.getElementById('drIncludePatterns').checked;
+  const inclLive      = document.getElementById('drIncludeLive').checked;
+  const inclHistory   = document.getElementById('drIncludeHistory').checked;
+  const inclMeds      = document.getElementById('drIncludeMeds').checked;
+  const inclPatterns  = document.getElementById('drIncludePatterns').checked;
+  const inclMounjaro  = document.getElementById('drIncludeMounjaro').checked;
 
   btn.disabled  = true;
   btnLabel.textContent = 'Generating…';
@@ -6384,24 +6388,48 @@ async function generateDoctorReport() {
   const ctx = buildAIContext();
   aiScope = savedScope;
 
+  // Build Mounjaro transition data block
+  let mounjaroBlock = '';
+  if (inclMounjaro && histData && histData.periods) {
+    const mjPeriods = histData.periods.filter(p => p.medication === 'Mounjaro 5mg');
+    const ozPeriods = histData.periods.filter(p => p.medication && p.medication.startsWith('Ozempic'));
+    const now = new Date();
+    const dose1 = new Date('2026-04-15');
+    const weeksIn = Math.floor((now - dose1) / (7 * 24 * 60 * 60 * 1000)) + 1;
+    const ozBest  = ozPeriods.length ? ozPeriods.reduce((b,p) => p.avg < b.avg ? p : b, ozPeriods[0]) : null;
+    const mjBest  = mjPeriods.length ? mjPeriods.reduce((b,p) => p.avg < b.avg ? p : b, mjPeriods[0]) : null;
+    const mjLatest = mjPeriods.length ? mjPeriods[mjPeriods.length - 1] : null;
+
+    mounjaroBlock = `\n\nMOUNJARO TRANSITION DATA:
+- Switched from Ozempic 1.0mg to Mounjaro 5mg starting April 15, 2026
+- Currently on week ${weeksIn} (dose #${weeksIn}) of Mounjaro 5mg
+- Previous best on Ozempic: avg ${ozBest ? ozBest.avg : '?'} mg/dL, TIR ${ozBest ? ozBest.tir : '?'}% (${ozBest ? ozBest.label : ''})
+- Best on Mounjaro so far: avg ${mjBest ? mjBest.avg : '?'} mg/dL, TIR ${mjBest ? mjBest.tir : '?'}% (${mjBest ? mjBest.label : ''})
+- Most recent Mounjaro period: avg ${mjLatest ? mjLatest.avg : '?'} mg/dL, TIR ${mjLatest ? mjLatest.tir : '?'}%, CV ${mjLatest ? mjLatest.cv : '?'}%
+- All Mounjaro weekly periods: ${mjPeriods.map(p => `${p.label}: avg ${p.avg}, TIR ${p.tir}%, CV ${p.cv}%`).join(' | ')}
+- Dawn phenomenon (7–9am spike) remains the primary uncontrolled pattern — expected to improve doses 4–6
+- Side effects noted: reduced daytime appetite, brief mild nausea post-injection, some headaches`;
+  }
+
   // Build sections list for the prompt
   const sections = [];
-  if (inclLive)     sections.push('current 24-hour glucose stats (avg, TIR, CV, dawn peak, overnight low)');
-  if (inclHistory)  sections.push('historical period comparison across all tracked periods showing trend over time');
-  if (inclMeds)     sections.push('current medication list and any relevant observations about medication impact on glucose');
-  if (inclPatterns) sections.push('key identified patterns (dawn phenomenon, time-of-day trends, best/worst days)');
-  sections.push('one or two discussion points or questions worth raising with the doctor');
+  if (inclLive)      sections.push('current 24-hour glucose stats (avg, TIR, CV, dawn peak, overnight low)');
+  if (inclHistory)   sections.push('historical period comparison across all tracked periods showing trend over time');
+  if (inclMounjaro)  sections.push('Mounjaro transition summary — week-by-week progress, comparison to Ozempic baseline, side effects, and what to expect next');
+  if (inclMeds)      sections.push('current medication list and any relevant observations about medication impact on glucose');
+  if (inclPatterns)  sections.push('key identified patterns (dawn phenomenon, time-of-day trends, best/worst days)');
+  sections.push('one or two specific discussion points or questions worth raising with the doctor');
 
   const today = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
-  const systemPrompt = `You are generating a concise glucose summary report for a Type 2 diabetic named Chuck (Charles Wilson, DOB Sep 19 1990) to share with his doctor. Write in clear, clinical but plain language. No markdown formatting — use plain text with spacing and dashes only. Structure with clear labeled sections. Be specific with numbers. Keep the entire report under 500 words.`;
+  const systemPrompt = `You are generating a concise glucose summary report for a Type 2 diabetic named Chuck (Charles Wilson, DOB Sep 19 1990) to share with his doctor. Write in clear, clinical but plain language. No markdown formatting — use plain text with spacing and dashes only. Structure with clear labeled sections. Be specific with numbers. Keep the entire report under 600 words.`;
 
   const userPrompt = `Generate a glucose summary report for Chuck's upcoming doctor appointment. Today is ${today}.
 
 Include these sections: ${sections.join('; ')}.
 
 Data context:
-${JSON.stringify(ctx, null, 2)}
+${JSON.stringify(ctx, null, 2)}${mounjaroBlock}
 
 Format as plain text with this structure:
 GLUCOSE SUMMARY REPORT
