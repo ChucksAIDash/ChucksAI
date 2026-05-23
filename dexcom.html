@@ -1836,6 +1836,40 @@
       <pre class="dr-report-body" id="drReportBody"></pre>
     </div>
 
+    <!-- ── DIVIDER ── -->
+    <div style="display:flex;align-items:center;gap:.75rem;margin:1.75rem 0 1.25rem;">
+      <div style="flex:1;height:1px;background:var(--border);"></div>
+      <div style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-muted);">Export Data</div>
+      <div style="flex:1;height:1px;background:var(--border);"></div>
+    </div>
+
+    <div style="font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text-muted);text-align:center;margin-bottom:1.25rem;line-height:1.6;">
+      Downloads a single CSV with two sheets — live readings and historical period summaries.
+    </div>
+
+    <!-- Export options -->
+    <div class="dr-options-row" style="margin-bottom:1.25rem;">
+      <label class="dr-option-label">Include:</label>
+      <label class="dr-checkbox-item">
+        <input type="checkbox" id="csvIncludeLive" checked> Live readings (24h)
+      </label>
+      <label class="dr-checkbox-item">
+        <input type="checkbox" id="csvIncludeHistory" checked> Period summaries
+      </label>
+      <label class="dr-checkbox-item">
+        <input type="checkbox" id="csvIncludeHourly" checked> Hourly averages
+      </label>
+    </div>
+
+    <div style="text-align:center;margin-bottom:1.5rem;">
+      <button class="ai-analyze-btn" id="csvExportBtn" onclick="exportCSV()"
+        style="background:rgba(240,184,106,.1);border-color:rgba(240,184,106,.35);color:var(--accent3);">
+        <span id="csvExportIcon">⬇</span>
+        <span id="csvExportLabel">Download CSV</span>
+      </button>
+      <div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--text-muted);margin-top:.6rem;" id="csvStatus"></div>
+    </div>
+
   </div><!-- /#panel-ai -->
 
 </div><!-- /container -->
@@ -6154,6 +6188,173 @@ function copyReport() {
       copyBtn.innerHTML = '<span id="drCopyIcon">⎘</span> Copy';
     }, 2000);
   });
+}
+
+/* ══════════════════════════════════════════
+   EXPORT TO CSV
+   No API needed — pure client-side
+══════════════════════════════════════════ */
+
+function csvEscape(val) {
+  if (val === null || val === undefined) return '';
+  const s = String(val);
+  if (s.includes(',') || s.includes('"') || s.includes('\n')) {
+    return '"' + s.replace(/"/g, '""') + '"';
+  }
+  return s;
+}
+
+function csvRow(arr) {
+  return arr.map(csvEscape).join(',');
+}
+
+async function exportCSV() {
+  const btn      = document.getElementById('csvExportBtn');
+  const btnLabel = document.getElementById('csvExportLabel');
+  const status   = document.getElementById('csvStatus');
+
+  const inclLive    = document.getElementById('csvIncludeLive').checked;
+  const inclHistory = document.getElementById('csvIncludeHistory').checked;
+  const inclHourly  = document.getElementById('csvIncludeHourly').checked;
+
+  btn.disabled = true;
+  btnLabel.textContent = 'Building…';
+  status.textContent = '';
+
+  // Ensure history loaded
+  if (!histData) {
+    try { const r = await fetch('history.json'); histData = await r.json(); }
+    catch { /* proceed */ }
+  }
+
+  const sections = [];
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('en-US', { year:'numeric', month:'2-digit', day:'2-digit' }).replace(/\//g,'-');
+
+  // ── SECTION 1: Live Readings ──
+  if (inclLive && allData && allData.length) {
+    sections.push('LIVE READINGS — Last 24 Hours');
+    sections.push(csvRow(['Timestamp', 'Glucose (mg/dL)', 'Trend', 'Status']));
+
+    // Compute per-reading status
+    allData.forEach(r => {
+      const status = r.value < 70 ? 'Low' : r.value > 180 ? 'High' : r.value > 250 ? 'Very High' : 'In Range';
+      const trendLabel = {
+        doubleUp: 'Rising Fast', singleUp: 'Rising', fortyFiveUp: 'Rising Slowly',
+        flat: 'Stable', fortyFiveDown: 'Falling Slowly',
+        singleDown: 'Falling', doubleDown: 'Falling Fast'
+      }[r.trend] || r.trend || '';
+      sections.push(csvRow([
+        new Date(r.systemTime).toLocaleString('en-US'),
+        r.value,
+        trendLabel,
+        status
+      ]));
+    });
+
+    // Summary stats block
+    const vals = allData.map(r => r.value).filter(v => v > 0);
+    const avg  = Math.round(vals.reduce((a,b) => a+b,0) / vals.length);
+    const sd   = Math.round(Math.sqrt(vals.map(v=>(v-avg)**2).reduce((a,b)=>a+b,0)/vals.length));
+    const tir  = Math.round(vals.filter(v=>v>=70&&v<=180).length/vals.length*100);
+    sections.push('');
+    sections.push('24H SUMMARY');
+    sections.push(csvRow(['Metric', 'Value']));
+    sections.push(csvRow(['Average Glucose', avg + ' mg/dL']));
+    sections.push(csvRow(['High', Math.max(...vals) + ' mg/dL']));
+    sections.push(csvRow(['Low',  Math.min(...vals) + ' mg/dL']));
+    sections.push(csvRow(['Time in Range (70-180)', tir + '%']));
+    sections.push(csvRow(['Std Deviation', sd + ' mg/dL']));
+    sections.push(csvRow(['CV', Math.round((sd/avg)*100) + '%']));
+    sections.push(csvRow(['Total Readings', vals.length]));
+    sections.push('');
+  }
+
+  // ── SECTION 2: Period Summaries ──
+  if (inclHistory && histData && histData.periods) {
+    sections.push('HISTORICAL PERIOD SUMMARIES');
+    sections.push(csvRow([
+      'Period', 'Date Range', 'Days', 'Medication',
+      'Avg Glucose', 'GMI %', 'TIR %', 'Std Dev', 'CV %',
+      'Very High %', 'High %', 'In Range %', 'Low %', 'Very Low %'
+    ]));
+    histData.periods.forEach(p => {
+      sections.push(csvRow([
+        p.label, p.dateRange, p.days, p.medication,
+        p.avg, p.gmi, p.tir, p.sd, p.cv,
+        p.veryHigh ?? '', p.high ?? '', p.inRange ?? '', p.low ?? '', p.veryLow ?? ''
+      ]));
+    });
+    sections.push('');
+  }
+
+  // ── SECTION 3: Hourly Averages ──
+  if (inclHourly && histData && histData.periods) {
+    // Compute from live data if available
+    if (allData && allData.length) {
+      sections.push('HOURLY GLUCOSE AVERAGES — Live Data (24h)');
+      sections.push(csvRow(['Hour', 'Avg Glucose (mg/dL)', 'Reading Count', 'Min', 'Max']));
+
+      for (let h = 0; h < 24; h++) {
+        const hourVals = allData
+          .filter(r => new Date(r.systemTime).getHours() === h)
+          .map(r => r.value).filter(v => v > 0);
+        if (hourVals.length) {
+          const hAvg = Math.round(hourVals.reduce((a,b)=>a+b,0)/hourVals.length);
+          const label = h === 0 ? '12am' : h < 12 ? h + 'am' : h === 12 ? '12pm' : (h-12) + 'pm';
+          sections.push(csvRow([label, hAvg, hourVals.length, Math.min(...hourVals), Math.max(...hourVals)]));
+        }
+      }
+      sections.push('');
+    }
+
+    // Hourly from history.json if present
+    if (histData.hourly && histData.hourly.length) {
+      const latestHourly = histData.hourly[histData.hourly.length - 1];
+      if (latestHourly && latestHourly.hours) {
+        sections.push('HOURLY AVERAGES — ' + (latestHourly.periodLabel || 'Latest Period'));
+        sections.push(csvRow(['Hour', 'Avg Glucose (mg/dL)']));
+        latestHourly.hours.forEach(h => {
+          sections.push(csvRow([h.label || h.hour, h.avg]));
+        });
+        sections.push('');
+      }
+    }
+  }
+
+  // ── METADATA ──
+  sections.push('EXPORT METADATA');
+  sections.push(csvRow(['Exported', now.toLocaleString('en-US')]));
+  sections.push(csvRow(['Patient', 'Charles Wilson (Chuck)']));
+  sections.push(csvRow(['CGM', 'Dexcom G7']));
+  sections.push(csvRow(['Generated by', 'ChucksAI Glucose Dashboard']));
+
+  if (sections.length === 0) {
+    status.textContent = 'Nothing to export — select at least one option.';
+    btn.disabled = false;
+    btnLabel.textContent = 'Download CSV';
+    return;
+  }
+
+  // Build blob and trigger download
+  const csvContent = sections.join('\n');
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = 'chuck-glucose-' + dateStr + '.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  const rowCount = sections.filter(s => s && !s.startsWith('//') && s.includes(',')).length;
+  status.textContent = '✓ Downloaded ' + rowCount + ' rows';
+  btn.disabled = false;
+  btnLabel.textContent = 'Download CSV';
+  document.getElementById('csvExportIcon').textContent = '⬇';
+
+  setTimeout(() => { status.textContent = ''; }, 4000);
 }
 
 /* ── NAV INJECT ── */
