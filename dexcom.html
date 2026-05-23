@@ -1791,12 +1791,7 @@
 
     <!-- Suggested questions -->
     <div class="qa-suggestions" id="qaSuggestions">
-      <button class="qa-chip" onclick="askSuggestion(this)">Why is my morning glucose so high?</button>
-      <button class="qa-chip" onclick="askSuggestion(this)">How is Mounjaro affecting my numbers?</button>
-      <button class="qa-chip" onclick="askSuggestion(this)">What's my best time of day for glucose?</button>
-      <button class="qa-chip" onclick="askSuggestion(this)">Compare my Ozempic vs Mounjaro periods</button>
-      <button class="qa-chip" onclick="askSuggestion(this)">How are my overnight lows doing?</button>
-      <button class="qa-chip" onclick="askSuggestion(this)">What should I tell my doctor?</button>
+      <!-- dynamically populated by refreshQAChips() -->
     </div>
 
     <!-- Input row -->
@@ -1972,71 +1967,6 @@ const TF_DEFS = {
   '90d': { minutes: 90*1440,   label: '90 Days' },
 };
 
-// Known sensor change dates — add new ones as sensors are swapped
-const SENSOR_CHANGES = [
-  { date: '2026-05-05', label: 'New Sensor' },
-];
-
-// Builds a Chart.js plugin that draws vertical sensor-change lines
-// labels[] are the chart label strings; viewStart/viewEnd are timestamps (ms)
-function makeSensorMarkerPlugin(labels, viewStart, viewEnd, isDayRange) {
-  return {
-    id: 'sensorMarkers',
-    afterDraw(chart) {
-      const { ctx, chartArea: { top, bottom }, scales: { x } } = chart;
-      SENSOR_CHANGES.forEach(sc => {
-        const ts = new Date(sc.date).getTime();
-        if (ts < viewStart || ts > viewEnd) return;
-
-        // Find the closest label index
-        let closestIdx = -1, closestDiff = Infinity;
-        labels.forEach((lbl, i) => {
-          // labels are formatted times/dates — compare by finding nearest point
-          // Use x scale pixel positions to find where this timestamp falls
-          const pct = (ts - viewStart) / (viewEnd - viewStart);
-          const px  = chartArea_left + pct * (chartArea_right - chartArea_left);
-          if (closestIdx === -1) closestIdx = 0; // fallback
-          const diff = Math.abs(i / labels.length - pct);
-          if (diff < closestDiff) { closestDiff = diff; closestIdx = i; }
-        });
-
-        // Calculate pixel position proportionally
-        const pct = Math.max(0, Math.min(1, (ts - viewStart) / (viewEnd - viewStart)));
-        const { left, right } = chart.chartArea;
-        const xPx = left + pct * (right - left);
-
-        ctx.save();
-        // Vertical dashed line
-        ctx.strokeStyle = 'rgba(138,99,255,.55)';
-        ctx.lineWidth   = 1.5;
-        ctx.setLineDash([4, 3]);
-        ctx.beginPath();
-        ctx.moveTo(xPx, top);
-        ctx.lineTo(xPx, bottom);
-        ctx.stroke();
-
-        // Small label at top
-        ctx.setLineDash([]);
-        ctx.fillStyle    = 'rgba(138,99,255,.85)';
-        ctx.font         = '10px Space Mono, monospace';
-        ctx.textAlign    = 'center';
-        ctx.textBaseline = 'top';
-        // Background pill
-        const lblW = ctx.measureText(sc.label).width + 10;
-        ctx.fillStyle = 'rgba(138,99,255,.15)';
-        ctx.beginPath();
-        ctx.roundRect(xPx - lblW/2, top + 2, lblW, 16, 4);
-        ctx.fill();
-        ctx.fillStyle = 'rgba(167,139,250,.95)';
-        ctx.fillText(sc.label, xPx, top + 4);
-        ctx.restore();
-      });
-    },
-  };
-}
-
-
-
 // Auto-refresh: every 5 minutes
 let secsLeft = 300;
 const cdEl   = document.getElementById('countdown');
@@ -2062,6 +1992,9 @@ function switchTab(tab) {
   });
   if (tab === 'history' && !histData) {
     loadHistory();
+  }
+  if (tab === 'ai') {
+    refreshQAChips();
   }
 }
 
@@ -2142,6 +2075,7 @@ async function loadData() {
     loadAverages();
     loadWoW();
     loadBestWeek();
+    refreshQAChips();
   } catch(err) {
     console.error('loadData error:', err);
   }
@@ -2463,7 +2397,7 @@ function updateChartCustom(data, start, end) {
         ctx.fillRect(left, y.getPixelForValue(HIGH), right - left, y.getPixelForValue(LOW) - y.getPixelForValue(HIGH));
         ctx.restore();
       },
-    }, makeSensorMarkerPlugin(labels, start.getTime ? start.getTime() : +start, end.getTime ? end.getTime() : +end, isDayRange)],
+    }],
   });
 }
 
@@ -2604,7 +2538,7 @@ function updateChart(data) {
         ctx.fillRect(left, yHigh, right - left, yLow - yHigh);
         ctx.restore();
       },
-    }, makeSensorMarkerPlugin(labels, cutoff, Date.now(), isDayRange)],
+    }],
   });
 }
 
@@ -6296,6 +6230,107 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 });
+
+/* ── DYNAMIC Q&A CHIP GENERATOR ── */
+function refreshQAChips() {
+  const wrap = document.getElementById('qaSuggestions');
+  if (!wrap) return;
+
+  // Pool of possible questions, each with a condition function
+  // Conditions use live allData + histData — gracefully handle missing data
+  const pool = [];
+
+  const vals24 = allData.map(r => r.value).filter(v => v > 0);
+  const avg24  = vals24.length ? Math.round(vals24.reduce((a,b)=>a+b,0)/vals24.length) : null;
+
+  // Dawn spike — always relevant for Chuck
+  const dawnVals = allData.filter(r => { const h = new Date(r.systemTime).getHours(); return h>=6&&h<10; }).map(r=>r.value).filter(v=>v>0);
+  const dawnPeak = dawnVals.length ? Math.max(...dawnVals) : null;
+
+  // Overnight lows
+  const overnightVals = allData.filter(r => { const h = new Date(r.systemTime).getHours(); return h<6; }).map(r=>r.value).filter(v=>v>0);
+  const overnightLow  = overnightVals.length ? Math.min(...overnightVals) : null;
+
+  // Mounjaro week
+  const mjWeek = Math.floor((Date.now() - new Date('2026-04-15').getTime()) / (7*24*60*60*1000)) + 1;
+
+  // History data
+  const periods    = histData && histData.periods ? histData.periods : [];
+  const mjPeriods  = periods.filter(p => p.medication === 'Mounjaro 5mg');
+  const latest     = mjPeriods.length ? mjPeriods[mjPeriods.length-1] : null;
+  const prev       = mjPeriods.length >= 2 ? mjPeriods[mjPeriods.length-2] : null;
+  const avgTrend   = latest && prev ? latest.avg - prev.avg : null;
+  const tirLatest  = latest ? latest.tir : null;
+
+  // TIR today
+  const tir24 = vals24.length ? Math.round(vals24.filter(v=>v>=70&&v<=180).length/vals24.length*100) : null;
+
+  // Highs today
+  const highCount = vals24.filter(v=>v>180).length;
+
+  // --- Build pool based on data conditions ---
+
+  // Always include Mounjaro progress — it's the main story
+  pool.push({ q: `How is Mounjaro week ${mjWeek} going compared to earlier weeks?`, priority: 10 });
+
+  // Dawn spike — always relevant
+  if (dawnPeak && dawnPeak > 180) {
+    pool.push({ q: `My dawn peak was ${dawnPeak} mg/dL this morning — is that improving?`, priority: 9 });
+  } else {
+    pool.push({ q: 'How has my dawn phenomenon changed since starting Mounjaro?', priority: 8 });
+  }
+
+  // TIR — flag if low or celebrate if high
+  if (tir24 !== null && tir24 < 75) {
+    pool.push({ q: `My TIR is ${tir24}% today — what's dragging it down?`, priority: 9 });
+  } else if (tir24 !== null && tir24 >= 90) {
+    pool.push({ q: `TIR is ${tir24}% today — what's working well?`, priority: 7 });
+  }
+
+  // Avg trend vs prior period
+  if (avgTrend !== null && avgTrend > 5) {
+    pool.push({ q: `My avg is up ${avgTrend} mg/dL vs last period — why?`, priority: 9 });
+  } else if (avgTrend !== null && avgTrend < -5) {
+    pool.push({ q: `My avg dropped ${Math.abs(avgTrend)} mg/dL vs last period — what helped?`, priority: 8 });
+  }
+
+  // Overnight lows
+  if (overnightLow !== null && overnightLow < 75) {
+    pool.push({ q: `I had a ${overnightLow} mg/dL reading overnight — should I be concerned?`, priority: 9 });
+  } else {
+    pool.push({ q: 'How are my overnight readings trending since adjusting Glimepiride?', priority: 6 });
+  }
+
+  // High readings today
+  if (highCount > 5) {
+    pool.push({ q: `I had ${highCount} high readings today — what time of day is worst?`, priority: 8 });
+  }
+
+  // Ozempic vs Mounjaro comparison — always useful
+  pool.push({ q: 'Compare my best Ozempic weeks to my best Mounjaro weeks', priority: 7 });
+
+  // Doctor prep
+  pool.push({ q: 'What are the 3 most important things to tell my doctor?', priority: 6 });
+
+  // Best time of day
+  pool.push({ q: 'What time of day am I most in range right now?', priority: 5 });
+
+  // CV / variability
+  if (latest && latest.cv) {
+    pool.push({ q: `My CV is ${latest.cv}% — what does that mean for my control?`, priority: 5 });
+  }
+
+  // Sort by priority, take top 6, shuffle the lower-priority ones slightly
+  pool.sort((a, b) => b.priority - a.priority);
+  const top3    = pool.slice(0, 3);
+  const rest    = pool.slice(3).sort(() => Math.random() - 0.5);
+  const chosen  = [...top3, ...rest].slice(0, 6);
+
+  // Render
+  wrap.innerHTML = chosen.map(item =>
+    `<button class="qa-chip" onclick="askSuggestion(this)">${item.q}</button>`
+  ).join('');
+}
 
 function askSuggestion(btn) {
   const inp = document.getElementById('qaInput');
