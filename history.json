@@ -1,0 +1,321 @@
+{
+  "_note": "Dexcom Clarity historical data for Chuck's glucose dashboard. Add new periods here when uploading new Clarity exports.",
+  "_schema": "periods[] = period summaries | hourly[] = hourly stats per period | dow = day-of-week averages",
+
+  "faultySensorWindows": [
+    {
+      "start": "2026-03-25",
+      "end": "2026-04-04",
+      "note": "Sensor miscalibration — readings ~20–35 mg/dL lower than actual for most of this window. Data is unreliable. Exclude from Best Week calculations and flag in UI when this date range is selected.",
+      "fingerstickData": {
+        "note": "Manual fingerstick BG readings taken during faulty sensor window. Mar 25–28 had no manual entries — sensor may have seemed okay those first days. Mar 29–Apr 4 have reliable fingerstick values.",
+        "days": [
+          { "date": "2026-03-29", "readings": [147, 190] },
+          { "date": "2026-03-30", "readings": [138, 192, 166, 184, 146, 123, 106, 104, 97] },
+          { "date": "2026-03-31", "readings": [148, 181, 185, 167, 84, 79, 80, 102, 95, 139, 122] },
+          { "date": "2026-04-01", "readings": [191, 229, 283, 277, 176, 93, 115, 105, 88] },
+          { "date": "2026-04-02", "readings": [165, 178, 138, 88, 105, 127, 124, 82, 175, 140] },
+          { "date": "2026-04-03", "readings": [157, 178, 141, 122, 116, 111, 122, 64, 151] },
+          { "date": "2026-04-04", "readings": [196, 114, 73, 64, 138, 164, 142, 104] }
+        ],
+        "summary": {
+          "days": 7,
+          "readingCount": 58,
+          "avg": 138,
+          "sd": 47,
+          "cv": 34.1,
+          "tir": 79,
+          "high": 17,
+          "low": 3,
+          "veryHigh": 3,
+          "min": 64,
+          "max": 283
+        }
+      }
+    }
+  ],
+
+  "periods": [
+    {
+      "id": "jun-sep-2025",
+      "label": "Jun–Sep 2025",
+      "dateRange": "Jun 27 – Sep 24, 2025",
+      "days": 90,
+      "medication": "Ozempic 0.5mg",
+      "avg": 150,
+      "gmi": 6.9,
+      "tir": 74,
+      "sd": 55,
+      "cv": 36.4,
+      "veryHigh": 5,
+      "high": 20,
+      "inRange": 74,
+      "low": 1,
+      "veryLow": 0,
+      "daysWithData": null,
+      "timeActive": null
+    },
+    {
+      "id": "sep-dec-2025",
+      "label": "Sep–Dec 2025",
+      "dateRange": "Sep 25 – Dec 22, 2025",
+      "days": 89,
+      "medication": "Ozempic 1.0mg",
+      "avg": 159,
+      "gmi": 7.1,
+      "tir": 67,
+      "sd": 57,
+      "cv": 36.1,
+      "veryHigh": 7,
+      "high": 25,
+      "inRange": 67,
+      "low": 1,
+      "veryLow": 0,
+      "daysWithData": null,
+      "timeActive": null
+    },
+    {
+      "id": "dec-mar-2026",
+      "label": "Dec–Mar 2026",
+      "dateRange": "Dec 23, 2025 – Mar 22, 2026",
+      "days": 90,
+      "medication": "Ozempic 1.0mg",
+      "avg": 158,
+      "gmi": 7.1,
+      "tir": 69,
+      "sd": 49,
+      "cv": 31.3,
+      "veryHigh": 4,
+      "high": 26,
+      "inRange": 69,
+      "low": 1,
+      "veryLow": 0,
+      "daysWithData": 83,
+      "timeActive": 93
+    },
+    {
+      "id": "mar29-apr4-2026",
+      "label": "Mar 29–Apr 4 ✦",
+      "dateRange": "Mar 29 – Apr 4, 2026",
+      "days": 7,
+      "medication": "Ozempic 1.0mg",
+      "avg": 138,
+      "gmi": null,
+      "tir": 79,
+      "sd": 47,
+      "cv": 34.1,
+      "veryHigh": 3,
+      "high": 17,
+      "inRange": 79,
+      "low": 3,
+      "veryLow": 0,
+      "daysWithData": 7,
+      "timeActive": null,
+      "dataSource": "fingerstick",
+      "dataSourceNote": "Manual fingerstick BG only — CGM sensor was miscalibrated ~20–35 mg/dL low during this window. 58 readings across 7 days. Apr 1 morning showed 191→229→283→277 mg/dL spike. Last Ozempic period before switching to Mounjaro Apr 15."
+    },
+    {
+      "id": "mar-apr-2026",
+      "label": "Mar–Apr 2026",
+      "dateRange": "Mar 23 – Apr 23, 2026",
+      "days": 32,
+      "medication": "Mounjaro 5mg",
+      "avg": 145,
+      "gmi": 6.8,
+      "tir": 79,
+      "sd": 43,
+      "cv": 29.8,
+      "veryHigh": 1,
+      "high": 20,
+      "inRange": 79,
+      "low": 0,
+      "veryLow": 0,
+      "daysWithData": 18,
+      "timeActive": 91
+    },
+    {
+      "id": "apr23-apr30-2026",
+      "label": "Apr 23–30",
+      "dateRange": "Apr 23 – Apr 30, 2026",
+      "days": 8,
+      "medication": "Mounjaro 5mg",
+      "avg": 120,
+      "gmi": 6.2,
+      "tir": 92,
+      "sd": 34,
+      "cv": 28.5,
+      "veryHigh": 0,
+      "high": 6,
+      "inRange": 92,
+      "low": 2,
+      "veryLow": 0,
+      "daysWithData": 8,
+      "timeActive": 99
+    },
+    {
+      "id": "apr27-may3-2026",
+      "label": "Apr 27–May 3",
+      "dateRange": "Apr 27 – May 3, 2026",
+      "days": 7,
+      "medication": "Mounjaro 5mg",
+      "avg": 122,
+      "gmi": 6.2,
+      "tir": 92,
+      "sd": 35,
+      "cv": 29.0,
+      "veryHigh": 0,
+      "high": 6,
+      "inRange": 92,
+      "low": 2,
+      "veryLow": 0,
+      "daysWithData": 7,
+      "timeActive": 100
+    },
+    {
+      "id": "apr30-may4-2026",
+      "label": "Apr 30–May 4",
+      "dateRange": "Apr 30 – May 4, 2026",
+      "days": 5,
+      "medication": "Mounjaro 5mg",
+      "avg": 119,
+      "gmi": null,
+      "tir": 93,
+      "sd": 33,
+      "cv": 27.8,
+      "veryHigh": 0,
+      "high": 5,
+      "inRange": 93,
+      "low": 2,
+      "veryLow": 0,
+      "daysWithData": 5,
+      "timeActive": 100
+    },
+    {
+      "id": "may4-may10-2026",
+      "label": "May 4–10",
+      "dateRange": "May 4 – May 10, 2026",
+      "days": 7,
+      "medication": "Mounjaro 5mg",
+      "avg": 124,
+      "gmi": null,
+      "tir": 90,
+      "sd": 36,
+      "cv": 29.3,
+      "veryHigh": 1,
+      "high": 7,
+      "inRange": 90,
+      "low": 2,
+      "veryLow": 0,
+      "daysWithData": 7,
+      "timeActive": 100
+    },
+    {
+      "id": "may10-may20-2026",
+      "label": "May 10–20",
+      "dateRange": "May 10 – May 20, 2026",
+      "days": 11,
+      "medication": "Mounjaro 5mg",
+      "avg": 145,
+      "gmi": 6.8,
+      "tir": 80,
+      "sd": 42,
+      "cv": 28.8,
+      "veryHigh": 1,
+      "high": 19,
+      "inRange": 80,
+      "low": 0,
+      "veryLow": 0,
+      "daysWithData": 11,
+      "timeActive": 100
+    }
+  ],
+
+  "hourly": [
+    {
+      "periodId": "jun-sep-2025",
+      "label": "Jun–Sep 2025 (90d)",
+      "means":    [131, 121, 117, 125, 133, 144, 171, 198, 202, 191, 169, 149, 142, 162, 181, 170, 143, 123, 121, 131, 141, 146, 152, 142],
+      "tirInRange":[73, 85, 89, 88, 89, 82, 64, 44, 41, 45, 70, 77, 80, 68, 53, 60, 74, 87, 95, 89, 84, 82, 74, 69],
+      "tirHigh":   [20, 12, 8, 11, 11, 18, 32, 41, 41, 42, 22, 15, 14, 18, 31, 31, 19, 7, 2, 8, 11, 15, 22, 22],
+      "tirLow":    [6, 3, 3, 1, 0, 0, 0, 0, 0, 0, 0, 2, 1, 1, 1, 0, 2, 3, 1, 1, 1, 0, 1, 6]
+    },
+    {
+      "periodId": "sep-dec-2025",
+      "label": "Sep–Dec 2025 (89d)",
+      "means":    [146, 138, 134, 134, 137, 147, 164, 193, 202, 186, 163, 139, 142, 182, 189, 172, 147, 127, 135, 162, 175, 176, 176, 161],
+      "tirInRange":[66, 75, 81, 81, 81, 79, 72, 46, 39, 55, 72, 81, 82, 54, 46, 58, 75, 90, 87, 66, 58, 57, 54, 60],
+      "tirHigh":   [15, 11, 8, 12, 13, 15, 19, 41, 46, 35, 22, 18, 17, 36, 41, 35, 23, 8, 13, 32, 34, 34, 32, 23],
+      "tirLow":    [7, 5, 2, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 2, 5]
+    },
+    {
+      "periodId": "dec-mar-2026",
+      "label": "Dec–Mar 2026 (90d)",
+      "means":    [158, 150, 139, 139, 149, 163, 183, 216, 222, 202, 172, 145, 135, 160, 170, 151, 129, 118, 119, 141, 148, 155, 164, 165],
+      "tirInRange":[67, 74, 77, 82, 82, 72, 48, 18, 17, 33, 61, 79, 85, 69, 59, 75, 83, 92, 91, 91, 84, 74, 67, 64],
+      "tirHigh":   [26, 20, 20, 17, 16, 26, 47, 64, 62, 54, 33, 19, 13, 28, 37, 22, 13, 5, 8, 8, 16, 25, 28, 29],
+      "tirLow":    [1, 2, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 2, 1, 1, 0, 0, 0, 0, 0]
+    },
+    {
+      "periodId": "mar-apr-2026",
+      "label": "Mar–Apr 2026 (32d)",
+      "means": [120, 114, 121, 126, 140, 161, 182, 210, 212, 188, 147, 115, 118, 151, 156, 133, 114, 108, 115, 155, 158, 151, 145, 132],
+      "tirInRange": [97, 100, 100, 100, 98, 84, 44, 15, 7, 38, 87, 100, 89, 82, 71, 88, 94, 100, 95, 75, 71, 78, 84, 92],
+      "tirHigh":    [3, 0, 0, 0, 2, 16, 56, 79, 84, 62, 13, 0, 11, 13, 29, 12, 6, 0, 4, 22, 26, 16, 15, 7],
+      "tirLow":     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]
+    },
+    {
+      "periodId": "apr27-may3-2026",
+      "label": "Apr 27–May 3 (7d)",
+      "means":    [102, 99, 103, 115, 119, 129, 144, 171, 155, 136, 123, 112, 130, 139, 132, 106, 88, 90, 100, 127, 134, 125, 126, 122],
+      "tirInRange":[100, 85, 96, 100, 100, 100, 93, 65, 93, 87, 90, 96, 80, 93, 82, 94, 85, 98, 95, 100, 95, 94, 86, 93],
+      "tirHigh":   [0, 0, 0, 0, 0, 0, 7, 35, 7, 13, 10, 4, 20, 7, 8, 6, 0, 0, 0, 0, 4, 6, 14, 7],
+      "tirLow":    [0, 12, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 15, 2, 5, 0, 1, 0, 0, 0]
+    },
+    {
+      "periodId": "apr23-apr30-2026",
+      "label": "Apr 23–30 (8d)",
+      "means": [109, 96, 97, 105, 111, 126, 142, 176, 165, 137, 119, 114, 118, 133, 131, 107, 93, 96, 106, 117, 114, 122, 125, 115],
+      "tirInRange": [98, 86, 100, 100, 100, 100, 94, 59, 81, 91, 100, 97, 88, 92, 85, 88, 90, 98, 96, 100, 94, 100, 90, 88],
+      "tirHigh":    [2, 0, 0, 0, 0, 0, 6, 41, 19, 9, 0, 3, 12, 6, 8, 5, 0, 0, 0, 0, 0, 0, 10, 12],
+      "tirLow":     [0, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 7, 10, 2, 4, 0, 6, 0, 0, 0]
+    },
+    {
+      "periodId": "apr30-may4-2026",
+      "label": "Apr 30–May 4 (5d)",
+      "means": [107, 109, 107, 114, 110, 117, 134, 159, 152, 141, 130, 103, 123, 123, 107, 95, 84, 88, 88, 126, 139, 123, 136, 140],
+      "tirInRange": [100, 95, 95, 100, 100, 100, 100, 83, 88, 82, 87, 100, 92, 100, 95, 100, 78, 97, 85, 100, 93, 92, 76, 88],
+      "tirHigh":    [0, 0, 0, 0, 0, 0, 0, 17, 12, 18, 13, 0, 8, 0, 0, 0, 0, 0, 0, 0, 5, 8, 24, 12],
+      "tirLow":     [0, 5, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 0, 22, 3, 15, 0, 2, 0, 0, 0]
+    },
+    {
+      "periodId": "may4-may10-2026",
+      "label": "May 4–10 (7d)",
+      "means": [103, 101, 101, 104, 113, 131, 153, 180, 173, 147, 122, 103, 131, 176, 162, 109, 95, 91, 93, 121, 107, 113, 118, 115],
+      "tirInRange": [90, 89, 95, 100, 100, 100, 95, 51, 69, 96, 100, 100, 86, 50, 67, 92, 99, 99, 91, 100, 100, 100, 100, 99],
+      "tirHigh":    [0, 0, 0, 0, 0, 0, 5, 49, 31, 4, 0, 0, 14, 40, 29, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      "tirLow":     [10, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 1, 1, 9, 0, 0, 0, 0, 1]
+    },
+    {
+      "periodId": "may10-may20-2026",
+      "label": "May 10–20 (11d)",
+      "means": [134, 126, 120, 121, 130, 151, 169, 190, 190, 177, 150, 126, 108, 137, 172, 158, 131, 121, 123, 133, 141, 160, 159, 148],
+      "tirInRange": [98, 94, 91, 91, 89, 78, 60, 55, 48, 54, 88, 91, 98, 82, 50, 73, 83, 92, 100, 100, 87, 69, 72, 79],
+      "tirHigh":    [2, 6, 9, 9, 11, 22, 38, 28, 42, 46, 12, 9, 1, 18, 50, 27, 17, 8, 0, 0, 9, 31, 27, 21],
+      "tirLow":     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 2, 0, 1, 0]
+    }
+  ],
+
+  "dow": {
+    "source": "may10-may20-2026",
+    "note": "Day-of-week mean glucose from May 10–20, 2026 Clarity daily statistics table. 11-day window, values are daily means from the hourly stats breakdown.",
+    "days": [
+      { "day": "Mon", "avg": 157, "n": 2 },
+      { "day": "Tue", "avg": 143, "n": 2 },
+      { "day": "Wed", "avg": 170, "n": 2 },
+      { "day": "Thu", "avg": 130, "n": 1 },
+      { "day": "Fri", "avg": 124, "n": 1 },
+      { "day": "Sat", "avg": 128, "n": 1 },
+      { "day": "Sun", "avg": 137, "n": 2 }
+    ]
+  }
+}
