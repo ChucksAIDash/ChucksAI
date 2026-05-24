@@ -6,7 +6,7 @@
 <style>
   /* ── SHELL ── */
   #site-nav {
-    position: sticky; top: 0; z-index: 500;
+    position: fixed; top: 0; left: 0; width: 100%; z-index: 500;
     display: flex; align-items: center; justify-content: space-between;
     padding: .6rem 1.75rem;
     border-bottom: 1px solid var(--border);
@@ -194,7 +194,10 @@
   }
   .mob-overlay.open { display: block; }
 
-  /* ── RESPONSIVE ── */
+  /* Push page content below the fixed nav */
+  #nav-placeholder { height: 53px; }
+
+
   @media (max-width: 960px) {
     .hamburger { display: block; }
     .nav-right .nav-link,
@@ -217,7 +220,7 @@
 <nav id="site-nav">
   <div class="nav-left">
     <a class="nav-logo" href="index.html">
-      <span class="hi">chuck</span><span class="dot">.</span><span>ai</span>
+      <span class="hi">chucksai</span><span class="dot">.</span><span>com</span>
     </a>
 
     <!-- Market status + clock -->
