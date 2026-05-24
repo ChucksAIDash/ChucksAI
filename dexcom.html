@@ -1224,6 +1224,7 @@
     <div class="header-right">
       <div class="countdown-badge" id="countdown">AUTO ⟳ 5m</div>
       <button class="refresh-btn" id="refreshBtn" onclick="manualRefresh()">⟳ REFRESH</button>
+      <button id="authLockBtnTop" onclick="authOpenModal()" title="Private view" style="background:rgba(138,99,255,.12);border:1px solid rgba(138,99,255,.3);border-radius:8px;padding:0 .65rem;height:32px;color:rgba(138,99,255,.7);font-size:14px;cursor:pointer;transition:all .2s;line-height:1;">🔒</button>
     </div>
   </div>
 
@@ -7115,8 +7116,10 @@ function injectNav(html) {
       const ov = document.getElementById('blur-' + p);
       if (ov) ov.classList.toggle('hidden', unlocked);
     });
-    const lockBtn = document.getElementById('authLockBtn');
-    if (lockBtn) lockBtn.textContent = unlocked ? '🔓' : '🔒';
+    ['authLockBtn','authLockBtnTop'].forEach(id => {
+      const btn = document.getElementById(id);
+      if (btn) btn.textContent = unlocked ? '🔓' : '🔒';
+    });
     const logoutEl = document.getElementById('authLogout');
     if (logoutEl) logoutEl.style.display = unlocked ? 'block' : 'none';
   }
