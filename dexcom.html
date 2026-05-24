@@ -5191,19 +5191,29 @@ async function loadWoW() {
 
     const vals = records.filter(r => r.value > 0);
 
-    // Morning high streak uses same 14d data
-    updateMornStreak(records);
-    if (!vals.length) {
+    // Strip faulty sensor readings before any calculations
+    const faultyWin = await getFaultySensorWindows();
+    const valsClean = vals.filter(r => {
+      const ts = new Date(r.systemTime).getTime();
+      return !faultyWin.some(w => ts >= w.start && ts <= w.end);
+    });
+
+    // Morning high streak uses same 14d data (also cleaned)
+    updateMornStreak(records.filter(r => {
+      const ts = new Date(r.systemTime).getTime();
+      return !faultyWin.some(w => ts >= w.start && ts <= w.end);
+    }));
+    if (!valsClean.length) {
       grid.innerHTML = '<div style="font-family:\'DM Sans\',sans-serif;font-size:12px;color:var(--text-muted);">No data available</div>';
       return;
     }
 
     // Split at 7-day mark from most recent reading
-    const latest = new Date(vals[vals.length - 1].systemTime);
+    const latest = new Date(valsClean[valsClean.length - 1].systemTime);
     const cutoff = new Date(latest.getTime() - 7 * 24 * 60 * 60 * 1000);
 
-    const thisWeek = vals.filter(r => new Date(r.systemTime) >= cutoff);
-    const lastWeek = vals.filter(r => new Date(r.systemTime) <  cutoff);
+    const thisWeek = valsClean.filter(r => new Date(r.systemTime) >= cutoff);
+    const lastWeek = valsClean.filter(r => new Date(r.systemTime) <  cutoff);
 
     if (!thisWeek.length) {
       grid.innerHTML = '<div style="font-family:\'DM Sans\',sans-serif;font-size:12px;color:var(--text-muted);">Not enough data for comparison</div>';
@@ -5564,6 +5574,19 @@ async function loadBestWeek() {
     const vals90 = data90.filter(r => r.value > 0);
     const vals7  = week7.filter(r => r.value > 0);
 
+    // Load faulty sensor windows dynamically from history.json
+    const faultySensorWindows = await getFaultySensorWindows();
+    function isInFaultyWindow(ts) {
+      return faultySensorWindows.some(w => ts >= w.start && ts <= w.end);
+    }
+    function overlapsAnyFaultyWindow(start, end) {
+      return faultySensorWindows.some(w => start <= w.end && end >= w.start);
+    }
+
+    // Strip faulty sensor readings from 90d data before any calculations
+    const vals90Clean = vals90.filter(r => !isInFaultyWindow(new Date(r.systemTime).getTime()));
+    const vals7Clean  = vals7.filter(r  => !isInFaultyWindow(new Date(r.systemTime).getTime()));
+
     // Compute stats for any array of values
     function calcStats(vals) {
       const avg  = Math.round(vals.reduce((a, b) => a + b, 0) / vals.length);
@@ -5576,32 +5599,28 @@ async function loadBestWeek() {
       return { avg, tir, high, low, sd, cv };
     }
 
-    const thisStats = vals7.length ? calcStats(vals7.map(r => r.value)) : null;
+    const thisStats = vals7Clean.length ? calcStats(vals7Clean.map(r => r.value)) : null;
 
     // Try to find best week from API 90d data first
     let bestStats     = null;
     let bestWindowEnd = null;
 
-    // Faulty sensor period — exclude any window overlapping this range
-    const FAULTY_START = new Date('2026-03-25T00:00:00').getTime();
-    const FAULTY_END   = new Date('2026-04-04T23:59:59').getTime();
-
-    if (vals90.length >= 14) { // need at least 2 weeks of API data
+    if (vals90Clean.length >= 14) {
       const WIN_MS  = 7 * 24 * 60 * 60 * 1000;
       const STEP_MS = 24 * 60 * 60 * 1000;
-      const latest90  = new Date(vals90[vals90.length - 1].systemTime).getTime();
-      const earliest  = new Date(vals90[0].systemTime).getTime();
+      const latest90  = new Date(vals90Clean[vals90Clean.length - 1].systemTime).getTime();
+      const earliest  = new Date(vals90Clean[0].systemTime).getTime();
       let bestAvg = Infinity;
 
       for (let end = latest90; end >= earliest + WIN_MS; end -= STEP_MS) {
-        const start  = end - WIN_MS;
-        // Skip any window that overlaps the faulty sensor period
-        if (start <= FAULTY_END && end >= FAULTY_START) continue;
-        const window = vals90.filter(r => {
+        const start = end - WIN_MS;
+        // Skip any window that overlaps a faulty sensor period
+        if (overlapsAnyFaultyWindow(start, end)) continue;
+        const window = vals90Clean.filter(r => {
           const t = new Date(r.systemTime).getTime();
           return t >= start && t <= end;
         });
-        if (window.length < 12) continue; // at least 1 hour of data per window
+        if (window.length < 12) continue;
         const wVals = window.map(r => r.value);
         const stats = calcStats(wVals);
         if (stats.avg < bestAvg) {
@@ -5612,11 +5631,10 @@ async function loadBestWeek() {
       }
     }
 
-    // Fallback: use best Clarity period from history.json if API didn't have enough
+    // Fallback: use best Clarity period from history.json
     if (!bestStats) {
       let periods = [];
       try {
-        // histData may not be loaded yet if user hasn't visited History tab
         if (histData && histData.periods && histData.periods.length) {
           periods = histData.periods;
         } else {
@@ -5627,9 +5645,9 @@ async function loadBestWeek() {
       } catch {}
 
       if (periods.length) {
-        // Exclude the faulty sensor period (Mar 25 – Apr 4, 2026) from best period search
-        const valid = periods.filter(p => p.id !== 'mar-apr-2026') ;
-        const pool  = valid.length ? valid : periods; // safety fallback
+        // Exclude any period tagged as fingerstick or faulty
+        const valid = periods.filter(p => p.dataSource !== 'fingerstick');
+        const pool  = valid.length ? valid : periods;
         const best  = pool.reduce((b, p) => p.avg < b.avg ? p : b, pool[0]);
         bestStats = {
           avg: best.avg, tir: best.tir, sd: best.sd,
