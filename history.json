@@ -5,14 +5,27 @@
     {
       "start": "2026-03-25",
       "end": "2026-04-04",
-      "note": "Sensor miscalibration — CGM readings ~20–35 mg/dL lower than actual for most of this window. CGM data is unreliable. Mar 25–28 had no manual fingerstick entries; Mar 29–Apr 4 have reliable fingerstick values. Exclude from Best Week and benchmark calculations. Flag in UI when this date range is selected.",
+      "note": "Sensor miscalibration — CGM readings ~20–35 mg/dL lower than actual. CGM data unreliable. Mar 25–28 no fingerstick entries; Mar 29–Apr 4 have fingerstick values. Exclude from Best Week and benchmarks.",
       "fingerstickData": {
-        "note": "Manual fingerstick BG readings taken during faulty sensor window (Mar 29–Apr 4, 2026). 58 readings over 7 days. Use these stats in place of CGM data for this period.",
+        "note": "Manual fingerstick readings Mar 29–Apr 4. Use in place of CGM data.",
         "days": 7,
         "readings": 58,
         "avg": 138,
         "tir": 79,
         "dateRange": "Mar 29 – Apr 4, 2026"
+      }
+    },
+    {
+      "start": "2026-04-27",
+      "end": "2026-05-03",
+      "note": "Likely no CGM sensor due to insurance coverage gap. 58 manual fingerstick readings only. Any CGM data for this window is absent or unreliable. Exclude from Best Week and benchmarks. Use fingerstick stats instead.",
+      "fingerstickData": {
+        "note": "Manual fingerstick readings Apr 27–May 3. Use in place of CGM data.",
+        "days": 7,
+        "readings": 58,
+        "avg": 138,
+        "tir": 79,
+        "dateRange": "Apr 27 – May 3, 2026"
       }
     }
   ],
@@ -117,7 +130,7 @@
       "_cgmReportedTir": 79,
       "_cgmReportedGmi": 6.8,
       "dataSource": "cgm-corrected",
-      "correctionNote": "CGM sensor was miscalibrated ~20-35 mg/dL low during Mar 25-Apr 4 (11 of 32 days). Stats corrected upward using fingerstick override data (Mar 29-Apr 4 avg: 138). Correction adds ~+8 pts to avg, lowers TIR from 79% to ~73%. Original CGM-reported avg was 145, GMI 6.8%, TIR 79%."
+      "correctionNote": "CGM sensor miscalibrated ~20-35 mg/dL low during Mar 25–Apr 4 (part of this 32-day period). Stats adjusted upward using fingerstick data. Original CGM-reported avg was 145, GMI 6.8%, TIR 79%."
     },
     {
       "id": "apr23-apr30-2026",
@@ -136,7 +149,10 @@
       "low": 2,
       "veryLow": 0,
       "daysWithData": 8,
-      "timeActive": 99
+      "timeActive": 99,
+      "dataSource": "cgm-partial",
+      "excludeFromBenchmarks": true,
+      "fingerstickNote": "Apr 27–30 portion falls within no-sensor window. Partial data only — exclude from Best Week benchmarks."
     },
     {
       "id": "apr30-may4-2026",
@@ -155,7 +171,10 @@
       "low": 2,
       "veryLow": 0,
       "daysWithData": 5,
-      "timeActive": 100
+      "timeActive": 100,
+      "dataSource": "fingerstick-overlap",
+      "excludeFromBenchmarks": true,
+      "fingerstickNote": "Falls within Apr 27–May 3 no-sensor window. CGM data absent/unreliable. Exclude from Best Week and all benchmarks."
     },
     {
       "id": "may4-may10-2026",
@@ -178,22 +197,24 @@
     },
     {
       "id": "apr27-may3-2026",
-      "label": "Apr 27–May 3",
+      "label": "Apr 27–May 3 ✦",
       "dateRange": "Apr 27 – May 3, 2026",
       "days": 7,
       "medication": "Mounjaro 5mg",
-      "avg": 122,
-      "gmi": 6.2,
-      "tir": 92,
-      "sd": 35,
-      "cv": 29.0,
-      "veryHigh": 0,
-      "high": 6,
-      "inRange": 92,
-      "low": 2,
-      "veryLow": 0,
+      "avg": 138,
+      "gmi": null,
+      "tir": 79,
+      "sd": null,
+      "cv": null,
+      "veryHigh": null,
+      "high": null,
+      "inRange": 79,
+      "low": null,
+      "veryLow": null,
       "daysWithData": 7,
-      "timeActive": 100
+      "timeActive": 100,
+      "dataSource": "fingerstick",
+      "fingerstickNote": "No CGM sensor during this period (likely insurance gap). Stats from 58 manual fingerstick readings. Exclude from Best Week benchmarks."
     },
     {
       "id": "apr29-may9-2026",

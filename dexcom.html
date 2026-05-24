@@ -5738,8 +5738,13 @@ async function loadBestWeek() {
       } catch {}
 
       if (periods.length) {
-        // Exclude any period tagged as fingerstick or faulty
-        const valid = periods.filter(p => p.dataSource !== 'fingerstick');
+        // Exclude fingerstick, partial, overlap, or explicitly flagged periods
+        const valid = periods.filter(p =>
+          !p.excludeFromBenchmarks &&
+          p.dataSource !== 'fingerstick' &&
+          p.dataSource !== 'fingerstick-overlap' &&
+          p.dataSource !== 'cgm-partial'
+        );
         const pool  = valid.length ? valid : periods;
         const best  = pool.reduce((b, p) => p.avg < b.avg ? p : b, pool[0]);
         bestStats = {
@@ -6450,7 +6455,11 @@ async function checkFaultySensorBanner(viewStart, viewEnd) {
   const hit = windows.find(w => viewStart <= w.end && viewEnd >= w.start);
   if (hit) {
     const fmt = ts => new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-    if (msg) msg.textContent = `This view includes ${fmt(hit.start)}–${fmt(hit.end)}, when the sensor was reading ~20–35 mg/dL lower than actual. CGM values during this window are unreliable — manual fingerstick readings from Mar 29–Apr 4 are stored in the "Mar 29–Apr 4 ✦" History period.`;
+    const isMarchWindow = hit.start <= '2026-04-04';
+    const msgText = isMarchWindow
+      ? `This view includes ${fmt(hit.start)}–${fmt(hit.end)}: sensor was reading ~20–35 mg/dL lower than actual. CGM data unreliable — fingerstick readings (avg 138, TIR 79%) stored in "Mar 29–Apr 4 ✦" in History.`
+      : `This view includes ${fmt(hit.start)}–${fmt(hit.end)}: no CGM sensor (likely insurance gap). 58 manual fingerstick readings only (avg 138, TIR 79%) — see "Apr 27–May 3 ✦" in History.`;
+    if (msg) msg.textContent = msgText;
     banner.style.display = 'block';
   } else {
     banner.style.display = 'none';
