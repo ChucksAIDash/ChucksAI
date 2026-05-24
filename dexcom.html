@@ -1167,11 +1167,19 @@
     }
     .auth-blur-overlay.hidden { opacity: 0; pointer-events: none; }
     .auth-blur-msg {
-      display: flex; flex-direction: column; align-items: center; gap: .6rem;
+      display: flex; flex-direction: column; align-items: center; gap: .75rem;
       color: rgba(232,240,247,.55); font-family: 'Space Mono', monospace; font-size: 11px;
       letter-spacing: .07em;
     }
-    .auth-blur-msg .blur-lock { font-size: 28px; opacity: .5; }
+    .auth-blur-msg .blur-lock { font-size: 32px; opacity: .6; }
+    .auth-blur-btn {
+      background: rgba(138,99,255,.2); border: 1px solid rgba(138,99,255,.45);
+      border-radius: 8px; padding: .5rem 1.25rem;
+      color: rgba(138,99,255,.9); font-family: 'Space Mono', monospace; font-size: 11px;
+      letter-spacing: .06em; cursor: pointer; transition: all .2s;
+      margin-top: .25rem;
+    }
+    .auth-blur-btn:hover { background: rgba(138,99,255,.35); }
 
     /* tab panels need position:relative for overlay to anchor */
     .tab-panel { position: relative; }
@@ -1228,7 +1236,7 @@
 
   <!-- ══ LIVE TAB ══ -->
   <div class="tab-panel active" id="panel-live">
-    <div class="auth-blur-overlay" id="blur-live"><div class="auth-blur-msg"><span class="blur-lock">🔒</span><span>PRIVATE — tap lock icon to sign in</span></div></div>
+    <div class="auth-blur-overlay" id="blur-live"><div class="auth-blur-msg"><span class="blur-lock">🔒</span><span>PRIVATE VIEW</span><button class="auth-blur-btn" onclick="authOpenModal()">UNLOCK →</button></div></div>
 
     <!-- Connect banner (shown when not logged in) -->
     <div class="connect-banner" id="connectBanner">
@@ -1498,7 +1506,7 @@
 
   <!-- ══ HISTORY TAB ══ -->
   <div class="tab-panel" id="panel-history">
-    <div class="auth-blur-overlay" id="blur-history"><div class="auth-blur-msg"><span class="blur-lock">🔒</span><span>PRIVATE — tap lock icon to sign in</span></div></div>
+    <div class="auth-blur-overlay" id="blur-history"><div class="auth-blur-msg"><span class="blur-lock">🔒</span><span>PRIVATE VIEW</span><button class="auth-blur-btn" onclick="authOpenModal()">UNLOCK →</button></div></div>
 
     <div id="hist-loading">
       <span class="spinner"></span> Loading history…
@@ -1873,7 +1881,7 @@
 
   <!-- ══ AI TAB ══ -->
   <div class="tab-panel" id="panel-ai">
-    <div class="auth-blur-overlay" id="blur-ai"><div class="auth-blur-msg"><span class="blur-lock">🔒</span><span>PRIVATE — tap lock icon to sign in</span></div></div>
+    <div class="auth-blur-overlay" id="blur-ai"><div class="auth-blur-msg"><span class="blur-lock">🔒</span><span>PRIVATE VIEW</span><button class="auth-blur-btn" onclick="authOpenModal()">UNLOCK →</button></div></div>
 
     <!-- Hero / trigger -->
     <div class="ai-hero">
