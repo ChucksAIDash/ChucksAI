@@ -1072,6 +1072,33 @@
       .bestworst-grid { grid-template-columns: 1fr; }
       .period-grid { grid-template-columns: 1fr; }
     }
+    /* ── TOOLTIPS ── */
+    .tip-wrap { position:relative; display:inline-flex; align-items:center; gap:4px; }
+    .tip-icon {
+      display:inline-flex; align-items:center; justify-content:center;
+      width:14px; height:14px; border-radius:50%;
+      background:rgba(232,240,247,.12); border:1px solid rgba(232,240,247,.2);
+      font-family:'DM Sans',sans-serif; font-size:9px; font-weight:600;
+      color:rgba(232,240,247,.5); cursor:pointer; flex-shrink:0;
+      transition:background .15s, color .15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .tip-icon:hover, .tip-icon.active { background:rgba(138,99,255,.25); border-color:rgba(138,99,255,.5); color:rgba(167,139,250,.9); }
+    .tip-box {
+      display:none; position:absolute; z-index:999;
+      bottom:calc(100% + 6px); left:50%; transform:translateX(-50%);
+      width:220px; padding:.6rem .75rem;
+      background:rgba(15,18,24,.97); border:1px solid rgba(138,99,255,.3);
+      border-radius:10px; box-shadow:0 4px 20px rgba(0,0,0,.5);
+      font-family:'DM Sans',sans-serif; font-size:12px; line-height:1.5;
+      color:rgba(232,240,247,.85); pointer-events:none;
+    }
+    .tip-box.show { display:block; }
+    .tip-box::after {
+      content:''; position:absolute; top:100%; left:50%; transform:translateX(-50%);
+      border:5px solid transparent; border-top-color:rgba(138,99,255,.3);
+    }
+
   </style>
 </head>
 <body data-page="dexcom" data-mob="dexcom">
@@ -1160,27 +1187,27 @@
           <div class="stat-sub">data points</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">Time in Range</div>
+          <div class="stat-label" data-tip="tir">Time in Range</div>
           <div class="stat-val is-normal" id="statTIR">—</div>
           <div class="stat-sub">70–180 mg/dL</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">Above 200 (24h)</div>
+          <div class="stat-label" data-tip="above200">Above 200 (24h)</div>
           <div class="stat-val" id="statAbove200">—</div>
           <div class="stat-sub">% of readings</div>
         </div>
         <div class="stat-card" title="Consecutive days with avg glucose under 140">
-          <div class="stat-label">Good Day Streak</div>
+          <div class="stat-label" data-tip="streak">Good Day Streak</div>
           <div class="stat-val" id="statStreak">—</div>
           <div class="stat-sub">days &lt;140 avg</div>
         </div>
         <div class="stat-card" title="Distinct glucose excursions above 180 or below 70 in the last 24h">
-          <div class="stat-label">Excursions (24h)</div>
+          <div class="stat-label" data-tip="excursion">Excursions (24h)</div>
           <div class="stat-val" id="statExcursions">—</div>
           <div class="stat-sub" id="statExcursionsSub">high + low events</div>
         </div>
         <div class="stat-card" title="Consecutive days with a morning reading ≥200 between 7–9am">
-          <div class="stat-label">Morning High Streak</div>
+          <div class="stat-label" data-tip="mornStreak">Morning High Streak</div>
           <div class="stat-val" id="statMornStreak">—</div>
           <div class="stat-sub" id="statMornStreakSub">days ≥200 by 9am</div>
         </div>
@@ -1236,7 +1263,7 @@
 
       <!-- Time in range -->
       <div class="tir-card">
-        <div class="tir-title">Time in Range — Last 24h</div>
+        <div class="tir-title" data-tip="tir">Time in Range — Last 24h</div>
         <div class="tir-bar-wrap" id="tirBar">
           <div class="tir-seg" id="tirSegLow"  style="background:rgba(240,82,82,.75);width:0%"></div>
           <div class="tir-seg" id="tirSegNorm" style="background:rgba(61,220,132,.75);width:0%"></div>
@@ -1315,7 +1342,7 @@
       <!-- This Week vs Best Week Ever -->
       <div class="tir-card" id="bestWeekCard">
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem;margin-bottom:1rem;">
-          <div class="tir-title" style="margin-bottom:0;">🏆 This Week vs Best Week Ever</div>
+          <div class="tir-title" style="margin-bottom:0;" data-tip="bestWeek">🏆 This Week vs Best Week Ever</div>
           <div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--text-muted);" id="bestWeekMeta">Loading…</div>
         </div>
         <div id="bestWeekGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;">
@@ -1326,7 +1353,7 @@
       <!-- Week-over-Week comparison -->
       <div class="tir-card" id="wowCard">
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem;margin-bottom:1rem;">
-          <div class="tir-title" style="margin-bottom:0;">📊 This Week vs Last Week</div>
+          <div class="tir-title" style="margin-bottom:0;" data-tip="wow">📊 This Week vs Last Week</div>
           <div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--text-muted);" id="wowDateRange">Loading…</div>
         </div>
         <div id="wowGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;">
@@ -1337,7 +1364,7 @@
       <!-- Meal Impact Estimator (Live) -->
       <div class="tir-card" id="mealImpactLiveCard">
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem;margin-bottom:1rem;">
-          <div class="tir-title" style="margin-bottom:0;">🍽️ Meal Impact Events (24h)</div>
+          <div class="tir-title" style="margin-bottom:0;" data-tip="mealImpact">🍽️ Meal Impact Events (24h)</div>
           <div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--text-muted);" id="mealImpactLiveMeta">Rapid rises ≥25 mg/dL in 30 min</div>
         </div>
         <div id="mealImpactLiveGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;">
@@ -1481,7 +1508,7 @@
         <div class="hist-section-title">Variability Trend</div>
         <div class="chart-card" style="margin-bottom:0;">
           <div class="chart-header">
-            <div class="chart-title">Coefficient of Variation (CV%) Over Time</div>
+            <div class="chart-title" data-tip="cv">Coefficient of Variation (CV%) Over Time</div>
             <div style="font-family:'DM Sans',sans-serif;font-size:11px;color:var(--text-muted);">Lower = more stable · Goal &lt;36%</div>
           </div>
           <div class="hist-chart-wrap">
@@ -1500,7 +1527,7 @@
       <!-- 5. TIME-OF-DAY HEATMAP -->
 
       <div class="hist-section" style="margin-top:1.25rem;" id="dawnSpikeSection">
-        <div class="hist-section-title">🌄 Dawn Spike Score</div>
+        <div class="hist-section-title" data-tip="dawnSpike">🌄 Dawn Spike Score</div>
         <div id="dawnSpikeInsightRow" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin-bottom:1rem;"></div>
         <div class="chart-card" style="margin-bottom:0;">
           <div class="chart-header">
@@ -1559,7 +1586,7 @@
 
 
       <div class="hist-section" style="margin-top:1.25rem;" id="postMidnightSection">
-        <div class="hist-section-title">🌙 Post-Midnight Stability</div>
+        <div class="hist-section-title" data-tip="postMidnight">🌙 Post-Midnight Stability</div>
         <div id="postMidnightInsightRow" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin-bottom:1rem;"></div>
         <div class="chart-card" style="margin-bottom:0;">
           <div class="chart-header">
@@ -1578,7 +1605,7 @@
       <!-- 10. LOW FREQUENCY BY TIME OF DAY -->
 
       <div class="hist-section" style="margin-top:1.25rem;" id="lowFreqSection">
-        <div class="hist-section-title">🔻 Low Frequency by Time of Day</div>
+        <div class="hist-section-title" data-tip="lowFreq">🔻 Low Frequency by Time of Day</div>
         <div id="lowFreqInsightRow" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin-bottom:1rem;"></div>
         <div class="chart-card" style="margin-bottom:0;">
           <div class="chart-header">
@@ -1647,7 +1674,7 @@
       <!-- 8. DAWN SPIKE SCORE -->
 
       <div class="hist-section" style="margin-top:1.25rem;" id="periodCompSection">
-        <div class="hist-section-title">⚖️ Period Comparison</div>
+        <div class="hist-section-title" data-tip="periodComp">⚖️ Period Comparison</div>
         <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:1rem;">
           <div style="display:flex;align-items:center;gap:8px;">
             <span style="font-family:'Space Mono',monospace;font-size:10px;color:rgba(127,217,184,.7);">A:</span>
@@ -2074,6 +2101,71 @@ function switchTab(tab) {
     aiScope = savedScope;
   }
 }
+
+/* ── TOOLTIP SYSTEM ── */
+const TIPS = {
+  tir:          'Time in Range — % of readings between 70–180 mg/dL. Goal: ≥70%. Best indicator of day-to-day glucose control.',
+  gmi:          'Glucose Management Indicator — estimated A1C based on your CGM average. Not a lab A1C but closely correlated.',
+  cv:           'Coefficient of Variation — measures glucose variability as a % of your average. <36% is considered stable. Lower is better.',
+  sd:           'Standard Deviation — how much your glucose swings around the average. Lower = more stable, predictable control.',
+  excursion:    'Glucose Excursion — a significant swing above 180 or below 70 mg/dL that lasts at least 15 minutes. Counts both highs and lows.',
+  dawn:         'Dawn Phenomenon — a natural early-morning glucose rise (typically 6–9am) caused by hormones released before waking. Common in T2 diabetes.',
+  dawnSpike:    'Dawn Spike Score — how much your glucose rises from midnight baseline to morning peak (6–9am). Lower = better morning control.',
+  postMidnight: 'Post-Midnight Stability — how steady your glucose is overnight (12am–6am). Instability here often signals Glimepiride timing issues or late snacking.',
+  streak:       'Good Day Streak — consecutive days where your glucose stayed in range (70–180) for ≥70% of the day.',
+  mornStreak:   'Morning High Streak — consecutive mornings where glucose exceeded 180 mg/dL between 6–10am. Tracks dawn phenomenon consistency.',
+  above200:     'Above 200 (24h) — % of today\'s readings that exceeded 200 mg/dL. Anything above 0% is worth investigating.',
+  wow:          'Week over Week — compares this past 7 days to the prior 7 days across key metrics. Shows short-term trend direction.',
+  bestWeek:     'Best Week Ever — your best 7-day window from the past 90 days (excluding faulty sensor periods). Sets your personal benchmark.',
+  mealImpact:   'Meal Impact Estimator — estimates how much a meal raised your glucose by comparing the 2-hour peak after eating to your pre-meal baseline.',
+  lowFreq:      'Low Frequency by Time of Day — shows which hours of the day have the most lows (<70 mg/dL). Helps identify risky windows.',
+  periodComp:   'Period Comparison — overlay two tracked periods to compare glucose curves by time of day.',
+  mounjaro:     'Mounjaro (Tirzepatide) — a weekly GLP-1/GIP dual agonist injection for T2 diabetes. Takes 4–6 doses to reach full effect on dawn phenomenon.',
+};
+
+function tip(key) {
+  const def = TIPS[key];
+  if (!def) return '';
+  return `<span class="tip-wrap"><span class="tip-icon" ontouchstart="toggleTip(event,this)" onmouseenter="showTip(this)" onmouseleave="hideTip(this)">?<span class="tip-box">${def}</span></span></span>`;
+}
+
+function showTip(el) {
+  el.querySelector('.tip-box').classList.add('show');
+  el.classList.add('active');
+}
+function hideTip(el) {
+  el.querySelector('.tip-box').classList.remove('show');
+  el.classList.remove('active');
+}
+function toggleTip(e, el) {
+  e.preventDefault();
+  const box = el.querySelector('.tip-box');
+  const isShown = box.classList.contains('show');
+  // Close all open tips first
+  document.querySelectorAll('.tip-box.show').forEach(b => b.classList.remove('show'));
+  document.querySelectorAll('.tip-icon.active').forEach(i => i.classList.remove('active'));
+  if (!isShown) { box.classList.add('show'); el.classList.add('active'); }
+}
+// Close tips on outside tap
+document.addEventListener('touchstart', e => {
+  if (!e.target.closest('.tip-icon')) {
+    document.querySelectorAll('.tip-box.show').forEach(b => b.classList.remove('show'));
+    document.querySelectorAll('.tip-icon.active').forEach(i => i.classList.remove('active'));
+  }
+});
+
+// Inject tooltip icons next to all data-tip elements after DOM loads
+function injectTooltips() {
+  document.querySelectorAll('[data-tip]').forEach(el => {
+    if (el.querySelector('.tip-icon')) return; // already injected
+    const key = el.getAttribute('data-tip');
+    const html = tip(key);
+    if (html) el.insertAdjacentHTML('beforeend', ' ' + html);
+  });
+}
+// Run on load and whenever history tab renders (for dynamically rendered sections)
+document.addEventListener('DOMContentLoaded', injectTooltips);
+setTimeout(injectTooltips, 800); // catch anything rendered after load
 
 /* ── TREND ARROWS ── */
 const TREND_MAP = {
@@ -2836,6 +2928,7 @@ function renderHistory() {
   renderExcursions();
   renderMealImpact();
   renderMounjaroProgress();
+  injectTooltips();
 }
 
 /* ══════════════════════════════════════
@@ -5057,9 +5150,9 @@ function renderPeriodComp() {
   // Metrics to compare
   const metrics = [
     { key: 'avg',  label: 'Avg Glucose', unit: 'mg/dL', lowerBetter: true  },
-    { key: 'tir',  label: 'Time in Range', unit: '%',   lowerBetter: false },
-    { key: 'sd',   label: 'Std Deviation', unit: 'mg/dL', lowerBetter: true },
-    { key: 'cv',   label: 'CV%',          unit: '%',    lowerBetter: true  },
+    { key: 'tir',  label: 'Time in Range', unit: '%',   lowerBetter: false, tipKey: 'tir' },
+    { key: 'sd',   label: 'Std Deviation', unit: 'mg/dL', lowerBetter: true, tipKey: 'sd' },
+    { key: 'cv',   label: 'CV%',          unit: '%',    lowerBetter: true,  tipKey: 'cv'  },
     { key: 'high', label: 'High%',        unit: '%',    lowerBetter: true  },
     { key: 'low',  label: 'Low%',         unit: '%',    lowerBetter: true  },
     { key: 'gmi',  label: 'GMI',          unit: '%',    lowerBetter: true  },
@@ -5081,7 +5174,7 @@ function renderPeriodComp() {
         const arrow    = same ? '→' : improved ? '▼' : '▲';
 
         return `<div class="wow-stat">
-          <div class="wow-stat-label">${m.label}</div>
+          <div class="wow-stat-label">${m.label}${m.tipKey ? tip(m.tipKey) : ""}</div>
           <div class="wow-stat-row">
             <span class="wow-this" style="color:rgba(127,217,184,.9)">${vA}${m.unit === '%' && m.key !== 'gmi' ? '%' : ' ' + m.unit}</span>
             <span class="wow-last">${vB}${m.unit === '%' && m.key !== 'gmi' ? '%' : ' ' + m.unit}</span>
@@ -5268,7 +5361,7 @@ async function loadWoW() {
       const unit     = m.unit === '%' ? '%' : ' mg/dL';
 
       return `<div class="wow-stat">
-        <div class="wow-stat-label">${m.label}</div>
+        <div class="wow-stat-label">${m.label}${m.tipKey ? tip(m.tipKey) : ""}</div>
         <div class="wow-stat-row">
           <span class="wow-this" style="color:rgba(127,217,184,.9)">${vThis}${unit}</span>
           ${vLast !== null ? `<span class="wow-last">${vLast}${unit}</span>` : ''}
@@ -5676,9 +5769,9 @@ async function loadBestWeek() {
 
     const metrics = [
       { key: 'avg',  label: 'Avg Glucose', unit: 'mg/dL', lowerBetter: true  },
-      { key: 'tir',  label: 'Time in Range', unit: '%',   lowerBetter: false },
-      { key: 'cv',   label: 'CV%',          unit: '%',    lowerBetter: true  },
-      { key: 'sd',   label: 'Std Dev',      unit: 'mg/dL', lowerBetter: true },
+      { key: 'tir',  label: 'Time in Range', unit: '%',   lowerBetter: false, tipKey: 'tir' },
+      { key: 'cv',   label: 'CV%',          unit: '%',    lowerBetter: true,  tipKey: 'cv'  },
+      { key: 'sd',   label: 'Std Dev',      unit: 'mg/dL', lowerBetter: true, tipKey: 'sd' },
       { key: 'high', label: 'High%',        unit: '%',    lowerBetter: true  },
       { key: 'low',  label: 'Low%',         unit: '%',    lowerBetter: true  },
     ];
@@ -5698,7 +5791,7 @@ async function loadBestWeek() {
       const note   = better ? 'New best!' : atBest ? 'Matches best' : `${sign}${delta} from best`;
 
       return `<div class="wow-stat">
-        <div class="wow-stat-label">${m.label}</div>
+        <div class="wow-stat-label">${m.label}${m.tipKey ? tip(m.tipKey) : ""}</div>
         <div class="wow-stat-row">
           <span class="wow-this" style="color:rgba(127,217,184,.9)">${vThis}${unit}</span>
           <span class="wow-last">best: ${vBest}${unit}</span>
