@@ -194,8 +194,8 @@
   }
   .mob-overlay.open { display: block; }
 
-  /* Push page content below the fixed nav */
-  #nav-placeholder { height: 53px; }
+  /* Spacer injected alongside fixed nav to push page content down */
+  .nav-spacer { height: 53px; flex-shrink: 0; }
 
 
   @media (max-width: 960px) {
@@ -292,6 +292,7 @@
     <button class="hamburger" id="navHamburger">☰</button>
   </div>
 </nav>
+<div class="nav-spacer"></div>
 
 <div class="mob-overlay" id="mobOverlay"></div>
 <div class="mob-menu" id="mobMenu">
