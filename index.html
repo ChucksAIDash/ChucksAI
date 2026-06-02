@@ -603,37 +603,38 @@ async function loadGlucose(){
   const arrEl=document.getElementById('glucArrow');
   const subEl=document.getElementById('glucSub');
   try{
-    const res=await fetch(`${DEXCOM}/egvs?minutes=180`);
-    if(!res.ok) throw new Error('HTTP '+res.status);
-    const data=await res.json();
-    const records=(data.records||[]).filter(r=>r.value>0)
-      .sort((a,b)=>new Date(a.systemTime)-new Date(b.systemTime));
-    if(!records.length) throw new Error('No data');
-
-    // Latest reading
-    const r=records[records.length-1];
-    const val=r.value;
-    const glucColor=val<70?'var(--down)':val>180?'var(--accent3)':'var(--up)';
-    const cls=val<70?'is-low':val>180?'is-high':'is-normal';
-    widget.classList.remove('is-low','is-high','is-normal');
-    widget.classList.add(cls);
-    valEl.textContent=val; valEl.style.color=glucColor;
-    arrEl.textContent=TREND_MAP[r.trend]||'—'; arrEl.style.color=glucColor;
-
-    // Age
-    const minsAgo=Math.round((Date.now()-new Date(r.systemTime))/60000);
-    const agoStr=minsAgo<=1?'Just now':minsAgo<60?`${minsAgo}m ago`:`${Math.round(minsAgo/60)}h ago`;
-
-    // 24h avg from same fetch (up to 180 min — label honestly)
-    const vals=records.map(r=>r.value);
-    const avgText=Math.round(vals.reduce((a,b)=>a+b,0)/vals.length);
-    const tir=Math.round(vals.filter(v=>v>=70&&v<=180).length/vals.length*100);
-
-    subEl.textContent=`Avg: ${avgText} mg/dL · TIR: ${tir}% · ${agoStr}`;
-  }catch(err){
-    valEl.textContent='—';
-    subEl.textContent='Not connected';
-    widget.classList.remove('is-low','is-high','is-normal');
+    const [latestRes,histRes]=await Promise.allSettled([
+      fetch(`${DEXCOM}/latest`),
+      fetch(`${DEXCOM}/egvs?minutes=1440`)
+    ]);
+    let minsAgo='—';
+    if(latestRes.status==='fulfilled'){
+      const ld=await latestRes.value.json();
+      const r=ld.reading;
+      if(r&&r.value){
+        const val=r.value;
+        const glucColor=val<70?'var(--down)':val>180?'var(--accent3)':'var(--up)';
+        const cls=val<70?'is-low':val>180?'is-high':'is-normal';
+        widget.classList.remove('is-low','is-high','is-normal');
+        widget.classList.add(cls);
+        valEl.textContent=val; valEl.style.color=glucColor;
+        arrEl.textContent=TREND_MAP[r.trend]||'—'; arrEl.style.color=glucColor;
+        const t=new Date(r.systemTime);
+        minsAgo=Math.round((Date.now()-t)/60000);
+      }
+    }
+    let avgText='—';
+    if(histRes.status==='fulfilled'){
+      const hd=await histRes.value.json();
+      const vals=(hd.records||[]).map(r=>r.value).filter(v=>v>0);
+      if(vals.length) avgText=Math.round(vals.reduce((a,b)=>a+b,0)/vals.length);
+    }
+    const agoStr=typeof minsAgo==='number'?(minsAgo<=1?'Just now':`${minsAgo}m ago`):'—';
+    subEl.textContent=`Avg 24h: ${avgText} mg/dL · ${agoStr}`;
+    if(valEl.textContent==='--'){ valEl.textContent='—'; subEl.textContent='Not connected'; }
+  }catch{
+    document.getElementById('glucCurrent').textContent='—';
+    document.getElementById('glucSub').textContent='Unavailable';
   }
 }
 
