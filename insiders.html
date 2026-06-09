@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Chuck's AI — Insider Transactions</title>
+  <script src="theme.js"></script>
+  <link rel="stylesheet" href="styles.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    /* ── SEARCH BAR ── */
+    .search-wrap {
+      display: flex; gap: 8px; margin-bottom: 1rem; align-items: stretch;
+    }
+    .sym-input {
+      font-family: 'Space Mono', monospace; font-size: 14px; font-weight: 700;
+      letter-spacing: .08em; text-transform: uppercase;
+      background: var(--bg-card); border: 1px solid var(--border-bright);
+      border-radius: var(--r-md); color: var(--text-primary);
+      padding: 10px 16px; flex: 1; max-width: 220px;
+      transition: border-color .18s, box-shadow .18s;
+      outline: none;
+    }
+    .sym-input::placeholder { color: var(--text-muted); font-size: 12px; letter-spacing: .06em; text-transform: uppercase; }
+    .sym-input:focus { border-color: rgba(91,200,245,.5); box-shadow: 0 0 0 3px rgba(91,200,245,.1); }
+    html.light .sym-input { background: #fff; border-color: #c8dff7; color: #1c2333; }
+    html.light .sym-input:focus { box-shadow: 0 0 0 3px rgba(26,111,181,.1); }
+
+    .search-btn {
+      font-family: 'Space Mono', monospace; font-size: 10px; font-weight: 700;
+      letter-spacing: .1em; text-transform: uppercase;
+      background: rgba(91,200,245,.15); border: 1px solid rgba(91,200,245,.35);
+      color: var(--accent2); border-radius: var(--r-md); padding: 10px 20px;
+      cursor: pointer; transition: all .18s; white-space: nowrap;
+    }
+    .search-btn:hover { background: rgba(91,200,245,.25); box-shadow: 0 0 14px rgba(91,200,245,.2); }
+
+    /* ── QUICK CHIPS ── */
+    .quick-label {
+      font-family: 'Space Mono', monospace; font-size: 9px; font-weight: 700;
+      letter-spacing: .12em; text-transform: uppercase; color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+    .quick-chips {
+      display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 1.25rem;
+    }
+    .quick-chip {
+      font-family: 'Space Mono', monospace; font-size: 10px; font-weight: 700;
+      letter-spacing: .06em; padding: 5px 12px; border-radius: 99px;
+      border: 1px solid var(--border); background: var(--bg-card);
+      color: var(--text-secondary); cursor: pointer; transition: all .15s;
+    }
+    .quick-chip:hover { border-color: var(--border-bright); color: var(--text-primary); }
+    .quick-chip.active {
+      background: rgba(91,200,245,.1); border-color: rgba(91,200,245,.35); color: var(--accent2);
+    }
+
+    /* ── FILTER + SORT BAR ── */
+    .controls-bar {
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 1.25rem;
+    }
+    .ctrl-lbl {
+      font-family: 'Space Mono', monospace; font-size: 9px; letter-spacing: .1em;
+      text-transform: uppercase; color: var(--text-muted);
+    }
+    .ctrl-btn {
+      font-family: 'Space Mono', monospace; font-size: 9px; font-weight: 700;
+      letter-spacing: .08em; text-transform: uppercase;
+      padding: 4px 12px; border-radius: 99px;
+      border: 1px solid var(--border); background: none; color: var(--text-muted);
+      cursor: pointer; transition: all .15s;
+    }
+    .ctrl-btn:hover { color: var(--text-secondary); border-color: var(--border-bright); }
+    .ctrl-btn.active { background: rgba(255,255,255,.07); border-color: var(--border-bright); color: var(--text-primary); }
+    .ctrl-btn[data-type="P"].active { background: rgba(61,220,132,.1); border-color: rgba(61,220,132,.3); color: var(--up); }
+    .ctrl-btn[data-type="S"].active { background: rgba(240,82,82,.1);  border-color: rgba(240,82,82,.25); color: var(--down); }
+    .ctrl-sep { width: 1px; height: 16px; background: var(--border); margin: 0 4px; }
+
+    /* ── SUMMARY CHIPS ── */
+    .stat-chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 1.25rem; }
+    .stat-chip {
+      font-family: 'Space Mono', monospace; font-size: 10px; font-weight: 700;
+      padding: 5px 12px; border-radius: 99px;
+      border: 1px solid var(--border); background: var(--bg-card);
+      color: var(--text-secondary); letter-spacing: .04em;
+    }
+    .stat-chip span { margin-left: 5px; }
+
+    /* ── CURRENT SYMBOL HEADER ── */
+    .sym-header {
+      display: flex; align-items: center; gap: 12px; margin-bottom: 1rem; flex-wrap: wrap;
+    }
+    .sym-title {
+      font-family: 'Space Mono', monospace; font-size: 22px; font-weight: 700;
+      letter-spacing: -.01em; color: var(--text-primary);
+    }
+    .sym-subtitle { font-family: 'DM Sans', sans-serif; font-size: 13px; color: var(--text-muted); }
+
+    /* ── TRANSACTION CARD ── */
+    .tx-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--r-lg); padding: .9rem 1rem;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 4px 14px; align-items: center;
+      transition: border-color .18s, box-shadow .15s, transform .15s;
+      margin-bottom: 7px;
+      position: relative; overflow: hidden;
+    }
+    .tx-card::before {
+      content: ''; position: absolute; top: 0; left: 10%; right: 10%; height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,.07), transparent);
+    }
+    .tx-card:hover { border-color: var(--border-bright); box-shadow: 0 5px 18px rgba(0,0,0,.4); transform: translateY(-1px); }
+    .tx-card.buy  { border-color: rgba(61,220,132,.2);  background: rgba(61,220,132,.04); }
+    .tx-card.sell { border-color: rgba(240,82,82,.18);  background: rgba(240,82,82,.03); }
+    .tx-card.award { border-color: rgba(167,139,250,.18); background: rgba(167,139,250,.03); }
+
+    /* Type badge (left column) */
+    .tx-type {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      width: 52px; text-align: center;
+    }
+    .tx-badge {
+      font-family: 'Space Mono', monospace; font-size: 9px; font-weight: 700;
+      letter-spacing: .1em; text-transform: uppercase;
+      padding: 4px 8px; border-radius: 6px; white-space: nowrap;
+    }
+    .badge-buy    { background: rgba(61,220,132,.15); color: var(--up);           border: 1px solid rgba(61,220,132,.3); }
+    .badge-sell   { background: rgba(240,82,82,.12);  color: var(--down);         border: 1px solid rgba(240,82,82,.25); }
+    .badge-award  { background: rgba(167,139,250,.12);color: var(--accent-purple);border: 1px solid rgba(167,139,250,.25); }
+    .badge-other  { background: rgba(255,255,255,.06);color: var(--text-muted);   border: 1px solid var(--border); }
+    .tx-code {
+      font-family: 'Space Mono', monospace; font-size: 8px; color: var(--text-muted);
+      letter-spacing: .08em; margin-top: 3px;
+    }
+
+    /* Middle column */
+    .tx-middle {}
+    .tx-name {
+      font-family: 'Space Mono', monospace; font-size: 12px; font-weight: 700;
+      color: var(--text-primary); letter-spacing: -.01em;
+    }
+    .tx-meta {
+      font-family: 'DM Sans', sans-serif; font-size: 11px; color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    /* Right column */
+    .tx-right { text-align: right; }
+    .tx-value {
+      font-family: 'Space Mono', monospace; font-size: 14px; font-weight: 700;
+      letter-spacing: -.01em;
+    }
+    .tx-value.buy  { color: var(--up); }
+    .tx-value.sell { color: var(--down); }
+    .tx-shares {
+      font-family: 'Space Mono', monospace; font-size: 10px; color: var(--text-muted);
+      margin-top: 2px;
+    }
+    .tx-date {
+      font-family: 'Space Mono', monospace; font-size: 9px; color: var(--text-muted);
+      letter-spacing: .04em; margin-top: 3px;
+    }
+
+    /* ── STATES ── */
+    .ins-loading {
+      display: flex; align-items: center; justify-content: center;
+      flex-direction: column; gap: 14px; padding: 3rem 0;
+    }
+    .ins-spinner {
+      width: 36px; height: 36px; border-radius: 50%;
+      border: 3px solid var(--border); border-top-color: var(--accent2);
+      animation: spin .8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .ins-loading-text {
+      font-family: 'Space Mono', monospace; font-size: 11px;
+      color: var(--text-muted); letter-spacing: .07em;
+    }
+    .ins-empty {
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; padding: 3rem 1rem; gap: 10px;
+      border: 1px solid var(--border); border-radius: var(--r-lg); background: var(--bg-card);
+    }
+    .ins-empty-icon { font-size: 2.5rem; }
+    .ins-empty-text {
+      font-family: 'Space Mono', monospace; font-size: 11px;
+      color: var(--text-muted); letter-spacing: .05em; text-align: center; line-height: 1.7;
+    }
+
+    /* ── UPDATED ROW ── */
+    .updated-row {
+      display: flex; align-items: center; gap: 8px;
+      font-family: 'Space Mono', monospace; font-size: 9px;
+      color: var(--text-muted); letter-spacing: .05em; margin-bottom: 1.25rem;
+    }
+    .updated-row a { color: var(--accent2); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+    .updated-row a:hover { opacity: .8; }
+
+    @media (max-width: 520px) {
+      .tx-card { grid-template-columns: auto 1fr; }
+      .tx-right { grid-column: 2; }
+    }
+    @media (max-width: 380px) {
+      .tx-card { grid-template-columns: 1fr; }
+      .tx-type { flex-direction: row; width: auto; justify-content: flex-start; }
+      .tx-right { text-align: left; }
+    }
+  </style>
+</head>
+<body data-page="insiders" data-mob="insiders">
+
+  <div class="bg-canvas">
+    <div class="orb orb1"></div><div class="orb orb2"></div>
+    <div class="orb orb3"></div><div class="orb orb4"></div>
+  </div>
+
+  <div id="nav-placeholder"></div>
+
+  <div class="container">
+
+    <!-- Page header -->
+    <div class="page-header">
+      <div>
+        <div class="page-title"><span class="live-dot"></span> Insider Transactions</div>
+        <div class="page-sub">SEC Form 4 · Open Market Buys &amp; Sells · Finnhub</div>
+      </div>
+    </div>
+
+    <!-- Updated row -->
+    <div class="updated-row">
+      <span id="updatedTs">—</span>
+    </div>
+
+    <!-- Search -->
+    <div class="search-wrap">
+      <input class="sym-input" id="symInput" type="text" placeholder="Ticker — e.g. NVDA" maxlength="10" autocomplete="off" autocorrect="off" spellcheck="false"/>
+      <button class="search-btn" id="searchBtn">→ Look Up</button>
+    </div>
+
+    <!-- Quick chips -->
+    <div class="quick-label">Quick Look</div>
+    <div class="quick-chips" id="quickChips">
+      <button class="quick-chip active" data-sym="AAPL">AAPL</button>
+      <button class="quick-chip" data-sym="MSFT">MSFT</button>
+      <button class="quick-chip" data-sym="NVDA">NVDA</button>
+      <button class="quick-chip" data-sym="TSLA">TSLA</button>
+      <button class="quick-chip" data-sym="AMZN">AMZN</button>
+      <button class="quick-chip" data-sym="META">META</button>
+      <button class="quick-chip" data-sym="GOOGL">GOOGL</button>
+      <button class="quick-chip" data-sym="JPM">JPM</button>
+      <button class="quick-chip" data-sym="BRK.B">BRK.B</button>
+      <button class="quick-chip" data-sym="SPY">SPY</button>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls-bar">
+      <span class="ctrl-lbl">Show:</span>
+      <button class="ctrl-btn active" data-type="all">All</button>
+      <button class="ctrl-btn" data-type="P">Buys</button>
+      <button class="ctrl-btn" data-type="S">Sells</button>
+      <div class="ctrl-sep"></div>
+      <span class="ctrl-lbl">Sort:</span>
+      <button class="ctrl-btn active" data-sort="date">Date</button>
+      <button class="ctrl-btn" data-sort="value">Value</button>
+    </div>
+
+    <!-- Summary chips -->
+    <div class="stat-chips">
+      <div class="stat-chip">Total <span id="chipTotal" style="color:var(--text-primary)">—</span></div>
+      <div class="stat-chip">Buys <span id="chipBuys" style="color:var(--up)">—</span></div>
+      <div class="stat-chip">Sells <span id="chipSells" style="color:var(--down)">—</span></div>
+      <div class="stat-chip">Buy Value <span id="chipBuyVal" style="color:var(--up)">—</span></div>
+      <div class="stat-chip">Sell Value <span id="chipSellVal" style="color:var(--down)">—</span></div>
+    </div>
+
+    <!-- Current symbol header -->
+    <div class="sym-header" id="symHeader" style="display:none">
+      <span class="sym-title" id="symTitle">—</span>
+      <span class="sym-subtitle" id="symSubtitle"></span>
+    </div>
+
+    <!-- Results -->
+    <div id="insidersWrap">
+      <div class="ins-loading">
+        <div class="ins-spinner"></div>
+        <div class="ins-loading-text">Loading insider data…</div>
+      </div>
+    </div>
+
+  </div><!-- /container -->
+
+  <footer>
+    <span>Chuck's AI · Insider Transactions · Data: Finnhub · &copy; 2025</span>
+  </footer>
+
+  <script>
+  // ── CONFIG ──────────────────────────────────────────────────────────────────
+  const FINNHUB_KEY = 'd7kohmpr01qiqbcv6f8gd7kohmpr01qiqbcv6f90';
+
+  let currentSym  = 'AAPL';
+  let activeType  = 'all';
+  let activeSort  = 'date';
+  let rawTx       = [];
+
+  // Transaction code → human label + badge class
+  const TX_CODE = {
+    P: { label: 'Buy',   cls: 'buy',   badge: 'badge-buy' },
+    S: { label: 'Sell',  cls: 'sell',  badge: 'badge-sell' },
+    A: { label: 'Award', cls: 'award', badge: 'badge-award' },
+    M: { label: 'Exercise', cls: 'award', badge: 'badge-award' },
+    F: { label: 'Tax',   cls: '',      badge: 'badge-other' },
+    G: { label: 'Gift',  cls: '',      badge: 'badge-other' },
+    D: { label: 'Dispose', cls: 'sell', badge: 'badge-sell' },
+    X: { label: 'Exercise', cls: 'award', badge: 'badge-award' },
+    W: { label: 'Will',  cls: '',      badge: 'badge-other' },
+    I: { label: 'Disc.', cls: '',      badge: 'badge-other' },
+  };
+
+  // ── NAV INJECT ──────────────────────────────────────────────────────────────
+  function injectNav(html) {
+    const placeholder = document.getElementById('nav-placeholder');
+    if (!placeholder) return;
+    const tmp = document.createElement('div');
+    tmp.innerHTML = html;
+    Array.from(tmp.childNodes).forEach(node => {
+      if (node.nodeName !== 'SCRIPT')
+        placeholder.parentNode.insertBefore(node.cloneNode(true), placeholder);
+    });
+    tmp.querySelectorAll('script').forEach(old => {
+      const s = document.createElement('script');
+      if (old.src) s.src = old.src; else s.textContent = old.textContent;
+      document.head.appendChild(s);
+    });
+    placeholder.remove();
+  }
+  fetch('nav.html').then(r => r.text()).then(injectNav).catch(() => {});
+
+  // ── HELPERS ─────────────────────────────────────────────────────────────────
+  function fmtValue(n) {
+    if (!n || isNaN(n)) return '—';
+    const abs = Math.abs(n);
+    if (abs >= 1e9) return '$' + (n / 1e9).toFixed(2) + 'B';
+    if (abs >= 1e6) return '$' + (n / 1e6).toFixed(1) + 'M';
+    if (abs >= 1e3) return '$' + (n / 1e3).toFixed(0) + 'K';
+    return '$' + n.toFixed(0);
+  }
+
+  function fmtShares(n) {
+    if (!n || isNaN(n)) return '—';
+    const abs = Math.abs(n);
+    if (abs >= 1e6) return (n / 1e6).toFixed(2) + 'M shares';
+    if (abs >= 1e3) return (n / 1e3).toFixed(0) + 'K shares';
+    return n.toLocaleString() + ' shares';
+  }
+
+  function fmtDate(s) {
+    if (!s) return '—';
+    const d = new Date(s + 'T00:00:00');
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+
+  function toTitleCase(s) {
+    if (!s) return '—';
+    return s.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+  }
+
+  // ── FETCH ───────────────────────────────────────────────────────────────────
+  async function loadInsiders(sym) {
+    const wrap = document.getElementById('insidersWrap');
+    wrap.innerHTML = `<div class="ins-loading"><div class="ins-spinner"></div><div class="ins-loading-text">Fetching insider data for ${sym}…</div></div>`;
+    document.getElementById('updatedTs').textContent = 'Loading…';
+
+    // Update quick chip active state
+    document.querySelectorAll('.quick-chip').forEach(c => {
+      c.classList.toggle('active', c.dataset.sym === sym);
+    });
+
+    const url = `https://finnhub.io/api/v1/stock/insider-transactions?symbol=${sym}&token=${FINNHUB_KEY}`;
+    try {
+      const resp = await fetch(url);
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const data = await resp.json();
+      rawTx = (data.data || []).filter(t => t.transactionDate); // filter out empty dates
+      currentSym = sym;
+
+      // Update symbol header
+      const hdr = document.getElementById('symHeader');
+      hdr.style.display = 'flex';
+      document.getElementById('symTitle').textContent = sym;
+      document.getElementById('symSubtitle').textContent = `${rawTx.length} transactions on record`;
+
+      // Update input
+      document.getElementById('symInput').value = sym;
+
+      renderTransactions();
+      document.getElementById('updatedTs').textContent =
+        'Updated ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } catch (err) {
+      wrap.innerHTML = `
+        <div class="ins-empty">
+          <div class="ins-empty-icon">⚠️</div>
+          <div class="ins-empty-text">${err.message}<br>Check the ticker and try again.</div>
+        </div>`;
+    }
+  }
+
+  // ── RENDER ──────────────────────────────────────────────────────────────────
+  function renderTransactions() {
+    const wrap = document.getElementById('insidersWrap');
+
+    // Filter
+    let tx = [...rawTx];
+    if (activeType !== 'all') {
+      tx = tx.filter(t => (t.transactionCode || '') === activeType);
+    }
+
+    // Sort
+    if (activeSort === 'date') {
+      tx.sort((a, b) => (b.transactionDate || '').localeCompare(a.transactionDate || ''));
+    } else {
+      tx.sort((a, b) => {
+        const va = Math.abs((b.change || 0) * (b.transactionPrice || 0));
+        const vb = Math.abs((a.change || 0) * (a.transactionPrice || 0));
+        return va - vb;
+      });
+    }
+
+    // Summary
+    const buys  = rawTx.filter(t => t.transactionCode === 'P');
+    const sells = rawTx.filter(t => t.transactionCode === 'S');
+    const buyVal  = buys.reduce((s, t)  => s + Math.abs(t.change || 0) * (t.transactionPrice || 0), 0);
+    const sellVal = sells.reduce((s, t) => s + Math.abs(t.change || 0) * (t.transactionPrice || 0), 0);
+
+    document.getElementById('chipTotal').textContent   = rawTx.length;
+    document.getElementById('chipBuys').textContent    = buys.length;
+    document.getElementById('chipSells').textContent   = sells.length;
+    document.getElementById('chipBuyVal').textContent  = fmtValue(buyVal);
+    document.getElementById('chipSellVal').textContent = fmtValue(sellVal);
+
+    if (tx.length === 0) {
+      wrap.innerHTML = `
+        <div class="ins-empty">
+          <div class="ins-empty-icon">📋</div>
+          <div class="ins-empty-text">No transactions found for this filter.</div>
+        </div>`;
+      return;
+    }
+
+    wrap.innerHTML = '';
+    tx.forEach(t => {
+      const code   = t.transactionCode || '?';
+      const info   = TX_CODE[code] || { label: code, cls: '', badge: 'badge-other' };
+      const change = t.change || 0;
+      const price  = t.transactionPrice || 0;
+      const value  = Math.abs(change) * price;
+      const isNeg  = change < 0;
+
+      const card = document.createElement('div');
+      card.className = `tx-card ${info.cls}`;
+      card.innerHTML = `
+        <div class="tx-type">
+          <span class="tx-badge ${info.badge}">${info.label}</span>
+          <span class="tx-code">Code: ${code}</span>
+        </div>
+        <div class="tx-middle">
+          <div class="tx-name">${toTitleCase(t.name)}</div>
+          <div class="tx-meta">
+            ${t.filingDate ? `Filed ${fmtDate(t.filingDate)}` : ''}
+          </div>
+        </div>
+        <div class="tx-right">
+          ${value > 0 ? `<div class="tx-value ${info.cls}">${isNeg ? '−' : '+'}${fmtValue(value)}</div>` : '<div class="tx-value">—</div>'}
+          <div class="tx-shares">${change !== 0 ? (isNeg ? '▼ ' : '▲ ') + fmtShares(Math.abs(change)) : '—'}</div>
+          ${price > 0 ? `<div class="tx-shares">@ $${price.toFixed(2)}</div>` : ''}
+          <div class="tx-date">${fmtDate(t.transactionDate)}</div>
+        </div>
+      `;
+      wrap.appendChild(card);
+    });
+  }
+
+  // ── EVENT WIRING ────────────────────────────────────────────────────────────
+  // Quick chips
+  document.getElementById('quickChips').addEventListener('click', e => {
+    const chip = e.target.closest('.quick-chip');
+    if (!chip) return;
+    loadInsiders(chip.dataset.sym);
+  });
+
+  // Search
+  function doSearch() {
+    const val = document.getElementById('symInput').value.trim().toUpperCase();
+    if (!val) return;
+    loadInsiders(val);
+  }
+  document.getElementById('searchBtn').addEventListener('click', doSearch);
+  document.getElementById('symInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') doSearch();
+  });
+  document.getElementById('symInput').addEventListener('input', e => {
+    e.target.value = e.target.value.toUpperCase();
+  });
+
+  // Type filter
+  document.querySelectorAll('[data-type]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('[data-type]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      activeType = btn.dataset.type;
+      renderTransactions();
+    });
+  });
+
+  // Sort
+  document.querySelectorAll('[data-sort]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('[data-sort]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      activeSort = btn.dataset.sort;
+      renderTransactions();
+    });
+  });
+
+  // ── INIT ─────────────────────────────────────────────────────────────────────
+  loadInsiders('AAPL');
+  </script>
+</body>
+</html>

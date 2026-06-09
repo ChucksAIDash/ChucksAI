@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Chuck's AI — Market Breadth</title>
+  <script src="theme.js"></script>
+  <link rel="stylesheet" href="styles.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    /* ── VIX GAUGE ── */
+    .vix-wrap {
+      display: flex; flex-direction: column; align-items: center;
+      padding: 2rem 1rem 1.25rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--r-xl);
+      margin-bottom: 1.5rem;
+      position: relative; overflow: hidden;
+    }
+    .vix-wrap::before {
+      content: ''; position: absolute; top: 0; left: 15%; right: 15%; height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,.1), transparent);
+    }
+    .vix-label {
+      font-family: 'Space Mono', monospace;
+      font-size: 9px; font-weight: 700; letter-spacing: .18em;
+      text-transform: uppercase; color: var(--text-muted);
+      margin-bottom: .75rem;
+    }
+    .vix-gauge-svg { width: 260px; max-width: 90vw; }
+    .vix-value {
+      font-family: 'Space Mono', monospace;
+      font-size: 48px; font-weight: 700;
+      letter-spacing: -.04em; line-height: 1;
+      margin-top: .5rem; transition: color .4s;
+    }
+    .vix-level {
+      font-family: 'Space Mono', monospace;
+      font-size: 10px; font-weight: 700; letter-spacing: .12em;
+      text-transform: uppercase; margin-top: 4px;
+      padding: 3px 12px; border-radius: 99px; transition: all .4s;
+    }
+    .vix-change {
+      font-family: 'Space Mono', monospace;
+      font-size: 13px; color: var(--text-muted); margin-top: 4px;
+    }
+    .vix-sub {
+      font-family: 'DM Sans', sans-serif; font-size: 10px;
+      color: var(--text-muted); margin-top: 6px;
+    }
+
+    /* VIX color states */
+    .vix-calm   { color: var(--up);      }
+    .vix-normal { color: var(--accent3); }
+    .vix-stress { color: #f97316;        }
+    .vix-fear   { color: var(--down);    }
+
+    .pill-calm   { background: rgba(61,220,132,.12);  color: var(--up);      border: 1px solid rgba(61,220,132,.3); }
+    .pill-normal { background: rgba(240,184,106,.12); color: var(--accent3); border: 1px solid rgba(240,184,106,.3); }
+    .pill-stress { background: rgba(249,115,22,.12);  color: #f97316;        border: 1px solid rgba(249,115,22,.3); }
+    .pill-fear   { background: rgba(240,82,82,.12);   color: var(--down);    border: 1px solid rgba(240,82,82,.3); }
+
+    /* ── SECTION HEADER ── */
+    .sect-header {
+      display: flex; align-items: center; gap: 10px;
+      margin: 1.75rem 0 .85rem;
+    }
+    .sect-icon  { font-size: 18px; line-height: 1; }
+    .sect-title {
+      font-family: 'Space Mono', monospace;
+      font-size: 10px; font-weight: 700;
+      letter-spacing: .14em; text-transform: uppercase;
+      color: var(--text-secondary);
+    }
+    .sect-divider { flex: 1; height: 1px; background: linear-gradient(90deg, var(--border), transparent); }
+
+    /* ── INDEX SCOREBOARD ── */
+    .index-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px; margin-bottom: .5rem;
+    }
+    @media (max-width: 860px) { .index-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 440px) { .index-grid { grid-template-columns: 1fr 1fr; gap: 8px; } }
+
+    .idx-card {
+      border-radius: var(--r-lg); border: 1px solid var(--border);
+      background: var(--bg-card); padding: 1rem;
+      display: flex; flex-direction: column; gap: 5px;
+      transition: transform .2s, border-color .2s, box-shadow .2s;
+      position: relative; overflow: hidden;
+    }
+    .idx-card::before {
+      content: ''; position: absolute; top: 0; left: 10%; right: 10%; height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,.09), transparent);
+    }
+    .idx-card:hover { transform: translateY(-2px); border-color: var(--border-bright); box-shadow: 0 8px 24px rgba(0,0,0,.4); }
+    .idx-card.up-card  { border-color: rgba(61,220,132,.22);  background: rgba(61,220,132,.06); }
+    .idx-card.dn-card  { border-color: rgba(240,82,82,.22);   background: rgba(240,82,82,.06); }
+
+    .idx-name  { font-family: 'Space Mono', monospace; font-size: 9px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--text-muted); }
+    .idx-full  { font-family: 'DM Sans', sans-serif; font-size: 11px; color: var(--text-secondary); }
+    .idx-price { font-family: 'Space Mono', monospace; font-size: 20px; font-weight: 700; letter-spacing: -.02em; }
+    .idx-price.up   { color: var(--up); }
+    .idx-price.down { color: var(--down); }
+    .idx-pct {
+      font-family: 'Space Mono', monospace; font-size: 13px; font-weight: 700;
+    }
+    .idx-pct.up   { color: var(--up); }
+    .idx-pct.down { color: var(--down); }
+    .idx-pct.flat { color: var(--text-secondary); }
+
+    /* ── RISK PANEL ── */
+    .risk-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+    @media (max-width: 700px) { .risk-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 420px) { .risk-grid { grid-template-columns: 1fr 1fr; gap: 8px; } }
+
+    .risk-card {
+      border-radius: var(--r-md); border: 1px solid var(--border);
+      background: var(--bg-card); padding: .85rem .9rem;
+      display: flex; flex-direction: column; gap: 4px;
+      transition: transform .18s, border-color .18s;
+      position: relative; overflow: hidden;
+    }
+    .risk-card:hover { transform: translateY(-2px); border-color: var(--border-bright); }
+    .risk-card.risk-on  { border-color: rgba(61,220,132,.2);  background: rgba(61,220,132,.05); }
+    .risk-card.risk-off { border-color: rgba(167,139,250,.2); background: rgba(167,139,250,.05); }
+
+    .risk-header { display: flex; align-items: center; justify-content: space-between; }
+    .risk-sym  { font-family: 'Space Mono', monospace; font-size: 11px; font-weight: 700; letter-spacing: .04em; color: var(--text-primary); }
+    .risk-badge {
+      font-family: 'Space Mono', monospace; font-size: 8px; font-weight: 700;
+      letter-spacing: .1em; text-transform: uppercase; padding: 2px 7px; border-radius: 99px;
+    }
+    .badge-on  { background: rgba(61,220,132,.1); color: var(--up); border: 1px solid rgba(61,220,132,.25); }
+    .badge-off { background: rgba(167,139,250,.1); color: var(--accent-purple); border: 1px solid rgba(167,139,250,.25); }
+    .badge-neu { background: rgba(255,255,255,.06); color: var(--text-muted); border: 1px solid var(--border); }
+
+    .risk-name { font-family: 'DM Sans', sans-serif; font-size: 10px; color: var(--text-muted); }
+    .risk-price { font-family: 'Space Mono', monospace; font-size: 16px; font-weight: 700; letter-spacing: -.02em; }
+    .risk-price.up   { color: var(--up); }
+    .risk-price.down { color: var(--down); }
+    .risk-pct  { font-family: 'Space Mono', monospace; font-size: 11px; font-weight: 700; }
+    .risk-pct.up   { color: var(--up); }
+    .risk-pct.down { color: var(--down); }
+    .risk-pct.flat { color: var(--text-secondary); }
+
+    /* ── BREADTH SCORE ── */
+    .breadth-wrap {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--r-xl); padding: 1.25rem 1.5rem;
+      display: flex; flex-direction: column; gap: 12px;
+    }
+    .breadth-top {
+      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;
+    }
+    .breadth-score-label {
+      font-family: 'Space Mono', monospace; font-size: 9px; font-weight: 700;
+      letter-spacing: .14em; text-transform: uppercase; color: var(--text-muted);
+    }
+    .breadth-score-val {
+      font-family: 'Space Mono', monospace; font-size: 28px; font-weight: 700;
+      letter-spacing: -.02em;
+    }
+    .breadth-bar-track {
+      height: 8px; border-radius: 99px;
+      background: rgba(240,82,82,.25);
+      position: relative; overflow: hidden;
+    }
+    .breadth-bar-fill {
+      position: absolute; left: 0; top: 0; height: 100%;
+      border-radius: 99px;
+      background: linear-gradient(90deg, var(--down), var(--accent3), var(--up));
+      transition: width .6s ease;
+    }
+    .breadth-chips {
+      display: flex; gap: 8px; flex-wrap: wrap;
+    }
+    .breadth-chip {
+      font-family: 'Space Mono', monospace; font-size: 9px; font-weight: 700;
+      letter-spacing: .05em; padding: 3px 10px; border-radius: 99px;
+      border: 1px solid var(--border); background: var(--bg-card); color: var(--text-secondary);
+    }
+    .breadth-chip .up   { color: var(--up); }
+    .breadth-chip .down { color: var(--down); }
+
+    /* ── UPDATED ROW ── */
+    .updated-row {
+      display: flex; align-items: center; gap: 8px;
+      font-family: 'Space Mono', monospace; font-size: 9px;
+      color: var(--text-muted); letter-spacing: .05em;
+      margin-bottom: 1.25rem;
+    }
+    .updated-row a { color: var(--accent2); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+    .updated-row a:hover { opacity: .8; }
+
+    /* ── SKELETON ── */
+    .skel { background: rgba(255,255,255,.05); border-radius: 4px; animation: shimmer 1.4s ease-in-out infinite; }
+    @keyframes shimmer { 0%,100%{opacity:.4} 50%{opacity:.85} }
+  </style>
+</head>
+<body data-page="breadth" data-mob="breadth">
+
+  <div class="bg-canvas">
+    <div class="orb orb1"></div><div class="orb orb2"></div>
+    <div class="orb orb3"></div><div class="orb orb4"></div>
+  </div>
+
+  <div id="nav-placeholder"></div>
+
+  <div class="container">
+
+    <!-- Page header -->
+    <div class="page-header">
+      <div>
+        <div class="page-title"><span class="live-dot"></span> Market Breadth</div>
+        <div class="page-sub">Volatility · Indices · Risk Indicators · Sector Breadth · Finnhub</div>
+      </div>
+      <div class="header-right">
+        <button class="refresh-btn" id="refreshBtn">↺ Refresh</button>
+      </div>
+    </div>
+
+    <!-- Updated row -->
+    <div class="updated-row">
+      <span id="updatedTs">—</span>
+      · <a onclick="loadAll()">refresh now</a>
+      · auto-refresh every 60s
+    </div>
+
+    <!-- VIX Gauge -->
+    <div class="vix-wrap">
+      <div class="vix-label">CBOE Volatility Index — VIX Proxy (VIXY)</div>
+      <svg class="vix-gauge-svg" viewBox="0 0 260 145" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- Track arc (180° semicircle) -->
+        <path d="M 20 130 A 110 110 0 0 1 240 130" stroke="rgba(255,255,255,.07)" stroke-width="14" stroke-linecap="round"/>
+        <!-- Zone arcs: calm / normal / stress / fear -->
+        <!-- calm 0–25%  -->
+        <path d="M 20 130 A 110 110 0 0 1 75.4 37.4"   stroke="rgba(61,220,132,.35)"  stroke-width="14" stroke-linecap="round"/>
+        <!-- normal 25–50% -->
+        <path d="M 75.4 37.4 A 110 110 0 0 1 130 20"   stroke="rgba(240,184,106,.35)" stroke-width="14" stroke-linecap="butt"/>
+        <!-- stress 50–75% -->
+        <path d="M 130 20 A 110 110 0 0 1 184.6 37.4"  stroke="rgba(249,115,22,.35)"  stroke-width="14" stroke-linecap="butt"/>
+        <!-- fear 75–100% -->
+        <path d="M 184.6 37.4 A 110 110 0 0 1 240 130" stroke="rgba(240,82,82,.35)"   stroke-width="14" stroke-linecap="round"/>
+        <!-- Needle -->
+        <line id="gaugeNeedle" x1="130" y1="130" x2="130" y2="30"
+              stroke="var(--text-primary)" stroke-width="2.5" stroke-linecap="round"
+              transform="rotate(0, 130, 130)" opacity=".9"/>
+        <!-- Needle pivot -->
+        <circle cx="130" cy="130" r="6" fill="var(--text-primary)" opacity=".9"/>
+        <!-- Zone labels -->
+        <text x="18"  y="152" font-family="Space Mono" font-size="7" fill="rgba(61,220,132,.7)"  text-anchor="middle">CALM</text>
+        <text x="68"  y="52"  font-family="Space Mono" font-size="7" fill="rgba(240,184,106,.7)" text-anchor="middle">LOW</text>
+        <text x="130" y="16"  font-family="Space Mono" font-size="7" fill="rgba(249,115,22,.7)"  text-anchor="middle">STRESS</text>
+        <text x="193" y="52"  font-family="Space Mono" font-size="7" fill="rgba(240,82,82,.7)"   text-anchor="middle">FEAR</text>
+        <text x="242" y="152" font-family="Space Mono" font-size="7" fill="rgba(240,82,82,.7)"   text-anchor="middle">PANIC</text>
+        <!-- Range ticks -->
+        <text x="22"  y="128" font-family="Space Mono" font-size="8" fill="rgba(255,255,255,.25)" text-anchor="middle">10</text>
+        <text x="130" y="22"  font-family="Space Mono" font-size="8" fill="rgba(255,255,255,.25)" text-anchor="middle">30</text>
+        <text x="238" y="128" font-family="Space Mono" font-size="8" fill="rgba(255,255,255,.25)" text-anchor="middle">50</text>
+      </svg>
+      <div class="vix-value" id="vixValue">—</div>
+      <div class="vix-level" id="vixLevel">Loading…</div>
+      <div class="vix-change" id="vixChange"></div>
+      <div class="vix-sub">VIXY · ProShares VIX Short-Term Futures ETF · VIX proxy, not spot</div>
+    </div>
+
+    <!-- Major Indices -->
+    <div class="sect-header">
+      <span class="sect-icon">📊</span>
+      <span class="sect-title">Major Indices</span>
+      <div class="sect-divider"></div>
+    </div>
+    <div class="index-grid" id="indexGrid">
+      <div class="idx-card"><div class="skel" style="height:10px;width:40%;margin-bottom:6px"></div><div class="skel" style="height:22px;width:65%"></div></div>
+      <div class="idx-card"><div class="skel" style="height:10px;width:40%;margin-bottom:6px"></div><div class="skel" style="height:22px;width:65%"></div></div>
+      <div class="idx-card"><div class="skel" style="height:10px;width:40%;margin-bottom:6px"></div><div class="skel" style="height:22px;width:65%"></div></div>
+      <div class="idx-card"><div class="skel" style="height:10px;width:40%;margin-bottom:6px"></div><div class="skel" style="height:22px;width:65%"></div></div>
+    </div>
+
+    <!-- Risk On / Risk Off -->
+    <div class="sect-header">
+      <span class="sect-icon">⚖️</span>
+      <span class="sect-title">Risk Indicators</span>
+      <div class="sect-divider"></div>
+    </div>
+    <div class="risk-grid" id="riskGrid">
+      <div class="risk-card"><div class="skel" style="height:10px;width:50%;margin-bottom:6px"></div><div class="skel" style="height:18px;width:55%"></div></div>
+      <div class="risk-card"><div class="skel" style="height:10px;width:50%;margin-bottom:6px"></div><div class="skel" style="height:18px;width:55%"></div></div>
+      <div class="risk-card"><div class="skel" style="height:10px;width:50%;margin-bottom:6px"></div><div class="skel" style="height:18px;width:55%"></div></div>
+      <div class="risk-card"><div class="skel" style="height:10px;width:50%;margin-bottom:6px"></div><div class="skel" style="height:18px;width:55%"></div></div>
+      <div class="risk-card"><div class="skel" style="height:10px;width:50%;margin-bottom:6px"></div><div class="skel" style="height:18px;width:55%"></div></div>
+      <div class="risk-card"><div class="skel" style="height:10px;width:50%;margin-bottom:6px"></div><div class="skel" style="height:18px;width:55%"></div></div>
+    </div>
+
+    <!-- Sector Breadth Score -->
+    <div class="sect-header">
+      <span class="sect-icon">🌡️</span>
+      <span class="sect-title">Sector Breadth</span>
+      <div class="sect-divider"></div>
+    </div>
+    <div class="breadth-wrap">
+      <div class="breadth-top">
+        <div>
+          <div class="breadth-score-label">Sectors Advancing Today</div>
+          <div class="breadth-score-val" id="breadthScore">—<span style="font-size:16px;color:var(--text-muted)"> / 11</span></div>
+        </div>
+        <div class="breadth-chips" id="breadthChips"></div>
+      </div>
+      <div class="breadth-bar-track">
+        <div class="breadth-bar-fill" id="breadthFill" style="width:0%"></div>
+      </div>
+    </div>
+
+  </div><!-- /container -->
+
+  <footer>
+    <span>Chuck's AI · Market Breadth · Data: Finnhub · &copy; 2025</span>
+  </footer>
+
+  <script>
+  // ── CONFIG ──────────────────────────────────────────────────────────────────
+  const FINNHUB_KEY = 'd7kohmpr01qiqbcv6f8gd7kohmpr01qiqbcv6f90';
+
+  const INDICES = [
+    { sym: 'SPY',  name: 'S&P 500',       full: 'SPDR S&P 500 ETF' },
+    { sym: 'QQQ',  name: 'Nasdaq 100',    full: 'Invesco QQQ Trust' },
+    { sym: 'IWM',  name: 'Russell 2000',  full: 'iShares Russell 2000' },
+    { sym: 'DIA',  name: 'Dow Jones',     full: 'SPDR Dow Jones ETF' },
+  ];
+
+  // Risk-on = rising is bullish for equities; Risk-off = rising is defensive/bearish signal
+  const RISK = [
+    { sym: 'HYG',  name: 'High Yield Corp Bonds', mode: 'on',  desc: 'Risk appetite — rises with equities' },
+    { sym: 'TLT',  name: '20yr Treasury Bond',    mode: 'off', desc: 'Flight to safety — rises on fear' },
+    { sym: 'LQD',  name: 'Invest. Grade Bonds',   mode: 'off', desc: 'Credit quality proxy' },
+    { sym: 'GLD',  name: 'Gold',                  mode: 'off', desc: 'Safe haven asset' },
+    { sym: 'UUP',  name: 'US Dollar Index',       mode: 'neu', desc: 'Dollar strength indicator' },
+    { sym: 'RSP',  name: 'Equal Weight S&P',      mode: 'on',  desc: 'Breadth proxy — RSP vs SPY spread' },
+  ];
+
+  const SECTORS = ['XLK','XLV','XLF','XLY','XLC','XLI','XLP','XLE','XLU','XLRE','XLB'];
+  const SECTOR_NAMES = {
+    XLK:'Tech', XLV:'Health', XLF:'Finance', XLY:'Cons.Disc', XLC:'Comm',
+    XLI:'Indust', XLP:'Staples', XLE:'Energy', XLU:'Utilities', XLRE:'Real Est', XLB:'Materials'
+  };
+
+  // ── NAV INJECT ──────────────────────────────────────────────────────────────
+  function injectNav(html) {
+    const placeholder = document.getElementById('nav-placeholder');
+    if (!placeholder) return;
+    const tmp = document.createElement('div');
+    tmp.innerHTML = html;
+    Array.from(tmp.childNodes).forEach(node => {
+      if (node.nodeName !== 'SCRIPT')
+        placeholder.parentNode.insertBefore(node.cloneNode(true), placeholder);
+    });
+    tmp.querySelectorAll('script').forEach(old => {
+      const s = document.createElement('script');
+      if (old.src) s.src = old.src; else s.textContent = old.textContent;
+      document.head.appendChild(s);
+    });
+    placeholder.remove();
+  }
+  fetch('nav.html').then(r => r.text()).then(injectNav).catch(() => {});
+
+  // ── FETCH ───────────────────────────────────────────────────────────────────
+  async function fetchQuote(sym) {
+    const r = await fetch(`https://finnhub.io/api/v1/quote?symbol=${sym}&token=${FINNHUB_KEY}`);
+    if (!r.ok) throw new Error(r.status);
+    return r.json();
+  }
+
+  async function fetchBatch(syms) {
+    const results = {};
+    for (const sym of syms) {
+      try { results[sym] = await fetchQuote(sym); }
+      catch { results[sym] = null; }
+      await new Promise(r => setTimeout(r, 60));
+    }
+    return results;
+  }
+
+  // ── GAUGE ───────────────────────────────────────────────────────────────────
+  // VIX mapped 10–50 → -90° to +90° (left = calm, right = panic)
+  function vixToAngle(v) {
+    const clamped = Math.min(50, Math.max(10, v));
+    return ((clamped - 10) / 40) * 180 - 90; // -90 = left, +90 = right
+  }
+
+  function updateGauge(price, dp) {
+    const el = document.getElementById('vixValue');
+    const lvl = document.getElementById('vixLevel');
+    const chg = document.getElementById('vixChange');
+    const needle = document.getElementById('gaugeNeedle');
+
+    el.textContent = price.toFixed(2);
+
+    let cls, label;
+    if (price < 15)      { cls = 'vix-calm';   label = 'Calm';         }
+    else if (price < 20) { cls = 'vix-normal';  label = 'Low Volatility'; }
+    else if (price < 30) { cls = 'vix-stress';  label = 'Elevated Stress'; }
+    else                 { cls = 'vix-fear';    label = 'Fear / Panic';  }
+
+    el.className = 'vix-value ' + cls;
+    lvl.textContent = label;
+    lvl.className = 'vix-level pill-' + cls.replace('vix-', '');
+
+    const sign = dp >= 0 ? '+' : '';
+    chg.textContent = `${sign}${dp.toFixed(2)}% today`;
+    chg.style.color = dp >= 0 ? 'var(--down)' : 'var(--up)'; // VIX up = bad
+
+    // Rotate needle
+    const angle = vixToAngle(price);
+    needle.setAttribute('transform', `rotate(${angle}, 130, 130)`);
+  }
+
+  // ── RENDER INDICES ──────────────────────────────────────────────────────────
+  function renderIndices(quotes) {
+    const grid = document.getElementById('indexGrid');
+    grid.innerHTML = '';
+    INDICES.forEach(({ sym, name, full }) => {
+      const q = quotes[sym];
+      const card = document.createElement('div');
+      if (!q || q.c === 0) {
+        card.className = 'idx-card';
+        card.innerHTML = `<div class="idx-name">${sym}</div><div class="idx-full" style="color:var(--down);font-size:10px">Unavailable</div>`;
+        grid.appendChild(card); return;
+      }
+      const pctCls = q.dp > 0.01 ? 'up' : q.dp < -0.01 ? 'down' : 'flat';
+      card.className = `idx-card ${q.dp >= 0 ? 'up-card' : 'dn-card'}`;
+      card.innerHTML = `
+        <div class="idx-name">${sym}</div>
+        <div class="idx-full">${full}</div>
+        <div class="idx-price ${pctCls}">$${q.c.toFixed(2)}</div>
+        <div class="idx-pct ${pctCls}">${q.dp >= 0 ? '+' : ''}${q.dp.toFixed(2)}% <span style="font-size:9px;color:var(--text-muted)">(${q.d >= 0 ? '+' : ''}${q.d.toFixed(2)})</span></div>
+      `;
+      grid.appendChild(card);
+    });
+  }
+
+  // ── RENDER RISK ─────────────────────────────────────────────────────────────
+  function renderRisk(quotes) {
+    const grid = document.getElementById('riskGrid');
+    grid.innerHTML = '';
+    RISK.forEach(({ sym, name, mode, desc }) => {
+      const q = quotes[sym];
+      const card = document.createElement('div');
+      const modeClass = mode === 'on' ? 'risk-on' : mode === 'off' ? 'risk-off' : '';
+      card.className = `risk-card ${modeClass}`;
+
+      if (!q || q.c === 0) {
+        card.innerHTML = `
+          <div class="risk-header"><span class="risk-sym">${sym}</span></div>
+          <div class="risk-name">${name}</div>
+          <div style="font-size:10px;color:var(--down)">Unavailable</div>`;
+        grid.appendChild(card); return;
+      }
+
+      const pctCls = q.dp > 0.01 ? 'up' : q.dp < -0.01 ? 'down' : 'flat';
+      const badgeCls = mode === 'on' ? 'badge-on' : mode === 'off' ? 'badge-off' : 'badge-neu';
+      const badgeTxt = mode === 'on' ? 'Risk-On' : mode === 'off' ? 'Risk-Off' : 'Neutral';
+      card.innerHTML = `
+        <div class="risk-header">
+          <span class="risk-sym">${sym}</span>
+          <span class="risk-badge ${badgeCls}">${badgeTxt}</span>
+        </div>
+        <div class="risk-name">${name}</div>
+        <div class="risk-price ${pctCls}">$${q.c.toFixed(2)}</div>
+        <div class="risk-pct ${pctCls}">${q.dp >= 0 ? '+' : ''}${q.dp.toFixed(2)}%</div>
+        <div style="font-size:9px;color:var(--text-muted);font-family:'DM Sans',sans-serif;margin-top:2px">${desc}</div>
+      `;
+      grid.appendChild(card);
+    });
+  }
+
+  // ── RENDER BREADTH ──────────────────────────────────────────────────────────
+  function renderBreadth(quotes) {
+    const up = SECTORS.filter(s => quotes[s] && quotes[s].dp > 0);
+    const dn = SECTORS.filter(s => quotes[s] && quotes[s].dp < 0);
+    const total = SECTORS.length;
+    const score = up.length;
+    const pct = (score / total) * 100;
+
+    document.getElementById('breadthScore').innerHTML =
+      `${score}<span style="font-size:16px;color:var(--text-muted)"> / ${total}</span>`;
+    document.getElementById('breadthFill').style.width = pct + '%';
+
+    // Best + worst sector chips
+    const valid = SECTORS.filter(s => quotes[s] && quotes[s].c > 0);
+    const bestS  = valid.reduce((a, b) => quotes[b].dp > quotes[a].dp ? b : a, valid[0]);
+    const worstS = valid.reduce((a, b) => quotes[b].dp < quotes[a].dp ? b : a, valid[0]);
+
+    const chips = document.getElementById('breadthChips');
+    chips.innerHTML = `
+      <div class="breadth-chip">Up <span class="up">${score}</span></div>
+      <div class="breadth-chip">Down <span class="down">${dn.length}</span></div>
+      ${bestS  ? `<div class="breadth-chip">Best <span class="up">${SECTOR_NAMES[bestS]} ${quotes[bestS].dp >= 0 ? '+' : ''}${quotes[bestS].dp.toFixed(2)}%</span></div>` : ''}
+      ${worstS ? `<div class="breadth-chip">Worst <span class="down">${SECTOR_NAMES[worstS]} ${quotes[worstS].dp.toFixed(2)}%</span></div>` : ''}
+    `;
+  }
+
+  // ── LOAD ALL ────────────────────────────────────────────────────────────────
+  async function loadAll() {
+    document.getElementById('updatedTs').textContent = 'Loading…';
+
+    const allSyms = ['VIXY', ...INDICES.map(i => i.sym), ...RISK.map(r => r.sym), ...SECTORS];
+    const quotes = await fetchBatch(allSyms);
+
+    // VIX gauge
+    const vixy = quotes['VIXY'];
+    if (vixy && vixy.c > 0) updateGauge(vixy.c, vixy.dp);
+
+    renderIndices(quotes);
+    renderRisk(quotes);
+    renderBreadth(quotes);
+
+    document.getElementById('updatedTs').textContent =
+      'Updated ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+
+  // ── INIT ─────────────────────────────────────────────────────────────────────
+  document.getElementById('refreshBtn').addEventListener('click', loadAll);
+  loadAll();
+  setInterval(loadAll, 60 * 1000);
+  </script>
+</body>
+</html>
