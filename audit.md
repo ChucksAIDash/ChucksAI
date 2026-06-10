@@ -1,6 +1,6 @@
 # ChucksAI HTML Audit
 
-_Generated 2026-05-23 · 18 files scanned_
+_Generated 2026-05-23 · 18 files scanned — updated 2026-06-09 · 5 new pages added_
 
 **Legend:** ✅ Pass · ❌ Fail · — Not applicable (component or redirect-only page)
 
@@ -33,6 +33,11 @@ _Generated 2026-05-23 · 18 files scanned_
 | `news.html` | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
 | `options-flow.html` | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
 | `treasuries.html` | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
+| `commodities.html` | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
+| `breadth.html` | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
+| `ipo.html` | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
+| `insiders.html` | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
+| `watchlist.html` | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
 
 ---
 
@@ -134,6 +139,11 @@ This is the second most widespread issue after hardcoded colors. Every content p
 | `crypto.html` | 4 | 0 |
 | `chat.html` | 3 | 0 |
 | `_template.html` | 1 | 0 (uses `var(--accent)`) |
+| `breadth.html` | 27 | 0 |
+| `watchlist.html` | 17 | 0 |
+| `insiders.html` | 6 | 0 |
+| `ipo.html` | 4 | 0 |
+| `commodities.html` | 4 | 0 |
 
 The massive counts in the dexcom files are partly from JS-generated HTML strings (e.g., `style="display:none"`, `style="font-size:${fs}"`, `style="color:${color}"`). These should be replaced with CSS classes and `data-` attributes.
 
