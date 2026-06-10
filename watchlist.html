@@ -125,7 +125,7 @@
     .wl-price.up   { color: var(--up);   text-shadow: 0 0 16px rgba(61,220,132,.45); }
     .wl-price.down { color: var(--down); text-shadow: 0 0 16px rgba(240,82,82,.45); }
     .wl-price.flat { color: var(--text-primary); }
-    html.light .wl-price.up,.wl-price.down { text-shadow: none; }
+    html.light .wl-price.up, html.light .wl-price.down { text-shadow: none; }
 
     /* Change row */
     .wl-change-row { display: flex; align-items: center; gap: 10px; }
@@ -588,13 +588,16 @@
       try {
         const q = await fetchQuote(sym);
         if (q) quotes[sym] = q;
+        await new Promise(r => setTimeout(r, 80));
         if (!profiles[sym]) {
-          const [p, m] = await Promise.all([fetchProfile(sym), fetchMetrics(sym)]);
+          const p = await fetchProfile(sym);
           if (p) profiles[sym] = p;
-          if (m) metrics[sym]  = m;
+          await new Promise(r => setTimeout(r, 80));
+          const m = await fetchMetrics(sym);
+          if (m) metrics[sym] = m;
+          await new Promise(r => setTimeout(r, 80));
         }
       } catch { /* continue */ }
-      await new Promise(r => setTimeout(r, 80)); // throttle
       renderAll(); // progressive render
     }
 
