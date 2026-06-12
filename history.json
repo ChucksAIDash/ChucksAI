@@ -1,18 +1,18 @@
 {
   "_note": "Dexcom Clarity historical data for Chuck's glucose dashboard. Add new periods here when uploading new Clarity exports.",
-  "_schema": "periods[] = period summaries | hourly[] = hourly stats per period | dow = day-of-week averages",
+  "_schema": "periods[] = period summaries | hourly[] = hourly stats per period | dow = day-of-week averages | events[] = notable clinical events",
   "faultySensorWindows": [
     {
       "start": "2026-03-25",
       "end": "2026-04-04",
-      "note": "Sensor miscalibration — CGM readings ~20–35 mg/dL lower than actual. CGM data unreliable. Mar 25–28 no fingerstick entries; Mar 29–Apr 4 have fingerstick values. Exclude from Best Week and benchmarks.",
+      "note": "Sensor miscalibration \u2014 CGM readings ~20\u201335 mg/dL lower than actual. CGM data unreliable. Mar 25\u201328 no fingerstick entries; Mar 29\u2013Apr 4 have fingerstick values. Exclude from Best Week and benchmarks.",
       "fingerstickData": {
-        "note": "Manual fingerstick readings Mar 29–Apr 4. Use in place of CGM data.",
+        "note": "Manual fingerstick readings Mar 29\u2013Apr 4. Use in place of CGM data.",
         "days": 7,
         "readings": 58,
         "avg": 138,
         "tir": 79,
-        "dateRange": "Mar 29 – Apr 4, 2026"
+        "dateRange": "Mar 29 \u2013 Apr 4, 2026"
       }
     },
     {
@@ -20,20 +20,20 @@
       "end": "2026-05-03",
       "note": "Likely no CGM sensor due to insurance coverage gap. 58 manual fingerstick readings only. Any CGM data for this window is absent or unreliable. Exclude from Best Week and benchmarks. Use fingerstick stats instead.",
       "fingerstickData": {
-        "note": "Manual fingerstick readings Apr 27–May 3. Use in place of CGM data.",
+        "note": "Manual fingerstick readings Apr 27\u2013May 3. Use in place of CGM data.",
         "days": 7,
         "readings": 58,
         "avg": 138,
         "tir": 79,
-        "dateRange": "Apr 27 – May 3, 2026"
+        "dateRange": "Apr 27 \u2013 May 3, 2026"
       }
     }
   ],
   "periods": [
     {
       "id": "jun-sep-2025",
-      "label": "Jun–Sep 2025",
-      "dateRange": "Jun 27 – Sep 24, 2025",
+      "label": "Jun\u2013Sep 2025",
+      "dateRange": "Jun 27 \u2013 Sep 24, 2025",
       "days": 90,
       "medication": "Ozempic 0.5mg",
       "avg": 150,
@@ -51,8 +51,8 @@
     },
     {
       "id": "sep-dec-2025",
-      "label": "Sep–Dec 2025",
-      "dateRange": "Sep 25 – Dec 22, 2025",
+      "label": "Sep\u2013Dec 2025",
+      "dateRange": "Sep 25 \u2013 Dec 22, 2025",
       "days": 89,
       "medication": "Ozempic 1.0mg",
       "avg": 159,
@@ -70,8 +70,8 @@
     },
     {
       "id": "dec-mar-2026",
-      "label": "Dec–Mar 2026",
-      "dateRange": "Dec 23, 2025 – Mar 22, 2026",
+      "label": "Dec\u2013Mar 2026",
+      "dateRange": "Dec 23, 2025 \u2013 Mar 22, 2026",
       "days": 90,
       "medication": "Ozempic 1.0mg",
       "avg": 158,
@@ -89,8 +89,8 @@
     },
     {
       "id": "mar29-apr4-2026",
-      "label": "Mar 29–Apr 4 ✦",
-      "dateRange": "Mar 29 – Apr 4, 2026",
+      "label": "Mar 29\u2013Apr 4 \u2726",
+      "dateRange": "Mar 29 \u2013 Apr 4, 2026",
       "days": 7,
       "medication": "Mounjaro 5mg",
       "avg": 138,
@@ -106,12 +106,12 @@
       "daysWithData": 7,
       "timeActive": null,
       "dataSource": "fingerstick",
-      "fingerstickNote": "CGM sensor was miscalibrated ~20–35 mg/dL low during Mar 25–Apr 4. These stats are from 58 manual fingerstick readings over 7 days. No hourly data available."
+      "fingerstickNote": "CGM sensor was miscalibrated ~20\u201335 mg/dL low during Mar 25\u2013Apr 4. These stats are from 58 manual fingerstick readings over 7 days. No hourly data available."
     },
     {
       "id": "mar-apr-2026",
-      "label": "Mar–Apr 2026",
-      "dateRange": "Mar 23 – Apr 23, 2026",
+      "label": "Mar\u2013Apr 2026",
+      "dateRange": "Mar 23 \u2013 Apr 23, 2026",
       "days": 32,
       "medication": "Mounjaro 5mg",
       "avg": 153,
@@ -130,12 +130,12 @@
       "_cgmReportedTir": 79,
       "_cgmReportedGmi": 6.8,
       "dataSource": "cgm-corrected",
-      "correctionNote": "CGM sensor miscalibrated ~20-35 mg/dL low during Mar 25–Apr 4 (part of this 32-day period). Stats adjusted upward using fingerstick data. Original CGM-reported avg was 145, GMI 6.8%, TIR 79%."
+      "correctionNote": "CGM sensor miscalibrated ~20-35 mg/dL low during Mar 25\u2013Apr 4 (part of this 32-day period). Stats adjusted upward using fingerstick data. Original CGM-reported avg was 145, GMI 6.8%, TIR 79%."
     },
     {
       "id": "apr23-apr30-2026",
-      "label": "Apr 23–30",
-      "dateRange": "Apr 23 – Apr 30, 2026",
+      "label": "Apr 23\u201330",
+      "dateRange": "Apr 23 \u2013 Apr 30, 2026",
       "days": 8,
       "medication": "Mounjaro 5mg",
       "avg": 120,
@@ -152,12 +152,12 @@
       "timeActive": 99,
       "dataSource": "cgm-partial",
       "excludeFromBenchmarks": true,
-      "fingerstickNote": "Apr 27–30 portion falls within no-sensor window. Partial data only — exclude from Best Week benchmarks."
+      "fingerstickNote": "Apr 27\u201330 portion falls within no-sensor window. Partial data only \u2014 exclude from Best Week benchmarks."
     },
     {
       "id": "apr30-may4-2026",
-      "label": "Apr 30–May 4",
-      "dateRange": "Apr 30 – May 4, 2026",
+      "label": "Apr 30\u2013May 4",
+      "dateRange": "Apr 30 \u2013 May 4, 2026",
       "days": 5,
       "medication": "Mounjaro 5mg",
       "avg": 119,
@@ -174,12 +174,12 @@
       "timeActive": 100,
       "dataSource": "fingerstick-overlap",
       "excludeFromBenchmarks": true,
-      "fingerstickNote": "Falls within Apr 27–May 3 no-sensor window. CGM data absent/unreliable. Exclude from Best Week and all benchmarks."
+      "fingerstickNote": "Falls within Apr 27\u2013May 3 no-sensor window. CGM data absent/unreliable. Exclude from Best Week and all benchmarks."
     },
     {
       "id": "may4-may10-2026",
-      "label": "May 4–10",
-      "dateRange": "May 4 – May 10, 2026",
+      "label": "May 4\u201310",
+      "dateRange": "May 4 \u2013 May 10, 2026",
       "days": 7,
       "medication": "Mounjaro 5mg",
       "avg": 124,
@@ -197,8 +197,8 @@
     },
     {
       "id": "apr27-may3-2026",
-      "label": "Apr 27–May 3 ✦",
-      "dateRange": "Apr 27 – May 3, 2026",
+      "label": "Apr 27\u2013May 3 \u2726",
+      "dateRange": "Apr 27 \u2013 May 3, 2026",
       "days": 7,
       "medication": "Mounjaro 5mg",
       "avg": 138,
@@ -218,8 +218,8 @@
     },
     {
       "id": "apr29-may9-2026",
-      "label": "Apr 29–May 9",
-      "dateRange": "Apr 29 – May 9, 2026",
+      "label": "Apr 29\u2013May 9",
+      "dateRange": "Apr 29 \u2013 May 9, 2026",
       "days": 11,
       "medication": "Mounjaro 5mg",
       "avg": 122,
@@ -237,8 +237,8 @@
     },
     {
       "id": "may10-may20-2026",
-      "label": "May 10–20",
-      "dateRange": "May 10 – May 20, 2026",
+      "label": "May 10\u201320",
+      "dateRange": "May 10 \u2013 May 20, 2026",
       "days": 11,
       "medication": "Mounjaro 5mg",
       "avg": 145,
@@ -253,12 +253,32 @@
       "veryLow": 0,
       "daysWithData": 11,
       "timeActive": 100
+    },
+    {
+      "id": "may20-jun11-2026",
+      "label": "May 20\u2013Jun 11",
+      "dateRange": "May 20 \u2013 Jun 11, 2026",
+      "days": 23,
+      "medication": "Mounjaro 5mg",
+      "avg": 140,
+      "gmi": 6.6,
+      "tir": 84,
+      "sd": 41,
+      "cv": 29.5,
+      "veryHigh": 1,
+      "high": 15,
+      "inRange": 84,
+      "low": 0,
+      "veryLow": 0,
+      "daysWithData": 23,
+      "timeActive": 100,
+      "notes": "Mounjaro shots 7 (May 27), 8 (Jun 3), 9 (Jun 10) logged in CGM. Prednisone course started Jun 11 (gout flare) \u2014 data from Jun 11 onward will show steroid-elevated glucose."
     }
   ],
   "hourly": [
     {
       "periodId": "jun-sep-2025",
-      "label": "Jun–Sep 2025 (90d)",
+      "label": "Jun\u2013Sep 2025 (90d)",
       "means": [
         131,
         121,
@@ -366,7 +386,7 @@
     },
     {
       "periodId": "sep-dec-2025",
-      "label": "Sep–Dec 2025 (89d)",
+      "label": "Sep\u2013Dec 2025 (89d)",
       "means": [
         146,
         138,
@@ -474,7 +494,7 @@
     },
     {
       "periodId": "dec-mar-2026",
-      "label": "Dec–Mar 2026 (90d)",
+      "label": "Dec\u2013Mar 2026 (90d)",
       "means": [
         158,
         150,
@@ -582,7 +602,7 @@
     },
     {
       "periodId": "mar-apr-2026",
-      "label": "Mar–Apr 2026 (32d)",
+      "label": "Mar\u2013Apr 2026 (32d)",
       "means": [
         120,
         114,
@@ -690,7 +710,7 @@
     },
     {
       "periodId": "apr23-apr30-2026",
-      "label": "Apr 23–30 (8d)",
+      "label": "Apr 23\u201330 (8d)",
       "means": [
         109,
         96,
@@ -798,7 +818,7 @@
     },
     {
       "periodId": "apr30-may4-2026",
-      "label": "Apr 30–May 4 (5d)",
+      "label": "Apr 30\u2013May 4 (5d)",
       "means": [
         107,
         109,
@@ -906,7 +926,7 @@
     },
     {
       "periodId": "may4-may10-2026",
-      "label": "May 4–10 (7d)",
+      "label": "May 4\u201310 (7d)",
       "means": [
         103,
         101,
@@ -1014,7 +1034,7 @@
     },
     {
       "periodId": "apr27-may3-2026",
-      "label": "Apr 27–May 3 (7d)",
+      "label": "Apr 27\u2013May 3 (7d)",
       "means": [
         102,
         99,
@@ -1122,7 +1142,7 @@
     },
     {
       "periodId": "may10-may20-2026",
-      "label": "May 10–20 (11d)",
+      "label": "May 10\u201320 (11d)",
       "means": [
         134,
         126,
@@ -1227,47 +1247,209 @@
         1,
         0
       ]
+    },
+    {
+      "periodId": "may20-jun11-2026",
+      "label": "May 20\u2013Jun 11 (23d)",
+      "means": [
+        131,
+        123,
+        120,
+        124,
+        135,
+        153,
+        172,
+        209,
+        196,
+        165,
+        134,
+        111,
+        113,
+        157,
+        170,
+        137,
+        112,
+        111,
+        112,
+        128,
+        136,
+        134,
+        136,
+        130
+      ],
+      "tirInRange": [
+        91,
+        94,
+        99,
+        100,
+        99,
+        92,
+        64,
+        22,
+        28,
+        69,
+        83,
+        96,
+        92,
+        66,
+        58,
+        87,
+        97,
+        100,
+        96,
+        100,
+        98,
+        93,
+        94,
+        91
+      ],
+      "tirHigh": [
+        9,
+        6,
+        1,
+        0,
+        1,
+        8,
+        36,
+        78,
+        72,
+        31,
+        17,
+        4,
+        8,
+        32,
+        42,
+        11,
+        2,
+        0,
+        2,
+        0,
+        2,
+        7,
+        6,
+        9
+      ],
+      "tirLow": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        0,
+        2,
+        1,
+        0,
+        2,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
     }
   ],
   "dow": {
-    "source": "apr27-may3-2026",
-    "note": "Day-of-week mean glucose from Apr 27–May 3, 2026 Clarity daily statistics table. 7-day window, one reading per day.",
+    "source": "may20-jun11-2026",
+    "note": "Day-of-week mean glucose from May 20\u2013Jun 11, 2026 Clarity daily statistics table. 23-day window, 3\u20134 instances per day slot \u2014 best sample size to date.",
     "days": [
       {
         "day": "Mon",
-        "avg": 120,
-        "n": 1
+        "avg": 146,
+        "n": 4
       },
       {
         "day": "Tue",
-        "avg": 132,
-        "n": 1
+        "avg": 144,
+        "n": 4
       },
       {
         "day": "Wed",
-        "avg": 121,
-        "n": 1
+        "avg": 144,
+        "n": 4
       },
       {
         "day": "Thu",
-        "avg": 100,
-        "n": 1
+        "avg": 139,
+        "n": 4
       },
       {
         "day": "Fri",
-        "avg": 105,
-        "n": 1
+        "avg": 127,
+        "n": 4
       },
       {
         "day": "Sat",
-        "avg": 132,
-        "n": 1
+        "avg": 133,
+        "n": 3
       },
       {
         "day": "Sun",
-        "avg": 145,
-        "n": 1
+        "avg": 142,
+        "n": 4
       }
     ]
-  }
+  },
+  "events": [
+    {
+      "id": "prednisone-jun2026",
+      "type": "medication_course",
+      "label": "Prednisone (gout flare)",
+      "startDate": "2026-06-11",
+      "endDate": "2026-06-16",
+      "details": "40mg/day Jun 11\u201313 (2x20mg), 40mg Jun 14 (2x20mg), 20mg Jun 15, 20mg Jun 16. Steroid-induced hyperglycemia expected \u2014 glucose data in this window not representative of Mounjaro trend.",
+      "expectedImpact": "Significant glucose elevation, especially post-meal afternoon/evening. Exclude from trend analysis."
+    },
+    {
+      "id": "mounjaro-dose-log",
+      "type": "medication_log",
+      "label": "Mounjaro 5mg dose log",
+      "doses": [
+        {
+          "dose": 1,
+          "date": "2026-04-15"
+        },
+        {
+          "dose": 2,
+          "date": "2026-04-22"
+        },
+        {
+          "dose": 3,
+          "date": "2026-04-29"
+        },
+        {
+          "dose": 4,
+          "date": "2026-05-06"
+        },
+        {
+          "dose": 5,
+          "date": "2026-05-13"
+        },
+        {
+          "dose": 6,
+          "date": "2026-05-20"
+        },
+        {
+          "dose": 7,
+          "date": "2026-05-27"
+        },
+        {
+          "dose": 8,
+          "date": "2026-06-03"
+        },
+        {
+          "dose": 9,
+          "date": "2026-06-10"
+        }
+      ]
+    }
+  ]
 }
