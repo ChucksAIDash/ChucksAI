@@ -36,12 +36,12 @@
     .load-btn {
       font-family: 'Space Mono', monospace; font-size: 10px; font-weight: 700;
       letter-spacing: .08em; padding: 8px 18px;
-      background: rgba(91,200,245,.1);
-      border: 1px solid rgba(91,200,245,.3);
+      background: var(--tint-blue);
+      border: 1px solid var(--glow-blue-mid);
       border-radius: var(--r-sm); color: var(--accent2);
       cursor: pointer; transition: all .2s;
     }
-    .load-btn:hover { background: rgba(91,200,245,.2); }
+    .load-btn:hover { background: var(--glow-blue-soft); }
     .load-btn:disabled { opacity: .4; cursor: not-allowed; }
 
     /* Quick symbol pills */
@@ -57,8 +57,8 @@
     }
     .pill:hover { border-color: var(--border-bright); color: var(--text-secondary); }
     .pill.active {
-      background: rgba(91,200,245,.1);
-      border-color: rgba(91,200,245,.35);
+      background: var(--tint-blue);
+      border-color: var(--glow-blue-mid);
       color: var(--accent2);
     }
 
@@ -80,13 +80,13 @@
     }
     .exp-pill:hover { border-color: var(--border-bright); color: var(--text-secondary); }
     .exp-pill.active {
-      background: rgba(240,184,106,.1);
+      background: var(--tint-amber);
       border-color: rgba(240,184,106,.35);
       color: var(--accent3);
     }
     .exp-pill.dte-tag {
       font-size: 8px; padding: 2px 7px;
-      background: rgba(255,255,255,.04);
+      background: var(--surface-1);
       border-color: transparent;
       color: var(--text-muted); cursor: default;
     }
@@ -116,8 +116,8 @@
       color: var(--text-primary); line-height: 1.1;
     }
     .sum-sub { font-size: 10px; color: var(--text-muted); margin-top: 4px; }
-    .call-val { color: var(--up);   text-shadow: 0 0 12px rgba(61,220,132,.3); }
-    .put-val  { color: var(--down); text-shadow: 0 0 12px rgba(240,82,82,.3); }
+    .call-val { color: var(--up);   text-shadow: 0 0 12px var(--glow-up-bd); }
+    .put-val  { color: var(--down); text-shadow: 0 0 12px var(--glow-down-bd); }
     .neutral-val { color: var(--accent3); }
 
     /* Sentiment bar */
@@ -146,7 +146,7 @@
     }
     .sent-bar-fill {
       height: 100%; border-radius: 11px;
-      background: linear-gradient(90deg, var(--up), rgba(61,220,132,.6));
+      background: linear-gradient(90deg, var(--up), var(--glow-up));
       transition: width .8s ease;
     }
     .sent-bar-label {
@@ -192,10 +192,9 @@
       display: grid;
       grid-template-columns: 68px 52px 64px 64px 56px 56px;
       padding: 7px 14px;
-      background: rgba(255,255,255,.02);
+      background: var(--surface-1);
       border-bottom: 1px solid var(--border);
     }
-    html.light .opt-row-hdr { background: rgba(0,0,0,.03); }
     .opt-hdr {
       font-family: 'Space Mono', monospace; font-size: 8px; font-weight: 700;
       color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em;
@@ -210,7 +209,7 @@
     .opt-row:last-child { border-bottom: none; }
     .opt-row:hover { background: var(--bg-card-hover); }
     .opt-row.itm { background: rgba(61,220,132,.04); }
-    .opt-row.itm:hover { background: rgba(61,220,132,.08); }
+    .opt-row.itm:hover { background: var(--tint-up); }
     .opt-row.hot { background: rgba(255,200,0,.04); }
     .opt-row.hot:hover { background: rgba(255,200,0,.08); }
 
@@ -230,23 +229,23 @@
       display: inline-block; margin-left: 4px; vertical-align: middle;
     }
     .badge-hot { background: rgba(255,200,0,.15); color: #ffc800; border: 1px solid rgba(255,200,0,.3); }
-    .badge-itm { background: rgba(91,200,245,.12); color: var(--accent2); border: 1px solid rgba(91,200,245,.25); }
+    .badge-itm { background: var(--tint-blue); color: var(--accent2); border: 1px solid rgba(91,200,245,.25); }
 
     .ai-gen-btn {
       font-family: 'Space Mono', monospace; font-size: 9px; font-weight: 700;
       letter-spacing: .08em; padding: 6px 14px;
-      background: rgba(167,139,250,.12);
+      background: var(--tint-purple);
       border: 1px solid rgba(167,139,250,.3);
       border-radius: var(--r-sm); color: var(--accent-purple);
       cursor: pointer; transition: all .2s; margin-left: auto;
     }
-    .ai-gen-btn:hover { background: rgba(167,139,250,.25); }
+    .ai-gen-btn:hover { background: var(--tint-purple-bd); }
     .ai-gen-btn:disabled { opacity: .4; cursor: not-allowed; }
 
     /* AI card */
     .ai-card {
       background: var(--bg-card);
-      border: 1px solid rgba(167,139,250,.2);
+      border: 1px solid var(--tint-purple-bd);
       border-left: 3px solid var(--accent-purple);
       border-radius: var(--r-lg);
       padding: 1.25rem 1.5rem;
@@ -319,7 +318,7 @@
     }
     .spinner {
       display: inline-block; width: 12px; height: 12px; flex-shrink: 0;
-      border: 1.5px solid rgba(255,255,255,.1);
+      border: 1.5px solid var(--hairline);
       border-top-color: var(--accent); border-radius: 50%;
       animation: spin .7s linear infinite;
     }
@@ -328,7 +327,7 @@
     @keyframes fadeUp { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
 
     .error-msg {
-      background: rgba(240,82,82,.06); border: 1px solid rgba(240,82,82,.2);
+      background: var(--tint-down); border: 1px solid rgba(240,82,82,.2);
       border-radius: var(--r-md); padding: 12px 16px;
       font-family: 'Space Mono', monospace; font-size: 11px; color: var(--down);
     }
@@ -895,6 +894,7 @@ function init() {
   // Auto-refresh chain data every 60s — AI read is manual only
   let secsLeft = 180;
   setInterval(() => {
+    if (document.hidden) return;   // pause auto-refresh while tab hidden (saves Tradier quota)
     secsLeft--;
     const badge = document.getElementById('countdown-badge');
     if (badge) badge.textContent = `AUTO ⟳ ${secsLeft}s`;

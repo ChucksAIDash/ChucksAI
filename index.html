@@ -33,8 +33,8 @@
     }
     .tw-sub { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
 
-    .gluc-widget { border-left: 3px solid rgba(240,82,82,.35); }
-    .gluc-widget.is-normal { border-left-color: rgba(61,220,132,.4); }
+    .gluc-widget { border-left: 3px solid var(--glow-down-bd); }
+    .gluc-widget.is-normal { border-left-color: var(--glow-up-bd); }
     .gluc-widget.is-high   { border-left-color: rgba(240,184,106,.5); }
     .gluc-widget.is-low    { border-left-color: rgba(240,82,82,.5); }
     #glucVal {
@@ -52,9 +52,9 @@
     .section-line { flex: 1; height: 1px; background: var(--border); }
     .section-pip {
       width: 4px; height: 14px; border-radius: 2px; flex-shrink: 0;
-      background: var(--accent2); box-shadow: 0 0 7px rgba(91,200,245,.5);
+      background: var(--accent2); box-shadow: 0 0 7px var(--glow-blue-strong);
     }
-    .section-pip.pip-green  { background: var(--accent);        box-shadow: 0 0 7px rgba(127,217,184,.5); }
+    .section-pip.pip-green  { background: var(--accent);        box-shadow: 0 0 7px var(--glow-green); }
     .section-pip.pip-yellow { background: var(--accent3);       box-shadow: 0 0 7px rgba(240,184,106,.5); }
     .section-pip.pip-purple { background: var(--accent-purple); box-shadow: 0 0 7px rgba(167,139,250,.5); }
     .section-pip.pip-red    { background: var(--down);          box-shadow: 0 0 7px rgba(240,82,82,.5); }
@@ -81,8 +81,8 @@
     .ni-summary.visible { display: block; }
     .ni-ai-tag {
       font-family: 'Space Mono', monospace; font-size: 8px; font-weight: 700;
-      color: var(--accent-purple); background: rgba(167,139,250,.1);
-      border: 1px solid rgba(167,139,250,.2); padding: 1px 6px; border-radius: 99px; letter-spacing: .06em;
+      color: var(--accent-purple); background: var(--tint-purple);
+      border: 1px solid var(--tint-purple-bd); padding: 1px 6px; border-radius: 99px; letter-spacing: .06em;
     }
 
     /* ── MARKET ── */
@@ -121,7 +121,7 @@
     }
     .wl-card-label::before {
       content: ''; width: 3px; height: 10px; border-radius: 2px; display: inline-block; flex-shrink: 0;
-      background: var(--accent); box-shadow: 0 0 6px rgba(127,217,184,.6);
+      background: var(--accent); box-shadow: 0 0 6px var(--glow-green);
     }
     .wl-row {
       display: flex; justify-content: space-between; align-items: center;
@@ -137,7 +137,7 @@
       cursor: pointer; padding: 2px 5px; border-radius: 3px;
       transition: all .15s; border: 1px solid transparent;
     }
-    .wl-rm:hover{ color:var(--down); border-color:rgba(240,82,82,.3); background:rgba(240,82,82,.06); }
+    .wl-rm:hover{ color:var(--down); border-color:var(--glow-down-bd); background:var(--tint-down); }
     .wl-add{ display:flex; gap:6px; margin-top:10px; }
     .wl-input{
       flex:1; font-family:'Space Mono',monospace; font-size:11px;
@@ -148,11 +148,11 @@
     .wl-input:focus{ border-color:var(--accent2); }
     .wl-btn{
       font-family:'Space Mono',monospace; font-size:10px; font-weight:700;
-      background:rgba(91,200,245,.1); border:1px solid rgba(91,200,245,.25);
+      background:var(--tint-blue); border:1px solid rgba(91,200,245,.25);
       border-radius:var(--r-sm); padding:6px 12px; color:var(--accent2);
       cursor:pointer; transition:all .15s; letter-spacing:.06em;
     }
-    .wl-btn:hover{ background:rgba(91,200,245,.18); }
+    .wl-btn:hover{ background:var(--glow-blue-soft); }
 
     /* ── FEAR & GREED DUAL ── */
     .fg-dual{
@@ -172,7 +172,7 @@
     .fg-card-label::before{
       content:''; width:3px; height:10px; border-radius:2px; flex-shrink:0; display:inline-block;
     }
-    .fg-card.equity .fg-card-label::before{ background:var(--accent2); box-shadow:0 0 6px rgba(91,200,245,.5); }
+    .fg-card.equity .fg-card-label::before{ background:var(--accent2); box-shadow:0 0 6px var(--glow-blue-strong); }
     .fg-card.crypto .fg-card-label::before{ background:var(--accent3); box-shadow:0 0 6px rgba(240,184,106,.5); }
 
     .fg-score-row{ display:flex; align-items:flex-end; gap:12px; margin-bottom:12px; }
@@ -224,7 +224,7 @@
       min-width: 110px; flex: 1; position: relative;
       transition: border-color .15s;
     }
-    .snap-card.is-up   { border-color: rgba(61,220,132,.35); }
+    .snap-card.is-up   { border-color: var(--glow-up-bd); }
     .snap-card.is-down { border-color: rgba(255,80,80,.35); }
     .snap-label {
       font-family: 'Space Mono', monospace; font-size: 9px;
@@ -245,10 +245,10 @@
     .snap-status {
       font-family: 'Space Mono', monospace; font-size: 8px;
       padding: 2px 7px; border-radius: 4px;
-      background: rgba(61,220,132,.12); color: var(--up);
+      background: var(--tint-up); color: var(--up);
       border: 1px solid rgba(61,220,132,.25); margin-left: auto;
     }
-    .snap-status.loading { background: rgba(91,200,245,.08); color: var(--accent2); border-color: rgba(91,200,245,.2); }
+    .snap-status.loading { background: var(--tint-blue); color: var(--accent2); border-color: var(--glow-blue-soft); }
 
     .date-row {
       display: flex; align-items: center; gap: 12px;
@@ -274,9 +274,9 @@
       background: var(--accent2); color: var(--bg-deep);
       border: none; border-radius: var(--r-md);
       cursor: pointer; transition: all .2s; letter-spacing: .04em;
-      box-shadow: 0 0 20px rgba(91,200,245,.35);
+      box-shadow: 0 0 20px var(--glow-blue-mid);
     }
-    .gen-btn:hover { background: #80d9ff; box-shadow: 0 0 32px rgba(91,200,245,.55); transform: translateY(-1px); }
+    .gen-btn:hover { background: #80d9ff; box-shadow: 0 0 32px var(--glow-blue); transform: translateY(-1px); }
     .gen-btn:disabled { opacity: .4; cursor: not-allowed; transform: none; }
 
     .briefing-card {
@@ -321,7 +321,7 @@
     .loading-state { text-align: center; padding: 3rem 1rem; }
     .big-spinner {
       display: inline-block; width: 32px; height: 32px;
-      border: 3px solid rgba(255,255,255,.1);
+      border: 3px solid var(--hairline);
       border-top-color: var(--accent2); border-radius: 50%;
       animation: spin .8s linear infinite; margin-bottom: 1rem;
     }
@@ -346,7 +346,7 @@
     .history-label::before {
       content: ''; display: block; width: 3px; height: 14px;
       background: var(--accent3); border-radius: 2px;
-      box-shadow: 0 0 8px rgba(240,184,106,.7);
+      box-shadow: 0 0 8px var(--glow-amber);
     }
     .history-list { display: flex; flex-direction: column; gap: 8px; }
     .history-item {
