@@ -32,8 +32,8 @@
     }
     .fbtn:hover { border-color: var(--border-bright); color: var(--text-secondary); }
     .fbtn.active {
-      background: rgba(91,200,245,.1);
-      border-color: rgba(91,200,245,.3);
+      background: var(--tint-blue);
+      border-color: var(--glow-blue-mid);
       color: var(--accent2);
     }
 
@@ -56,8 +56,8 @@
       padding: 2px 8px; border-radius: 99px;
       display: inline-block; margin-right: 4px;
     }
-    .impact-badge.high { background: rgba(240,82,82,.12);   color: #f07070;          border: 1px solid rgba(240,82,82,.25); }
-    .impact-badge.med  { background: rgba(240,184,106,.12); color: var(--accent3);   border: 1px solid rgba(240,184,106,.25); }
+    .impact-badge.high { background: var(--tint-down);   color: #f07070;          border: 1px solid var(--glow-down-bd); }
+    .impact-badge.med  { background: var(--tint-amber); color: var(--accent3);   border: 1px solid var(--tint-amber-bd); }
     .impact-badge.low  { background: rgba(90,112,128,.1);   color: var(--text-secondary); border: 1px solid var(--border); }
 
     /* ── SPOTLIGHT CARDS ── */
@@ -74,7 +74,7 @@
     }
     .spot-card::before {
       content: ''; position: absolute; top: 0; left: 10%; right: 10%; height: 1px;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,.1), transparent);
+      background: linear-gradient(90deg, transparent, var(--hairline), transparent);
     }
     .spot-card:hover { border-color: var(--border-bright); transform: translateY(-2px); }
     .spot-card.high { border-left: 3px solid #f05252; }
@@ -130,7 +130,7 @@
       width: 12px; height: 12px;
       border-radius: 50%; border: 2px solid var(--bg-deep); z-index: 1;
     }
-    .tl-dot.high      { background: #f05252; box-shadow: 0 0 8px rgba(240,82,82,.6); }
+    .tl-dot.high      { background: #f05252; box-shadow: 0 0 8px var(--glow-down); }
     .tl-dot.med       { background: var(--accent3); box-shadow: 0 0 6px rgba(240,184,106,.5); }
     .tl-dot.low       { background: var(--text-muted); }
     .tl-dot.today-dot {
@@ -159,7 +159,7 @@
     .tl-fc   { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--text-secondary); }
 
     .today-banner {
-      background: rgba(91,200,245,.08);
+      background: var(--tint-blue);
       border: 1px solid rgba(91,200,245,.25);
       border-radius: var(--r-sm); padding: 5px 14px;
       font-family: 'Space Mono', monospace;

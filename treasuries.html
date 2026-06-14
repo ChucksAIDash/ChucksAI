@@ -20,7 +20,7 @@
     /* Bond card */
     .bond-card {
       background: var(--bg-ticker);
-      border: 1px solid rgba(240,184,106,.2);
+      border: 1px solid var(--tint-amber-bd);
       border-radius: var(--r-md);
       padding: 14px 16px 12px;
       position: relative; overflow: hidden;
@@ -29,13 +29,13 @@
     }
     .bond-card::before {
       content: ''; position: absolute; top: 0; left: 10%; right: 10%; height: 1px;
-      background: linear-gradient(90deg, transparent, rgba(240,184,106,.25), transparent);
+      background: linear-gradient(90deg, transparent, var(--tint-amber-bd), transparent);
     }
     .bond-card:hover { border-color: rgba(240,184,106,.4); transform: translateY(-2px); }
     .bond-card.is-up   { border-color: rgba(61,220,132,.2); }
     .bond-card.is-down { border-color: rgba(240,82,82,.18); }
-    .bond-card.is-up   .bond-price { color: var(--up);   text-shadow: 0 0 12px rgba(61,220,132,.5); }
-    .bond-card.is-down .bond-price { color: var(--down); text-shadow: 0 0 12px rgba(240,82,82,.5); }
+    .bond-card.is-up   .bond-price { color: var(--up);   text-shadow: 0 0 12px var(--glow-up); }
+    .bond-card.is-down .bond-price { color: var(--down); text-shadow: 0 0 12px var(--glow-down); }
     html.light .bond-card { backdrop-filter: none; background: rgba(255,255,255,.85); }
 
     .bond-sym {
@@ -94,7 +94,7 @@
     }
     .spinner {
       display: inline-block; width: 12px; height: 12px; flex-shrink: 0;
-      border: 1.5px solid rgba(255,255,255,.1);
+      border: 1.5px solid var(--hairline);
       border-top-color: var(--accent); border-radius: 50%;
       animation: spin .7s linear infinite;
     }
@@ -202,14 +202,21 @@ function updateClock() {
 setInterval(updateClock, 1000);
 updateClock();
 
-/* ── Auto-refresh countdown ── */
+/* ── Auto-refresh countdown ──
+   Pause when the tab is hidden so we don't burn the shared Finnhub
+   free-tier budget (60/min across all tabs). Refresh once on return. */
 let secsLeft = 60;
 const cdEl = document.getElementById('countdown');
 setInterval(() => {
+  if (document.hidden) return;            // paused while tab is hidden
   secsLeft--;
   if (cdEl) cdEl.textContent = `AUTO ⟳ ${secsLeft}s`;
   if (secsLeft <= 0) { secsLeft = 60; loadBonds(); }
 }, 1000);
+
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) { secsLeft = 60; loadBonds(); }  // refresh on return
+});
 
 function manualRefresh() { secsLeft = 60; loadBonds(); }
 

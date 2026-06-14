@@ -22,7 +22,7 @@
 
     .crypto-big {
       background: var(--bg-ticker);
-      border: 1px solid rgba(91,200,245,.18);
+      border: 1px solid var(--glow-blue-soft);
       border-radius: var(--r-lg);
       padding: 20px 22px 16px;
       backdrop-filter: blur(14px);
@@ -32,23 +32,23 @@
     }
     .crypto-big::before {
       content: ''; position: absolute; top: 0; left: 10%; right: 10%; height: 1px;
-      background: linear-gradient(90deg, transparent, rgba(91,200,245,.35), transparent);
+      background: linear-gradient(90deg, transparent, var(--glow-blue-mid), transparent);
     }
     .crypto-big:hover { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(0,0,0,.5); }
-    .crypto-big.is-up   { border-color: rgba(61,220,132,.35); }
-    .crypto-big.is-down { border-color: rgba(240,82,82,.3); }
+    .crypto-big.is-up   { border-color: var(--glow-up-bd); }
+    .crypto-big.is-down { border-color: var(--glow-down-bd); }
 
     .cb-sym {
       font-family: 'Space Mono', monospace; font-size: 12px; font-weight: 700;
       color: var(--accent2); letter-spacing: .1em; margin-bottom: 7px;
-      text-shadow: 0 0 10px rgba(91,200,245,.5);
+      text-shadow: 0 0 10px var(--glow-blue-strong);
     }
     .cb-price {
       font-family: 'Space Mono', monospace; font-size: 22px; font-weight: 400;
       line-height: 1.1; color: var(--text-primary);
     }
-    .crypto-big.is-up   .cb-price { color: var(--up);   text-shadow: 0 0 18px rgba(61,220,132,.6); }
-    .crypto-big.is-down .cb-price { color: var(--down); text-shadow: 0 0 18px rgba(240,82,82,.6); }
+    .crypto-big.is-up   .cb-price { color: var(--up);   text-shadow: 0 0 18px var(--glow-up); }
+    .crypto-big.is-down .cb-price { color: var(--down); text-shadow: 0 0 18px var(--glow-down); }
 
     .cb-chg { font-family: 'Space Mono', monospace; font-size: 12px; font-weight: 700; margin-top: 4px; }
     .crypto-big.is-up   .cb-chg { color: var(--up);   text-shadow: var(--up-glow); }
@@ -65,11 +65,11 @@
     }
     .spinner {
       display: inline-block; width: 12px; height: 12px; flex-shrink: 0;
-      border: 1.5px solid rgba(255,255,255,.1);
+      border: 1.5px solid var(--hairline);
       border-top-color: var(--accent); border-radius: 50%;
       animation: spin .7s linear infinite;
     }
-    html.light .spinner { border-color: rgba(0,0,0,.08); border-top-color: var(--accent2); }
+    html.light .spinner { border-top-color: var(--accent2); }
     @keyframes spin { to { transform: rotate(360deg); } }
 
     .fade-in { animation: fadeUp .35s ease both; }

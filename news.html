@@ -48,7 +48,7 @@
     }
     .news-card::before {
       content: ''; position: absolute; top: 0; left: 10%; right: 10%; height: 1px;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,.1), transparent);
+      background: linear-gradient(90deg, transparent, var(--hairline), transparent);
     }
     .news-card:hover {
       border-color: var(--border-bright);
@@ -65,10 +65,10 @@
       padding: 3px 10px; border-radius: 99px;
       letter-spacing: .07em;
     }
-    .tag-us     { background: rgba(91,200,245,.12);  color: var(--accent2);       border: 1px solid rgba(91,200,245,.22); }
-    .tag-world  { background: rgba(127,217,184,.12); color: var(--accent);        border: 1px solid rgba(127,217,184,.22); }
-    .tag-iran   { background: rgba(240,82,82,.12);   color: #f07070;              border: 1px solid rgba(240,82,82,.22); }
-    .tag-gov    { background: rgba(240,184,106,.12); color: var(--accent3);       border: 1px solid rgba(240,184,106,.22); }
+    .tag-us     { background: var(--tint-blue);  color: var(--accent2);       border: 1px solid rgba(91,200,245,.22); }
+    .tag-world  { background: var(--tint-green); color: var(--accent);        border: 1px solid var(--tint-green-bd); }
+    .tag-iran   { background: var(--tint-down);  color: #f07070;              border: 1px solid rgba(240,82,82,.22); }
+    .tag-gov    { background: var(--tint-amber); color: var(--accent3);       border: 1px solid var(--tint-amber-bd); }
 
     /* Card content */
     .news-headline {
@@ -103,7 +103,7 @@
     .spinner {
       display: inline-block; width: 12px; height: 12px;
       flex-shrink: 0;
-      border: 1.5px solid rgba(255,255,255,.1);
+      border: 1.5px solid var(--hairline);
       border-top-color: var(--accent); border-radius: 50%;
       animation: spin .7s linear infinite;
     }

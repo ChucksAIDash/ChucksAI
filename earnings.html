@@ -32,8 +32,8 @@
     }
     .fbtn:hover { border-color: var(--border-bright); color: var(--text-secondary); }
     .fbtn.active {
-      background: rgba(91,200,245,.1);
-      border-color: rgba(91,200,245,.3);
+      background: var(--tint-blue);
+      border-color: var(--glow-blue-mid);
       color: var(--accent2);
     }
 
@@ -59,8 +59,8 @@
       background: rgba(91,200,245,.04);
     }
     .cal-cell.today-cell {
-      border-color: rgba(91,200,245,.5);
-      background: rgba(91,200,245,.07);
+      border-color: var(--glow-blue-strong);
+      background: var(--tint-blue);
     }
     html.light .cal-cell { background: rgba(255,255,255,.8); }
     html.light .cal-cell.has-earnings { background: rgba(91,200,245,.06); }
@@ -76,7 +76,7 @@
       font-family: 'Space Mono', monospace;
       font-size: 9px; font-weight: 700;
       color: var(--accent2);
-      background: rgba(91,200,245,.1);
+      background: var(--tint-blue);
       border-radius: 4px; padding: 1px 5px;
       margin-bottom: 2px; display: block;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
@@ -92,10 +92,9 @@
       display: grid;
       grid-template-columns: 80px 1fr 110px 110px 100px 70px;
       padding: 10px 18px;
-      background: rgba(255,255,255,.025);
+      background: var(--surface-1);
       border-bottom: 1px solid var(--border);
     }
-    html.light .et-hdr { background: rgba(0,0,0,.03); }
     .eth {
       font-family: 'Space Mono', monospace;
       font-size: 9px; font-weight: 700;
@@ -117,20 +116,20 @@
     .et-sym   { font-family: 'Space Mono', monospace; font-size: 13px; font-weight: 700; color: var(--text-primary); }
     .et-co    { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
     .et-val   { font-family: 'Space Mono', monospace; font-size: 12px; color: var(--text-secondary); }
-    .beat     { color: var(--up);   text-shadow: 0 0 8px rgba(61,220,132,.4); }
-    .miss     { color: var(--down); text-shadow: 0 0 8px rgba(240,82,82,.4); }
+    .beat     { color: var(--up);   text-shadow: 0 0 8px var(--glow-up-bd); }
+    .miss     { color: var(--down); text-shadow: 0 0 8px var(--glow-down-bd); }
 
     /* Time badges */
     .bmo-badge {
       font-family: 'Space Mono', monospace; font-size: 9px; font-weight: 700;
       padding: 2px 7px; border-radius: 4px;
-      background: rgba(240,184,106,.12); color: var(--accent3);
-      border: 1px solid rgba(240,184,106,.25);
+      background: var(--tint-amber); color: var(--accent3);
+      border: 1px solid var(--tint-amber-bd);
     }
     .amc-badge {
       font-family: 'Space Mono', monospace; font-size: 9px; font-weight: 700;
       padding: 2px 7px; border-radius: 4px;
-      background: rgba(91,200,245,.12); color: var(--accent2);
+      background: var(--tint-blue); color: var(--accent2);
       border: 1px solid rgba(91,200,245,.25);
     }
 
@@ -147,7 +146,7 @@
     }
     .spinner {
       display: inline-block; width: 12px; height: 12px; flex-shrink: 0;
-      border: 1.5px solid rgba(255,255,255,.1);
+      border: 1.5px solid var(--hairline);
       border-top-color: var(--accent); border-radius: 50%;
       animation: spin .7s linear infinite;
     }

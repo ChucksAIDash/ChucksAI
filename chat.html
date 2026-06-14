@@ -49,7 +49,7 @@
       min-height: 48px; max-height: 120px;
     }
     html.light .chat-input { background: rgba(255,255,255,.9); }
-    .chat-input:focus { border-color: var(--accent2); box-shadow: 0 0 0 3px rgba(91,200,245,.08); }
+    .chat-input:focus { border-color: var(--accent2); box-shadow: 0 0 0 3px var(--tint-blue); }
     .chat-input::placeholder { color: var(--text-muted); }
 
     .send-btn {
@@ -58,7 +58,7 @@
       border: none; border-radius: var(--r-md);
       padding: 0 20px; cursor: pointer; transition: all .15s;
       white-space: nowrap; flex-shrink: 0;
-      box-shadow: 0 0 18px rgba(91,200,245,.35);
+      box-shadow: 0 0 18px var(--glow-blue-mid);
     }
     .send-btn:hover  { background: #80d9ff; }
     .send-btn:disabled { opacity: .4; cursor: not-allowed; }
@@ -117,8 +117,8 @@
       flex-shrink: 0; display: flex; align-items: center; justify-content: center;
       font-family: 'Space Mono', monospace; font-size: 9px; font-weight: 700;
     }
-    .msg.user .msg-avatar { background: rgba(91,200,245,.15);  border: 1px solid rgba(91,200,245,.3);  color: var(--accent2); }
-    .msg.ai   .msg-avatar { background: rgba(127,217,184,.12); border: 1px solid rgba(127,217,184,.25); color: var(--accent); }
+    .msg.user .msg-avatar { background: var(--glow-blue-soft);  border: 1px solid var(--glow-blue-mid);  color: var(--accent2); }
+    .msg.ai   .msg-avatar { background: var(--tint-green); border: 1px solid var(--tint-green-bd); color: var(--accent); }
 
     .msg-bubble { flex: 1; min-width: 0; }
     .msg-name {
@@ -134,7 +134,7 @@
       font-size: 14px; line-height: 1.65; color: var(--text-primary);
       word-break: break-word;
     }
-    .msg.user .msg-text  { background: rgba(91,200,245,.07); border-color: rgba(91,200,245,.2); }
+    .msg.user .msg-text  { background: var(--tint-blue); border-color: var(--glow-blue-soft); }
     html.light .msg-text           { background: rgba(255,255,255,.9); }
     html.light .msg.user .msg-text { background: rgba(91,200,245,.08); }
 
@@ -143,9 +143,8 @@
     .msg-text strong       { color: var(--accent2); }
     .msg-text code {
       font-family: 'Space Mono', monospace; font-size: 12px;
-      background: rgba(255,255,255,.08); padding: 1px 6px; border-radius: 4px;
+      background: var(--surface-1); padding: 1px 6px; border-radius: 4px;
     }
-    html.light .msg-text code { background: rgba(0,0,0,.06); }
 
     /* ── TYPING DOTS ── */
     .typing-dots { display: flex; gap: 5px; padding: 4px 0; }
