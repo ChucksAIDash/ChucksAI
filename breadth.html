@@ -20,7 +20,7 @@
     }
     .vix-wrap::before {
       content: ''; position: absolute; top: 0; left: 15%; right: 15%; height: 1px;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,.1), transparent);
+      background: linear-gradient(90deg, transparent, var(--hairline), transparent);
     }
     .vix-label {
       font-family: 'Space Mono', monospace;
@@ -56,10 +56,10 @@
     .vix-stress { color: #f97316;        }
     .vix-fear   { color: var(--down);    }
 
-    .pill-calm   { background: rgba(61,220,132,.12);  color: var(--up);      border: 1px solid rgba(61,220,132,.3); }
-    .pill-normal { background: rgba(240,184,106,.12); color: var(--accent3); border: 1px solid rgba(240,184,106,.3); }
+    .pill-calm   { background: var(--tint-up);  color: var(--up);      border: 1px solid var(--glow-up-bd); }
+    .pill-normal { background: var(--tint-amber); color: var(--accent3); border: 1px solid rgba(240,184,106,.3); }
     .pill-stress { background: rgba(249,115,22,.12);  color: #f97316;        border: 1px solid rgba(249,115,22,.3); }
-    .pill-fear   { background: rgba(240,82,82,.12);   color: var(--down);    border: 1px solid rgba(240,82,82,.3); }
+    .pill-fear   { background: var(--tint-down);   color: var(--down);    border: 1px solid var(--glow-down-bd); }
 
     /* ── SECTION HEADER ── */
     .sect-header {
@@ -93,11 +93,11 @@
     }
     .idx-card::before {
       content: ''; position: absolute; top: 0; left: 10%; right: 10%; height: 1px;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,.09), transparent);
+      background: linear-gradient(90deg, transparent, var(--hairline), transparent);
     }
     .idx-card:hover { transform: translateY(-2px); border-color: var(--border-bright); box-shadow: 0 8px 24px rgba(0,0,0,.4); }
-    .idx-card.up-card  { border-color: rgba(61,220,132,.22);  background: rgba(61,220,132,.06); }
-    .idx-card.dn-card  { border-color: rgba(240,82,82,.22);   background: rgba(240,82,82,.06); }
+    .idx-card.up-card  { border-color: rgba(61,220,132,.22);  background: var(--tint-up); }
+    .idx-card.dn-card  { border-color: rgba(240,82,82,.22);   background: var(--tint-down); }
 
     .idx-name  { font-family: 'Space Mono', monospace; font-size: 9px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--text-muted); }
     .idx-full  { font-family: 'DM Sans', sans-serif; font-size: 11px; color: var(--text-secondary); }
@@ -128,8 +128,8 @@
       position: relative; overflow: hidden;
     }
     .risk-card:hover { transform: translateY(-2px); border-color: var(--border-bright); }
-    .risk-card.risk-on  { border-color: rgba(61,220,132,.2);  background: rgba(61,220,132,.05); }
-    .risk-card.risk-off { border-color: rgba(167,139,250,.2); background: rgba(167,139,250,.05); }
+    .risk-card.risk-on  { border-color: rgba(61,220,132,.2);  background: var(--tint-up); }
+    .risk-card.risk-off { border-color: var(--tint-purple-bd); background: var(--tint-purple); }
 
     .risk-header { display: flex; align-items: center; justify-content: space-between; }
     .risk-sym  { font-family: 'Space Mono', monospace; font-size: 11px; font-weight: 700; letter-spacing: .04em; color: var(--text-primary); }
@@ -137,9 +137,9 @@
       font-family: 'Space Mono', monospace; font-size: 8px; font-weight: 700;
       letter-spacing: .1em; text-transform: uppercase; padding: 2px 7px; border-radius: 99px;
     }
-    .badge-on  { background: rgba(61,220,132,.1); color: var(--up); border: 1px solid rgba(61,220,132,.25); }
-    .badge-off { background: rgba(167,139,250,.1); color: var(--accent-purple); border: 1px solid rgba(167,139,250,.25); }
-    .badge-neu { background: rgba(255,255,255,.06); color: var(--text-muted); border: 1px solid var(--border); }
+    .badge-on  { background: var(--tint-up); color: var(--up); border: 1px solid rgba(61,220,132,.25); }
+    .badge-off { background: var(--tint-purple); color: var(--accent-purple); border: 1px solid var(--tint-purple-bd); }
+    .badge-neu { background: var(--surface-1); color: var(--text-muted); border: 1px solid var(--border); }
 
     .risk-name { font-family: 'DM Sans', sans-serif; font-size: 10px; color: var(--text-muted); }
     .risk-price { font-family: 'Space Mono', monospace; font-size: 16px; font-weight: 700; letter-spacing: -.02em; }
@@ -169,7 +169,7 @@
     }
     .breadth-bar-track {
       height: 8px; border-radius: 99px;
-      background: rgba(240,82,82,.25);
+      background: var(--glow-down-bd);
       position: relative; overflow: hidden;
     }
     .breadth-bar-fill {
@@ -200,7 +200,7 @@
     .updated-row a:hover { opacity: .8; }
 
     /* ── SKELETON ── */
-    .skel { background: rgba(255,255,255,.05); border-radius: 4px; animation: shimmer 1.4s ease-in-out infinite; }
+    .skel { background: var(--surface-1); border-radius: 4px; animation: shimmer 1.4s ease-in-out infinite; }
     @keyframes shimmer { 0%,100%{opacity:.4} 50%{opacity:.85} }
   </style>
 </head>
@@ -528,7 +528,9 @@
   // ── INIT ─────────────────────────────────────────────────────────────────────
   document.getElementById('refreshBtn').addEventListener('click', loadAll);
   loadAll();
-  setInterval(loadAll, 60 * 1000);
+  // Pause auto-refresh while tab hidden (Finnhub free tier = 60/min, shared across tabs); refresh on return.
+  setInterval(() => { if (!document.hidden) loadAll(); }, 60 * 1000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) loadAll(); });
   </script>
 </body>
 </html>
