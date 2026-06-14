@@ -22,18 +22,18 @@
       outline: none;
     }
     .sym-input::placeholder { color: var(--text-muted); font-size: 12px; letter-spacing: .06em; text-transform: uppercase; }
-    .sym-input:focus { border-color: rgba(91,200,245,.5); box-shadow: 0 0 0 3px rgba(91,200,245,.1); }
+    .sym-input:focus { border-color: var(--glow-blue-strong); box-shadow: 0 0 0 3px var(--tint-blue); }
     html.light .sym-input { background: #fff; border-color: #c8dff7; color: #1c2333; }
     html.light .sym-input:focus { box-shadow: 0 0 0 3px rgba(26,111,181,.1); }
 
     .search-btn {
       font-family: 'Space Mono', monospace; font-size: 10px; font-weight: 700;
       letter-spacing: .1em; text-transform: uppercase;
-      background: rgba(91,200,245,.15); border: 1px solid rgba(91,200,245,.35);
+      background: var(--glow-blue-soft); border: 1px solid var(--glow-blue-mid);
       color: var(--accent2); border-radius: var(--r-md); padding: 10px 20px;
       cursor: pointer; transition: all .18s; white-space: nowrap;
     }
-    .search-btn:hover { background: rgba(91,200,245,.25); box-shadow: 0 0 14px rgba(91,200,245,.2); }
+    .search-btn:hover { background: rgba(91,200,245,.25); box-shadow: 0 0 14px var(--glow-blue-soft); }
 
     /* ── QUICK CHIPS ── */
     .quick-label {
@@ -52,7 +52,7 @@
     }
     .quick-chip:hover { border-color: var(--border-bright); color: var(--text-primary); }
     .quick-chip.active {
-      background: rgba(91,200,245,.1); border-color: rgba(91,200,245,.35); color: var(--accent2);
+      background: var(--tint-blue); border-color: var(--glow-blue-mid); color: var(--accent2);
     }
 
     /* ── FILTER + SORT BAR ── */
@@ -71,9 +71,9 @@
       cursor: pointer; transition: all .15s;
     }
     .ctrl-btn:hover { color: var(--text-secondary); border-color: var(--border-bright); }
-    .ctrl-btn.active { background: rgba(255,255,255,.07); border-color: var(--border-bright); color: var(--text-primary); }
-    .ctrl-btn[data-type="P"].active { background: rgba(61,220,132,.1); border-color: rgba(61,220,132,.3); color: var(--up); }
-    .ctrl-btn[data-type="S"].active { background: rgba(240,82,82,.1);  border-color: rgba(240,82,82,.25); color: var(--down); }
+    .ctrl-btn.active { background: var(--surface-1); border-color: var(--border-bright); color: var(--text-primary); }
+    .ctrl-btn[data-type="P"].active { background: var(--tint-up); border-color: var(--glow-up-bd); color: var(--up); }
+    .ctrl-btn[data-type="S"].active { background: var(--tint-down);  border-color: var(--glow-down-bd); color: var(--down); }
     .ctrl-sep { width: 1px; height: 16px; background: var(--border); margin: 0 4px; }
 
     /* ── SUMMARY CHIPS ── */
@@ -109,12 +109,12 @@
     }
     .tx-card::before {
       content: ''; position: absolute; top: 0; left: 10%; right: 10%; height: 1px;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,.07), transparent);
+      background: linear-gradient(90deg, transparent, var(--hairline), transparent);
     }
     .tx-card:hover { border-color: var(--border-bright); box-shadow: 0 5px 18px rgba(0,0,0,.4); transform: translateY(-1px); }
     .tx-card.buy  { border-color: rgba(61,220,132,.2);  background: rgba(61,220,132,.04); }
     .tx-card.sell { border-color: rgba(240,82,82,.18);  background: rgba(240,82,82,.03); }
-    .tx-card.award { border-color: rgba(167,139,250,.18); background: rgba(167,139,250,.03); }
+    .tx-card.award { border-color: var(--tint-purple-bd); background: rgba(167,139,250,.03); }
 
     /* Type badge (left column) */
     .tx-type {
@@ -126,10 +126,10 @@
       letter-spacing: .1em; text-transform: uppercase;
       padding: 4px 8px; border-radius: 6px; white-space: nowrap;
     }
-    .badge-buy    { background: rgba(61,220,132,.15); color: var(--up);           border: 1px solid rgba(61,220,132,.3); }
-    .badge-sell   { background: rgba(240,82,82,.12);  color: var(--down);         border: 1px solid rgba(240,82,82,.25); }
-    .badge-award  { background: rgba(167,139,250,.12);color: var(--accent-purple);border: 1px solid rgba(167,139,250,.25); }
-    .badge-other  { background: rgba(255,255,255,.06);color: var(--text-muted);   border: 1px solid var(--border); }
+    .badge-buy    { background: var(--tint-up); color: var(--up);           border: 1px solid var(--glow-up-bd); }
+    .badge-sell   { background: var(--tint-down);  color: var(--down);         border: 1px solid var(--glow-down-bd); }
+    .badge-award  { background: var(--tint-purple);color: var(--accent-purple);border: 1px solid var(--tint-purple-bd); }
+    .badge-other  { background: var(--surface-1);color: var(--text-muted);   border: 1px solid var(--border); }
     .tx-code {
       font-family: 'Space Mono', monospace; font-size: 8px; color: var(--text-muted);
       letter-spacing: .08em; margin-top: 3px;

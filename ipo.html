@@ -21,8 +21,8 @@
     }
     .range-btn:hover { border-color: var(--border-bright); color: var(--text-secondary); }
     .range-btn.active {
-      background: rgba(91,200,245,.12); border-color: rgba(91,200,245,.35);
-      color: var(--accent2); box-shadow: 0 0 12px rgba(91,200,245,.18);
+      background: var(--tint-blue); border-color: var(--glow-blue-mid);
+      color: var(--accent2); box-shadow: 0 0 12px var(--glow-blue-soft);
     }
 
     /* ── STATUS FILTER BAR ── */
@@ -42,11 +42,11 @@
       cursor: pointer; transition: all .15s;
     }
     .filter-btn:hover { color: var(--text-secondary); border-color: var(--border-bright); }
-    .filter-btn.active { background: rgba(255,255,255,.07); border-color: var(--border-bright); color: var(--text-primary); }
-    .filter-btn[data-status="expected"].active  { background: rgba(91,200,245,.1);  border-color: rgba(91,200,245,.35);  color: var(--accent2); }
-    .filter-btn[data-status="priced"].active    { background: rgba(61,220,132,.1);  border-color: rgba(61,220,132,.3);   color: var(--up); }
-    .filter-btn[data-status="filed"].active     { background: rgba(240,184,106,.1); border-color: rgba(240,184,106,.3);  color: var(--accent3); }
-    .filter-btn[data-status="withdrawn"].active { background: rgba(240,82,82,.1);   border-color: rgba(240,82,82,.25);   color: var(--down); }
+    .filter-btn.active { background: var(--surface-1); border-color: var(--border-bright); color: var(--text-primary); }
+    .filter-btn[data-status="expected"].active  { background: var(--tint-blue);  border-color: var(--glow-blue-mid);  color: var(--accent2); }
+    .filter-btn[data-status="priced"].active    { background: var(--tint-up);  border-color: var(--glow-up-bd);   color: var(--up); }
+    .filter-btn[data-status="filed"].active     { background: var(--tint-amber); border-color: rgba(240,184,106,.3);  color: var(--accent3); }
+    .filter-btn[data-status="withdrawn"].active { background: var(--tint-down);   border-color: var(--glow-down-bd);   color: var(--down); }
 
     /* ── SUMMARY CHIPS ── */
     .stat-chips {
@@ -79,8 +79,8 @@
       font-family: 'Space Mono', monospace; font-size: 8px; font-weight: 700;
       letter-spacing: .1em; text-transform: uppercase;
       padding: 2px 8px; border-radius: 99px;
-      background: rgba(91,200,245,.12); color: var(--accent2);
-      border: 1px solid rgba(91,200,245,.3);
+      background: var(--tint-blue); color: var(--accent2);
+      border: 1px solid var(--glow-blue-mid);
     }
     .date-line {
       flex: 1; height: 1px;
@@ -101,7 +101,7 @@
     }
     .ipo-card::before {
       content: ''; position: absolute; top: 0; left: 10%; right: 10%; height: 1px;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,.07), transparent);
+      background: linear-gradient(90deg, transparent, var(--hairline), transparent);
     }
     .ipo-card:hover {
       border-color: var(--border-bright);
@@ -109,9 +109,9 @@
       transform: translateY(-1px);
     }
     .ipo-card.status-priced    { border-color: rgba(61,220,132,.2);  background: rgba(61,220,132,.04); }
-    .ipo-card.status-expected  { border-color: rgba(91,200,245,.18); background: rgba(91,200,245,.03); }
+    .ipo-card.status-expected  { border-color: var(--glow-blue-soft); background: rgba(91,200,245,.03); }
     .ipo-card.status-withdrawn { border-color: rgba(240,82,82,.18);  background: rgba(240,82,82,.03); }
-    .ipo-card.status-filed     { border-color: rgba(240,184,106,.18);background: rgba(240,184,106,.03); }
+    .ipo-card.status-filed     { border-color: var(--tint-amber-bd);background: rgba(240,184,106,.03); }
 
     /* Left column */
     .ipo-left {}
@@ -128,7 +128,7 @@
     }
     .ipo-exch {
       font-family: 'Space Mono', monospace; font-size: 9px; letter-spacing: .06em;
-      color: var(--text-muted); background: rgba(255,255,255,.06);
+      color: var(--text-muted); background: var(--surface-1);
       border: 1px solid var(--border); border-radius: 4px; padding: 1px 7px;
     }
     html.light .ipo-exch { background: #f4f6fa; border-color: #dde2ea; }
@@ -142,10 +142,10 @@
       letter-spacing: .1em; text-transform: uppercase;
       padding: 3px 10px; border-radius: 99px;
     }
-    .badge-expected  { background: rgba(91,200,245,.12);  color: var(--accent2);  border: 1px solid rgba(91,200,245,.3); }
-    .badge-priced    { background: rgba(61,220,132,.12);  color: var(--up);       border: 1px solid rgba(61,220,132,.3); }
-    .badge-filed     { background: rgba(240,184,106,.12); color: var(--accent3);  border: 1px solid rgba(240,184,106,.3); }
-    .badge-withdrawn { background: rgba(240,82,82,.12);   color: var(--down);     border: 1px solid rgba(240,82,82,.25); }
+    .badge-expected  { background: var(--tint-blue);  color: var(--accent2);  border: 1px solid var(--glow-blue-mid); }
+    .badge-priced    { background: var(--tint-up);  color: var(--up);       border: 1px solid var(--glow-up-bd); }
+    .badge-filed     { background: var(--tint-amber); color: var(--accent3);  border: 1px solid rgba(240,184,106,.3); }
+    .badge-withdrawn { background: var(--tint-down);   color: var(--down);     border: 1px solid var(--glow-down-bd); }
 
     .ipo-price {
       font-family: 'Space Mono', monospace; font-size: 13px; font-weight: 700;
