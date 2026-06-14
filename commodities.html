@@ -52,7 +52,7 @@
     /* Sheen */
     .comm-card::before {
       content: ''; position: absolute; top: 0; left: 10%; right: 10%; height: 1px;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,.1), transparent);
+      background: linear-gradient(90deg, transparent, var(--hairline), transparent);
     }
 
     /* Color tiers — up */
@@ -65,7 +65,7 @@
     .card-dn-2  { background: rgba(240,82,82,.13);   border-color: rgba(240,82,82,.28); }
     .card-dn-3  { background: rgba(240,82,82,.20);   border-color: rgba(240,82,82,.40); }
     .card-dn-4  { background: rgba(240,82,82,.28);   border-color: rgba(240,82,82,.55); }
-    .card-flat  { background: rgba(255,255,255,.04); border-color: var(--border); }
+    .card-flat  { background: var(--surface-1); border-color: var(--border); }
 
     /* Hover glows */
     .card-up-1:hover,.card-up-2:hover { box-shadow: 0 0 22px rgba(61,220,132,.2), 0 8px 28px rgba(0,0,0,.45); transform: translateY(-3px) scale(1.015); border-color: rgba(61,220,132,.5); }
@@ -93,7 +93,7 @@
       font-family: 'Space Mono', monospace;
       font-size: 9px; font-weight: 700; letter-spacing: .1em;
       text-transform: uppercase; color: var(--text-muted);
-      background: rgba(0,0,0,.25); border: 1px solid rgba(255,255,255,.07);
+      background: rgba(0,0,0,.25); border: 1px solid var(--border);
       border-radius: 5px; padding: 2px 7px;
     }
     html.light .card-sym { background: rgba(0,0,0,.06); border-color: #dde2ea; }
@@ -117,8 +117,8 @@
       font-size: 20px; font-weight: 700;
       letter-spacing: -.02em; line-height: 1;
     }
-    .card-price.up   { color: var(--up);   text-shadow: 0 0 14px rgba(61,220,132,.5); }
-    .card-price.down { color: var(--down); text-shadow: 0 0 14px rgba(240,82,82,.5); }
+    .card-price.up   { color: var(--up);   text-shadow: 0 0 14px var(--glow-up); }
+    .card-price.down { color: var(--down); text-shadow: 0 0 14px var(--glow-down); }
     .card-price.flat { color: var(--text-primary); }
     html.light .card-price.up   { color: var(--up); text-shadow: none; }
     html.light .card-price.down { color: var(--down); text-shadow: none; }
@@ -151,13 +151,13 @@
     }
     .range-track {
       height: 3px; border-radius: 99px;
-      background: rgba(255,255,255,.08); position: relative; overflow: visible;
+      background: var(--surface-1); position: relative; overflow: visible;
     }
-    html.light .range-track { background: rgba(0,0,0,.1); }
+    html.light .range-track { background: var(--shadow-soft); }
     .range-fill {
       position: absolute; left: 0; top: 0; height: 100%;
       border-radius: 99px;
-      background: linear-gradient(90deg, rgba(127,217,184,.3), var(--accent));
+      background: linear-gradient(90deg, var(--tint-green-bd), var(--accent));
       transition: width .4s ease;
     }
     .range-dot {
@@ -171,10 +171,10 @@
 
     /* Loading / error skeleton */
     .card-skeleton {
-      background: rgba(255,255,255,.04); border-color: var(--border);
+      background: var(--surface-1); border-color: var(--border);
     }
     .skel-line {
-      height: 10px; border-radius: 4px; background: rgba(255,255,255,.06);
+      height: 10px; border-radius: 4px; background: var(--surface-1);
       animation: shimmer 1.4s ease-in-out infinite;
     }
     @keyframes shimmer {
@@ -510,7 +510,9 @@
 
   // ── INIT ─────────────────────────────────────────────────────────────────────
   loadAll();
-  setInterval(loadAll, 60 * 1000);
+  // Pause auto-refresh while tab hidden (Finnhub free tier = 60/min, shared across tabs); refresh on return.
+  setInterval(() => { if (!document.hidden) loadAll(); }, 60 * 1000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) loadAll(); });
   </script>
 </body>
 </html>
