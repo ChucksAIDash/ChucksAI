@@ -44,6 +44,47 @@
   --glow-blue:        rgba(91,200,245,.55);
   --glow-green:       rgba(127,217,184,.55);
 
+  /* ── Extended glow + surface tokens (v8 — full tokenization / theming) ── */
+  /* Accent glows (blue / accent2) */
+  --glow-blue-strong: rgba(91,200,245,.5);
+  --glow-blue-mid:    rgba(91,200,245,.35);
+  --glow-blue-soft:   rgba(91,200,245,.15);
+  --tint-blue:        rgba(91,200,245,.12);   /* badge/tab fill   */
+  --tint-blue-bd:     rgba(91,200,245,.4);    /* badge/tab border */
+  /* Green / accent */
+  --glow-green-strong: rgba(127,217,184,.7);
+  --tint-green:        rgba(127,217,184,.1);
+  --tint-green-bd:     rgba(127,217,184,.22);
+  /* Amber / accent3 */
+  --glow-amber:        rgba(240,184,106,.7);
+  --tint-amber:        rgba(240,184,106,.1);
+  --tint-amber-bd:     rgba(240,184,106,.22);
+  /* Purple */
+  --glow-purple:       rgba(167,139,250,.7);
+  --tint-purple:       rgba(167,139,250,.1);
+  --tint-purple-bd:    rgba(167,139,250,.22);
+  /* Status (price up/down) */
+  --glow-up:           rgba(61,220,132,.6);
+  --glow-up-bd:        rgba(61,220,132,.35);
+  --tint-up:           rgba(61,220,132,.1);
+  --glow-down:         rgba(240,82,82,.6);
+  --glow-down-bd:      rgba(240,82,82,.3);
+  --tint-down:         rgba(240,82,82,.1);
+  /* Commodity symbol glows */
+  --glow-gold:         rgba(240,192,96,.6);
+  --glow-silver:       rgba(176,200,208,.6);
+  --glow-copper:       rgba(212,144,96,.6);
+  /* Surface overlays (white-on-dark) */
+  --surface-1:         rgba(255,255,255,.05);
+  --hairline:          rgba(255,255,255,.1);
+  --hairline-strong:   rgba(255,255,255,.3);
+  /* Dark scrims + shadows */
+  --scrim:             rgba(0,0,0,.82);
+  --scrim-soft:        rgba(0,0,0,.35);
+  --shadow-deep:       rgba(0,0,0,.95);
+  --shadow-soft:       rgba(0,0,0,.08);
+  --panel-deep:        rgba(6,13,24,.85);
+
   /* Radius */
   --r-sm:  6px;
   --r-md:  10px;
@@ -72,6 +113,39 @@ html.light {
 
   --glow-blue:        rgba(91,200,245,.4);
   --glow-green:       rgba(127,217,184,.4);
+
+  /* ── Extended tokens — light counterparts ── */
+  --glow-blue-strong: rgba(91,200,245,.4);
+  --glow-blue-mid:    rgba(91,200,245,.3);
+  --glow-blue-soft:   rgba(91,200,245,.15);
+  --tint-blue:        rgba(91,200,245,.14);
+  --tint-blue-bd:     rgba(91,200,245,.35);
+  --glow-green-strong: rgba(127,217,184,.5);
+  --tint-green:        rgba(127,217,184,.14);
+  --tint-green-bd:     rgba(127,217,184,.3);
+  --glow-amber:        rgba(240,184,106,.5);
+  --tint-amber:        rgba(240,184,106,.14);
+  --tint-amber-bd:     rgba(240,184,106,.3);
+  --glow-purple:       rgba(167,139,250,.5);
+  --tint-purple:       rgba(167,139,250,.14);
+  --tint-purple-bd:    rgba(167,139,250,.3);
+  --glow-up:           rgba(61,220,132,.5);
+  --glow-up-bd:        rgba(61,220,132,.3);
+  --tint-up:           rgba(61,220,132,.14);
+  --glow-down:         rgba(240,82,82,.5);
+  --glow-down-bd:      rgba(240,82,82,.25);
+  --tint-down:         rgba(240,82,82,.14);
+  --glow-gold:         rgba(240,192,96,.5);
+  --glow-silver:       rgba(176,200,208,.5);
+  --glow-copper:       rgba(212,144,96,.5);
+  --surface-1:         rgba(0,0,0,.04);
+  --hairline:          rgba(0,0,0,.08);
+  --hairline-strong:   rgba(0,0,0,.18);
+  --scrim:             rgba(0,0,0,.45);
+  --scrim-soft:        rgba(0,0,0,.2);
+  --shadow-deep:       rgba(0,0,0,.25);
+  --shadow-soft:       rgba(0,0,0,.06);
+  --panel-deep:        rgba(232,237,242,.92);
 }
 
 /* Keep body.light in sync for any legacy selectors */

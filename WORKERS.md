@@ -28,7 +28,7 @@
 |------|--------|---------|
 | `/` (default) | POST | Anthropic `/v1/messages` proxy. Origin-checked (`https://chucksai.com` only). Streams if `stream: true`. |
 | `/tradier/*` | GET | Proxies `https://api.tradier.com/v1/*` with `TRADIER_TOKEN`. Used by Options Flow (15-min delayed). |
-| `/cnn-fg` | GET | Proxies CNN's Fear & Greed graphdata; returns `{ score, rating }`. Spoofs browser User-Agent/Referer to get past CNN's bot block. |
+| `/cnn-fg` | GET | Proxies CNN's Fear & Greed graphdata; returns `{ score, rating }`. Spoofs browser User-Agent/Referer to get past CNN's bot block. ⚠️ **Currently unused** — `fear-greed.html` uses a homemade VIX-based stock gauge + Alternative.me for crypto, not this route. Candidate to wire in as the "official" equity F&G source. |
 
 - **CORS is hardcoded to `https://chucksai.com`.** This is why local dev (Live Server / localhost) hits CORS errors — expected, matches the known issue. Only the live site can read responses.
 

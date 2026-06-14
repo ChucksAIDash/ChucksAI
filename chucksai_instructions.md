@@ -73,13 +73,14 @@ Dark is the default. Never add flash — `theme.js` must be the FIRST script in 
 
 ---
 
-## NAVIGATION — nav.html v7
+## NAVIGATION — nav.html v8
 
 - **Layout:** Logo left, links right, theme toggle + hamburger far right
 - **Logo:** `chuck.<span class="hi">ai</span>` (blue "chuck", green dot)
 - **Active state:** Set dynamically via `data-page` (desktop) and `data-mob` (mobile) attributes on `<body>`
 - **Mobile:** Slide-in menu from the right
-- **Dropdowns:** Data (11 items), AI (1 item — Chat), Health (1 item — Glucose)
+- **Top-level (desktop):** Home · Markets ▾ · Calendars ▾ · Sentiment ▾ · Crypto · News · AI Chat · 🩸 Glucose
+- **Dropdowns:** Markets (6 items), Calendars (3 items), Sentiment (3 items). AI Chat and Glucose are direct top-level links (the old single-item AI/Health dropdowns were removed in v8).
 - **Features built into nav:**
   - Market status dot (open / pre / after / closed) with live clock
   - Weather widget (Lombard, IL 60148) via Open-Meteo, popover on click
@@ -109,12 +110,20 @@ fetch('nav.html').then(r => r.text()).then(injectNav).catch(() => {});
 
 **Critical:** Never use `.innerHTML = html` to inject nav. Scripts won't execute and all dropdowns, clock, and weather will be dead on that page.
 
-### Nav Dropdowns Structure
+### Nav Dropdowns Structure (v8)
 | Dropdown | Items |
 |----------|-------|
-| **Data** | Watchlist ⭐, Fear & Greed, Treasuries, Economic Calendar, Earnings Calendar, Options Flow, Sector Heatmap, Commodities, Market Breadth, IPO Calendar, Insider Transactions |
-| **AI** | AI Market Chat |
-| **Health** | 🩸 Glucose |
+| **Markets** | Watchlist ⭐, Forex, Treasuries, Commodities, Sector Heatmap, Market Breadth |
+| **Calendars** | Economic Calendar, Earnings Calendar, IPO Calendar |
+| **Sentiment** | Fear & Greed, Options Flow, Insider Transactions |
+
+**Direct top-level links (not in a dropdown):** Home, Crypto, News, AI Chat, 🩸 Glucose
+
+**v8 notes:**
+- `currency.html` is labeled **"Forex"** inside the Markets dropdown (was top-level "Markets" in v7).
+- Watchlist lives inside Markets (can be split back to top-level if desired).
+- No page files were merged — all calendar pages stay separate (Economic Calendar intentionally kept one click away for day-of events).
+- Dropdown element IDs: `dropMarkets`, `dropCalendars`, `dropSentiment` (JS selects by `.nav-drop` class, not ID).
 
 ---
 
@@ -126,7 +135,7 @@ fetch('nav.html').then(r => r.text()).then(injectNav).catch(() => {});
 | Markets | `currency.html` | Forex rates |
 | Crypto | `crypto.html` | 10 coins via Coinbase, 60s auto-refresh |
 | News | `news.html` | US financial + US Government news via TheNewsAPI |
-| Fear & Greed | `fear-greed.html` | Equity F&G via Alternative.me |
+| Fear & Greed | `fear-greed.html` | Dual gauge — **Stock sentiment** (VIX-based, computed from Finnhub VXX quote, homemade) + **Crypto F&G** (via Alternative.me `/fng/`). NOTE: the worker's `/cnn-fg` route is NOT used here — it's an unused route, candidate for a future upgrade to swap the homemade VIX proxy for CNN's official equity F&G. |
 | Crypto Fear & Greed | `fear-greed-crypto.html` | **Redirect → fear-greed.html** |
 | Treasuries | `treasuries.html` | Bond ETFs (SHV SHY IEI IEF TLT ZROZ) via Finnhub |
 | Economic Calendar | `economic-calendar.html` | FRED data |

@@ -26,9 +26,11 @@ Small visual/UX fixes to batch alongside bigger work. Not urgent on their own.
 
 ## 📝 Doc mismatches to reconcile
 
-- **Fear & Greed source.** The Anthropic Worker has a `/cnn-fg` route (CNN data), but project docs say F&G comes from Alternative.me. Confirm which `fear-greed.html` actually uses and update the master instructions.
-- **Master instructions → v8 nav.** Project instructions still describe the old v7 nav (Data-11 / AI / Health dropdowns). Update to the v8 structure (Markets / Calendars / Sentiment + direct AI Chat & Glucose links) once the new nav is live.
+- ✅ **Fear & Greed source** — Resolved. `fear-greed.html` shows a homemade VIX-based stock gauge (Finnhub VXX) + crypto F&G (Alternative.me). The `/cnn-fg` worker route is unused. Docs corrected in `chucksai_instructions.md` + `WORKERS.md`. *(June 14, 2026)*
+- ✅ **Master instructions → v8 nav** — Updated `chucksai_instructions.md` nav section + dropdown table to v8 (Markets / Calendars / Sentiment + direct AI Chat & Glucose). *(June 14, 2026)*
 
 ## 💡 Ideas worth considering
 
 *(low-priority suggestions with a quick "why it's worth it" — pick up if/when they appeal)*
+
+- **Wire in the `/cnn-fg` route for the stock gauge.** Your stock sentiment gauge is a homemade VIX proxy; the `/cnn-fg` worker route already pulls CNN's *official* Fear & Greed index but sits unused. Swapping it in would make the stock gauge match the number people actually quote ("CNN Fear & Greed"), and the worker route is already built — it's mostly a front-end change in `fear-greed.html`. Worth it for credibility/recognizability; low effort since the backend exists.
