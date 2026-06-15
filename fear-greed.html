@@ -215,18 +215,31 @@ function indCard(label, val, desc){
 }
 
 /* ═══════════════════════════════════════
-   STOCK SENTIMENT (VXX-based)
+   STOCK SENTIMENT (official CNN Fear & Greed via Worker,
+   with VXX-derived proxy as fallback)
 ═══════════════════════════════════════ */
 async function loadStockSentiment(){
+  // 1) Official CNN Fear & Greed index (the number people quote)
+  try{
+    const r = await fetch('https://anthropic.infiniti306.workers.dev/cnn-fg');
+    if(r.ok){
+      const j = await r.json();
+      if(j && typeof j.score === 'number'){
+        // best-effort VXX for the volatility detail card / note
+        let vxx = null;
+        try{ vxx = (await fhQuote('VXX')).price || null; }catch{}
+        return { score: Math.round(j.score), rating: j.rating || null, vxx, source:'cnn' };
+      }
+    }
+  }catch{}
+  // 2) Fallback: VXX-derived proxy (high VXX = fear, low = greed; ~12–80 range)
   try{
     const q = await fhQuote('VXX');
     const vxx = q.price || 20;
-    // Invert VXX: high VXX = fear, low VXX = greed
-    // VXX typically ranges ~12 (low fear) to ~80 (extreme fear)
     const score = Math.round(Math.max(0, Math.min(100, 100-((vxx-12)/68)*100)));
-    return { score, vxx };
+    return { score, rating:null, vxx, source:'vxx' };
   }catch{
-    return { score:50, vxx:null };
+    return { score:50, rating:null, vxx:null, source:'vxx' };
   }
 }
 
@@ -262,7 +275,7 @@ async function loadAll(){
       <div class="gauge-wrap">${drawGauge(mv, hexMv)}</div>
       <div class="gauge-val" style="color:${hexMv};text-shadow:0 0 20px ${hexMv}60">${mv}</div>
       <div class="gauge-lbl" style="color:${hexMv}">${sl(mv)}</div>
-      <div class="gauge-note">VIX-based · ${vxx?'VXX $'+vxx.toFixed(2):'—'}</div>
+      <div class="gauge-note">${stockRes.source==='cnn' ? ('CNN Fear &amp; Greed'+(stockRes.rating?' · '+stockRes.rating.replace(/\b\w/g,c=>c.toUpperCase()):'')) : ('VIX-based · '+(vxx?'VXX $'+vxx.toFixed(2):'—'))}</div>
     </div>
     <div class="fg-panel fade-in">
       <div class="fg-panel-title">₿ Crypto Fear &amp; Greed</div>
