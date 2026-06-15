@@ -24,8 +24,8 @@
 
     /* ── CONNECT BANNER (shown when not authenticated) ── */
     .connect-banner {
-      background: rgba(127,217,184,.06);
-      border: 1px solid rgba(127,217,184,.22);
+      background: var(--tint-green);
+      border: 1px solid var(--tint-green-bd);
       border-radius: var(--r-lg);
       padding: 2rem 1.75rem;
       text-align: center;
@@ -48,7 +48,7 @@
       font-family: 'Space Mono', monospace; font-size: 11px; font-weight: 700;
       letter-spacing: .08em; text-transform: uppercase;
       padding: .7rem 1.75rem;
-      background: rgba(127,217,184,.14);
+      background: var(--tint-green);
       border: 1px solid rgba(127,217,184,.4);
       color: var(--accent);
       border-radius: var(--r-md);
@@ -79,7 +79,7 @@
     }
     .tab-btn:hover { color: var(--text-secondary); background: rgba(255,255,255,.04); }
     .tab-btn.active {
-      background: rgba(127,217,184,.14);
+      background: var(--tint-green);
       border: 1px solid rgba(127,217,184,.3);
       color: var(--accent);
     }
@@ -90,7 +90,7 @@
 
     /* ── AI TAB ── */
     .ai-hero {
-      background: linear-gradient(135deg, rgba(138,99,255,.08) 0%, rgba(127,217,184,.06) 100%);
+      background: linear-gradient(135deg, rgba(138,99,255,.08) 0%, var(--tint-green) 100%);
       border: 1px solid rgba(138,99,255,.25);
       border-radius: var(--r-xl);
       padding: 2rem 2rem 1.75rem;
@@ -186,7 +186,7 @@
       gap: 10px;
     }
     .ai-bullet-card {
-      background: rgba(255,255,255,.025);
+      background: var(--surface-1);
       border: 1px solid var(--border);
       border-radius: var(--r-md);
       padding: .85rem 1rem;
@@ -232,7 +232,7 @@
 
     /* Error state */
     .ai-error {
-      display: none; background: rgba(240,82,82,.06);
+      display: none; background: var(--tint-down);
       border: 1px solid rgba(240,82,82,.25);
       border-radius: var(--r-md);
       padding: 1rem 1.25rem;
@@ -243,7 +243,7 @@
 
     /* Context snapshot */
     .ai-context-card {
-      background: rgba(255,255,255,.02);
+      background: var(--surface-1);
       border: 1px dashed rgba(255,255,255,.1);
       border-radius: var(--r-md);
       padding: .9rem 1.1rem;
@@ -269,7 +269,7 @@
       display: flex; flex-wrap: wrap; gap: 8px 16px;
       align-items: center; margin-bottom: 1.1rem;
       padding: .75rem 1rem;
-      background: rgba(255,255,255,.02);
+      background: var(--surface-1);
       border: 1px solid var(--border);
       border-radius: var(--r-md);
     }
@@ -317,7 +317,7 @@
       letter-spacing: .07em;
       padding: .35rem .85rem;
       background: rgba(61,220,132,.1);
-      border: 1px solid rgba(61,220,132,.3);
+      border: 1px solid var(--glow-up-bd);
       border-radius: var(--r-sm);
       color: var(--up); cursor: pointer; transition: all .15s;
       flex-shrink: 0;
@@ -520,7 +520,7 @@
     }
     .tf-btn:hover { border-color: var(--border-bright); color: var(--text-secondary); }
     .tf-btn.active {
-      background: rgba(127,217,184,.14);
+      background: var(--tint-green);
       border-color: rgba(127,217,184,.4);
       color: var(--accent);
     }
@@ -689,7 +689,7 @@
       font-family: 'Space Mono', monospace; font-size: 8px; font-weight: 700;
       letter-spacing: .06em; text-transform: uppercase;
       padding: 2px 6px; border-radius: 4px;
-      background: rgba(127,217,184,.1); border: 1px solid rgba(127,217,184,.22);
+      background: var(--tint-green); border: 1px solid var(--tint-green-bd);
       color: var(--accent); white-space: nowrap;
     }
     .med-badge.mounjaro {
@@ -747,7 +747,7 @@
     }
     .ps-btn:hover { border-color: var(--border-bright); color: var(--text-secondary); }
     .ps-btn.active {
-      background: rgba(127,217,184,.12);
+      background: var(--tint-green);
       border-color: rgba(127,217,184,.35);
       color: var(--accent);
     }
@@ -880,15 +880,15 @@
       font-family: 'Space Mono', monospace; font-size: 8px; font-weight: 700;
       letter-spacing: .1em; text-transform: uppercase;
       padding: 3px 8px; border-radius: 20px;
-      background: rgba(127,217,184,.08); border: 1px solid rgba(127,217,184,.2);
+      background: rgba(127,217,184,.08); border: 1px solid var(--tint-green-bd);
       color: var(--accent); white-space: nowrap; flex-shrink: 0;
     }
     .placeholder-preview {
       width: 100%; height: 4px; border-radius: 2px; margin-top: .75rem;
       background: linear-gradient(90deg,
-        rgba(127,217,184,.12) 0%,
-        rgba(127,217,184,.06) 40%,
-        rgba(127,217,184,.12) 100%
+        var(--tint-green) 0%,
+        var(--tint-green) 40%,
+        var(--tint-green) 100%
       );
       background-size: 200% 100%;
       animation: shimmer 2.5s ease-in-out infinite;
@@ -968,7 +968,7 @@
       color: rgba(167,139,250,.6); margin-bottom: 3px;
     }
     .dose-next-badge .dnb-date { font-size: 12px; }
-    .dose-next-badge .dnb-days { font-size: 10px; color: rgba(167,139,250,.7); margin-top: 2px; }
+    .dose-next-badge .dnb-days { font-size: 10px; color: var(--glow-purple); margin-top: 2px; }
 
     /* Timeline visual */
     .med-timeline-chart-card {
@@ -1011,9 +1011,9 @@
       padding: .9rem 1rem;
       transition: border-color .2s;
     }
-    .dawn-insight.improving { border-color: rgba(61,220,132,.3); background: rgba(61,220,132,.03); }
+    .dawn-insight.improving { border-color: var(--glow-up-bd); background: rgba(61,220,132,.03); }
     .dawn-insight.warning   { border-color: rgba(240,184,106,.3); background: rgba(240,184,106,.03); }
-    .dawn-insight.alert     { border-color: rgba(240,82,82,.3);   background: rgba(240,82,82,.03); }
+    .dawn-insight.alert     { border-color: var(--glow-down-bd);   background: rgba(240,82,82,.03); }
     .dawn-insight-label {
       font-family: 'Space Mono', monospace; font-size: 10px; font-weight: 700;
       letter-spacing: .1em; text-transform: uppercase;
