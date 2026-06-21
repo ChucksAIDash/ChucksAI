@@ -537,3 +537,8 @@ html.light .modal-box { background: #fff; box-shadow: 0 20px 60px rgba(0,0,0,.18
 @media (min-width: 769px) {
   .hide-desktop { display: none !important; }
 }
+
+/* ── SHARED ANIMATIONS (consolidated from per-page <style> blocks) ── */
+@keyframes fadeUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes spin { to { transform: rotate(360deg); } }
+.fade-in { animation: fadeUp .35s ease both; }
