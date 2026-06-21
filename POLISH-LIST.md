@@ -35,11 +35,12 @@
 ## 🟢 Tier 4 — Minor cleanups
 
 - **`nav.html` dark-mode hardcodes** (lower priority): base rules still use raw `rgba(5,8,12,.88)` / `rgba(5,8,12,.97)` panel backgrounds + `rgba(255,255,255,.04)` shadows instead of `--panel-deep`/`--scrim`. Works fine in dark mode; tokenize when convenient.
-- **`nav.html` weather fetch** has no `.catch` (1 try, runs on every page) — add a guard so a weather API failure doesn't log on every page.
-- **`economic-calendar.html`** relies solely on `.catch` (no try block) — confirm the empty/error state renders gracefully.
-- **`news.html`** — add `rel="noopener noreferrer"` to the `target="_blank"` article link.
-- **`dexcom.html`** — add SRI hash + `crossorigin` to the Chart.js CDN `<script>`.
-- **Document the deliberate color leaves** in the master spec so check 3 stops re-flagging ~180 of them: Dexcom purple `138,99,255`, and the bespoke heat/scale gradients in `heat-map.html`, `commodities.html`, `currency.html`, and the gold sweep scale in `options-flow.html`.
+- ✅ **`news.html`** — added `rel="noopener noreferrer"` to the `target="_blank"` thenewsapi.com link. **(done 2026-06-20)**
+- ~~`nav.html` weather fetch~~ — **false alarm:** `loadWeather()` already has a full try/catch with a graceful `--°F`/`N/A` fallback. No fix needed. (Static scan flagged it because it has no literal `.catch`, but the try/catch handles it.)
+- ~~`economic-calendar.html` error state~~ — **false alarm:** the page's only `fetch` is the nav loader (which has `.catch`); it fetches no market data, so there's no API failure path to harden. No fix needed.
+- **`dexcom.html` Chart.js SRI** — **deferred.** It's loaded via a dynamic `chartScript.src = …` (line ~7181) with an `onerror` fallback, not a static `<script>` tag. Adding SRI means setting `.integrity`/`.crossOrigin` in JS; a wrong hash silently blocks the chart. Low value on this reference-copy page — skip unless revisiting dexcom.
+- **`nav.html` dark-mode backgrounds** — **approved deliberate leave** (decided 2026-06-20). The `rgba(5,8,12,.88)`/`.97` glass tints don't match `--panel-deep` (`rgba(6,13,24,.85)`); tokenizing would shift the dark nav's look. Left as bespoke; don't re-flag.
+- **Document the deliberate color leaves** in the master spec so check 3 stops re-flagging ~180 of them: Dexcom purple `138,99,255`, the nav dark glass tints above, and the bespoke heat/scale gradients in `heat-map.html`, `commodities.html`, `currency.html`, and the gold sweep scale in `options-flow.html`.
 - **`dexcom.html` weight** (278 KB, 207 inline styles, 47 color-bearing) — biggest single payload; trim/extract shared CSS if ever revisited. Not urgent (it's a reference copy).
 
 ---

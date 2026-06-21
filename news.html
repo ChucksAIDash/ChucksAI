@@ -306,7 +306,7 @@ async function loadAllNews() {
       const el = document.getElementById(id);
       if (el) el.innerHTML = `<div class="loading-text" style="grid-column:1/-1;color:var(--text-secondary)">
         Could not load headlines. Check your TheNewsAPI key or try refreshing.
-        Free key at <a href="https://www.thenewsapi.com" target="_blank" style="color:var(--accent2)">thenewsapi.com</a>
+        Free key at <a href="https://www.thenewsapi.com" target="_blank" rel="noopener noreferrer" style="color:var(--accent2)">thenewsapi.com</a>
       </div>`;
     });
   }
