@@ -99,6 +99,24 @@
     .section-label::after {
       content: ''; flex: 1; height: 1px; background: var(--border);
     }
+    /* Breadth pill — up vs down count, sits in the section label */
+    .breadth-pill {
+      font-family: 'Space Mono', monospace; font-size: 10px; font-weight: 700;
+      letter-spacing: .04em; padding: 3px 10px; border-radius: 99px;
+      border: 1px solid var(--border); background: var(--bg-card);
+      color: var(--text-secondary); white-space: nowrap; flex-shrink: 0;
+      text-transform: none;
+    }
+    .breadth-pill .bp-up   { color: var(--up); }
+    .breadth-pill .bp-down { color: var(--down); }
+    .breadth-pill .bp-sep  { color: var(--text-muted); margin: 0 5px; }
+
+    /* Last-updated note under the grid */
+    .updated-note {
+      font-family: 'Space Mono', monospace; font-size: 10px;
+      color: var(--text-muted); text-align: right;
+      margin: -.5rem 0 1.5rem;
+    }
 
     /* Two-column lower area */
     .today-cols {
@@ -207,10 +225,14 @@
   </div>
 
   <!-- ── INDEX ETFs ── -->
-  <div class="section-label">Major Indices</div>
+  <div class="section-label">
+    Major Indices
+    <span class="breadth-pill" id="breadthPill" hidden></span>
+  </div>
   <div class="index-grid" id="indexGrid">
     <div class="loading-text"><span class="spinner"></span> Loading indices…</div>
   </div>
+  <div class="updated-note" id="updatedNote"></div>
 
   <!-- ── LOWER: VIX + MOVERS ── -->
   <div class="today-cols">
@@ -370,6 +392,22 @@ function renderIndices(results){
         <div class="ic-pct ${cls}">${fmtPct(q.pct)}</div>
       </div>`;
   }).join('');
+
+  // Breadth pill: how many indices are up vs down today
+  const quotes = INDICES.map(i => results[i.sym]).filter(Boolean);
+  const up   = quotes.filter(q => q.pct > 0.05).length;
+  const down = quotes.filter(q => q.pct < -0.05).length;
+  const pill = document.getElementById('breadthPill');
+  if(quotes.length){
+    pill.innerHTML = `<span class="bp-up">▲ ${up} up</span><span class="bp-sep">·</span><span class="bp-down">▼ ${down} down</span>`;
+    pill.hidden = false;
+  } else {
+    pill.hidden = true;
+  }
+
+  // Last-updated timestamp (local time)
+  const note = document.getElementById('updatedNote');
+  if(note) note.textContent = 'Updated ' + new Date().toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
 }
 
 function renderVix(q){
