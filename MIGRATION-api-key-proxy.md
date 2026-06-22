@@ -12,7 +12,7 @@
 
 | Provider | Key (currently public in repo + live traffic) | Pages using it |
 |---|---|---|
-| Finnhub | `d7kohmpr01qiqbcv6f8gd7kohmpr01qiqbcv6f90` | index, currency, earnings, fear-greed, treasuries, breadth, insiders, ipo, watchlist |
+| Finnhub | `d7kohmpr01qiqbcv6f8gd7kohmpr01qiqbcv6f90` | index, currency, earnings, fear-greed, treasuries, breadth, insiders, ipo, watchlist, today |
 | Polygon | `mcVUA4y1kkJ_0Vm2d29ckUpiDxNmpjKH` | heat-map |
 | thenewsapi | `EaYs0yWgGLNEmYbHfDp47HwYeaCMaG8HxgOSHHsg` | news, index |
 
@@ -162,6 +162,7 @@ Each of these has a key constant to **delete** and quote/calendar URLs to **rewr
 | `insiders.html` | `const FINNHUB_KEY = '…'` (~line 301) | `…/stock/insider` |
 | `ipo.html` | `const FINNHUB_KEY = '…'` (~line 286) | `…/calendar/ipo` |
 | `watchlist.html` | `const FINNHUB_KEY = '…'` (~line 338) | `…/quote`, `…/stock/profile`, `…/stock/metric` |
+| `today.html` | `const FH_KEY = '…'` (in `fhQuote`) | `…/quote` (built 2026-06; 6 index ETFs + VIXY) |
 
 **Example — treasuries.html `fhQuote` (line ~188):**
 ```js
@@ -231,7 +232,7 @@ for (const b of BONDS) {
 - [ ] Create `finnhub-proxy`, `polygon-proxy`, `news-proxy` Workers
 - [ ] Add `FINNHUB_KEY` / `POLYGON_KEY` / `NEWS_KEY` secrets
 - [ ] Paste Worker source into each
-- [ ] Edit 9 Finnhub pages (swap host, drop token, delete key const)
+- [ ] Edit 10 Finnhub pages incl. today.html (swap host, drop token, delete key const)
 - [ ] Edit `heat-map.html` (Polygon)
 - [ ] Edit `news.html` + `index.html` (thenewsapi)
 - [ ] Throttle `treasuries.html` (and optionally `index.html`) fan-out
