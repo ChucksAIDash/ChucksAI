@@ -1,0 +1,26 @@
+# Normalize line endings to prevent LF/CRLF churn across tools/machines.
+# Git stores text with LF; this stops "whole file changed" diffs when
+# an editor or tool rewrites line endings.
+
+# Default: treat as text, normalize to LF in the repo.
+* text=auto eol=lf
+
+# Explicit rules for this project's file types.
+*.html  text eol=lf
+*.css   text eol=lf
+*.js    text eol=lf
+*.json  text eol=lf
+*.jsonc text eol=lf
+*.md    text eol=lf
+*.svg   text eol=lf
+*.txt   text eol=lf
+
+# Leave binaries untouched (add more here if you ever commit any).
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.webp  binary
+*.ico   binary
+*.woff  binary
+*.woff2 binary
