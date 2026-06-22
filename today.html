@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Chuck's AI — Today</title>
+
+  <!-- ① theme.js MUST be first — prevents flash -->
+  <script src="theme.js"></script>
+
+  <!-- ② Global design system -->
+  <link rel="stylesheet" href="styles.css"/>
+
+  <!-- ③ Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+
+  <!-- ④ Page-specific styles ONLY below — never edit styles.css -->
+  <style>
+    /* ── TODAY PANEL — PAGE SPECIFIC ── */
+
+    /* Market session banner */
+    .session-banner {
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 12px;
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--r-lg); padding: 1rem 1.25rem; margin-bottom: 1.5rem;
+    }
+    .session-left { display: flex; align-items: center; gap: 12px; }
+    .session-dot {
+      width: 10px; height: 10px; border-radius: 50%;
+      background: var(--text-muted); flex-shrink: 0;
+    }
+    .session-dot.open   { background: var(--up);   box-shadow: 0 0 10px var(--glow-up); }
+    .session-dot.pre    { background: var(--accent3); box-shadow: 0 0 10px var(--glow-amber); }
+    .session-dot.after  { background: var(--accent-purple); box-shadow: 0 0 10px var(--glow-purple); }
+    .session-dot.closed { background: var(--text-muted); }
+    .session-state {
+      font-family: 'Space Mono', monospace; font-weight: 700;
+      font-size: 15px; letter-spacing: .03em; color: var(--text-primary);
+    }
+    .session-sub {
+      font-family: 'Space Mono', monospace; font-size: 11px;
+      color: var(--text-muted); margin-top: 2px;
+    }
+    .session-clock {
+      font-family: 'Space Mono', monospace; font-size: 13px;
+      color: var(--text-secondary); text-align: right;
+    }
+    .session-date { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+
+    /* Index ETF grid */
+    .index-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px; margin-bottom: 1.75rem;
+    }
+    .index-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--r-lg); padding: 1.1rem 1.25rem;
+      transition: transform .2s, border-color .2s, box-shadow .2s;
+      position: relative; overflow: hidden;
+    }
+    .index-card:hover {
+      transform: translateY(-3px);
+      border-color: var(--border-bright);
+      box-shadow: 0 8px 28px var(--scrim-soft);
+    }
+    .index-card .ic-sym {
+      font-family: 'Space Mono', monospace; font-size: 11px; font-weight: 700;
+      letter-spacing: .08em; color: var(--text-muted); text-transform: uppercase;
+    }
+    .index-card .ic-name {
+      font-size: 10px; color: var(--text-muted); margin-bottom: 10px;
+    }
+    .index-card .ic-price {
+      font-family: 'Space Mono', monospace; font-size: 24px; font-weight: 700;
+      color: var(--text-primary); letter-spacing: -.02em; line-height: 1;
+    }
+    .index-card .ic-pct {
+      font-family: 'Space Mono', monospace; font-size: 14px; font-weight: 700;
+      margin-top: 6px;
+    }
+    .ic-pct.up   { color: var(--up);   text-shadow: 0 0 12px var(--glow-up); }
+    .ic-pct.down { color: var(--down); text-shadow: 0 0 12px var(--glow-down); }
+    .ic-pct.flat { color: var(--text-secondary); }
+    /* subtle top sheen */
+    .index-card::before {
+      content: ''; position: absolute; top: 0; left: 10%; right: 10%; height: 1px;
+      background: linear-gradient(90deg, transparent, var(--hairline), transparent);
+    }
+
+    /* Section label */
+    .section-label {
+      font-family: 'Space Mono', monospace; font-size: 11px; font-weight: 700;
+      letter-spacing: .12em; text-transform: uppercase; color: var(--text-secondary);
+      margin: 0 0 .9rem; display: flex; align-items: center; gap: 8px;
+    }
+    .section-label::after {
+      content: ''; flex: 1; height: 1px; background: var(--border);
+    }
+
+    /* Two-column lower area */
+    .today-cols {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+    }
+    @media (max-width: 720px) { .today-cols { grid-template-columns: 1fr; } }
+
+    .panel {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--r-lg); padding: 1.1rem 1.25rem;
+    }
+
+    /* Movers list */
+    .mover-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 9px 0; border-bottom: 1px solid var(--border);
+    }
+    .mover-row:last-child { border-bottom: none; }
+    .mover-sym {
+      font-family: 'Space Mono', monospace; font-size: 12px; font-weight: 700;
+      color: var(--text-primary);
+    }
+    .mover-name { font-size: 10px; color: var(--text-muted); margin-top: 1px; }
+    .mover-pct {
+      font-family: 'Space Mono', monospace; font-size: 13px; font-weight: 700;
+    }
+    .mover-pct.up   { color: var(--up); }
+    .mover-pct.down { color: var(--down); }
+
+    /* VIX gauge mini */
+    .vix-wrap { text-align: center; padding: .5rem 0; }
+    .vix-val {
+      font-family: 'Space Mono', monospace; font-size: 40px; font-weight: 700;
+      line-height: 1; color: var(--text-primary);
+    }
+    .vix-label {
+      font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: .1em;
+      text-transform: uppercase; color: var(--text-muted); margin-top: 6px;
+    }
+    .vix-note { font-size: 11px; color: var(--text-secondary); margin-top: 10px; }
+    .vix-band {
+      display: inline-block; font-family: 'Space Mono', monospace;
+      font-size: 10px; font-weight: 700; letter-spacing: .06em;
+      padding: 3px 10px; border-radius: 99px; margin-top: 8px;
+      border: 1px solid var(--border);
+    }
+    .vix-band.calm   { color: var(--up);      border-color: var(--glow-up-bd); background: var(--tint-up); }
+    .vix-band.normal { color: var(--accent2); border-color: var(--tint-blue-bd); background: var(--tint-blue); }
+    .vix-band.elevated { color: var(--accent3); border-color: var(--tint-amber-bd); background: var(--tint-amber); }
+    .vix-band.high   { color: var(--down);    border-color: var(--glow-down-bd); background: var(--tint-down); }
+
+    .loading-text {
+      font-size: 12px; color: var(--text-secondary);
+      padding: .6rem 0; display: flex; align-items: center; gap: 8px;
+    }
+    .spinner {
+      display: inline-block; width: 12px; height: 12px; flex-shrink: 0;
+      border: 1.5px solid var(--hairline);
+      border-top-color: var(--accent); border-radius: 50%;
+      animation: spin .7s linear infinite;
+    }
+    html.light .spinner { border-top-color: var(--accent2); }
+  </style>
+</head>
+
+<body data-page="today" data-mob="today">
+
+<!-- Ambient background orbs (standard on all pages) -->
+<div class="bg-canvas">
+  <div class="orb orb1"></div>
+  <div class="orb orb2"></div>
+  <div class="orb orb3"></div>
+  <div class="orb orb4"></div>
+</div>
+
+<!-- Nav injected here -->
+<div id="nav-placeholder"></div>
+
+<div class="container">
+
+  <!-- ── PAGE HEADER ── -->
+  <div class="page-header">
+    <div>
+      <div class="page-title">Today <span style="color:var(--accent)">at a Glance</span></div>
+      <div class="page-sub">Market session, major indices, volatility &amp; movers · via Finnhub</div>
+    </div>
+    <div class="header-right">
+      <div class="countdown-badge" id="countdown">AUTO ⟳ 60s</div>
+      <button class="refresh-btn" onclick="manualRefresh()">⟳ REFRESH</button>
+    </div>
+  </div>
+
+  <!-- ── SESSION BANNER ── -->
+  <div class="session-banner">
+    <div class="session-left">
+      <span class="session-dot closed" id="sessDot"></span>
+      <div>
+        <div class="session-state" id="sessState">Checking market…</div>
+        <div class="session-sub" id="sessSub">—</div>
+      </div>
+    </div>
+    <div>
+      <div class="session-clock" id="sessClock">—</div>
+      <div class="session-date" id="sessDate">—</div>
+    </div>
+  </div>
+
+  <!-- ── INDEX ETFs ── -->
+  <div class="section-label">Major Indices</div>
+  <div class="index-grid" id="indexGrid">
+    <div class="loading-text"><span class="spinner"></span> Loading indices…</div>
+  </div>
+
+  <!-- ── LOWER: VIX + MOVERS ── -->
+  <div class="today-cols">
+    <div class="panel">
+      <div class="section-label">Volatility (VIXY proxy)</div>
+      <div class="vix-wrap" id="vixWrap">
+        <div class="loading-text"><span class="spinner"></span> Loading…</div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="section-label">Index Movers Today</div>
+      <div id="moversList">
+        <div class="loading-text"><span class="spinner"></span> Loading…</div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<footer>TODAY · FINNHUB · AUTO-REFRESH 60s</footer>
+
+<script>
+/* ═══════════════════════════════════════════════════════════
+   TODAY PANEL — Chuck's AI
+   Major index ETFs + VIXY (VIX proxy) + session status + movers.
+   NOTE: FH_KEY is client-side here to match the other pages'
+   CURRENT pattern. When the Finnhub Worker proxy goes live
+   (see MIGRATION-api-key-proxy.md), swap fhQuote() to hit
+   finnhub-proxy.infiniti306.workers.dev and delete FH_KEY.
+═══════════════════════════════════════════════════════════ */
+const FH_KEY = 'd7kohmpr01qiqbcv6f8gd7kohmpr01qiqbcv6f90';
+
+/* ETF proxies (Finnhub free tier — no ^VIX/SPX/futures) */
+const INDICES = [
+  { sym: 'SPY', name: 'S&P 500' },
+  { sym: 'QQQ', name: 'Nasdaq 100' },
+  { sym: 'DIA', name: 'Dow Jones' },
+  { sym: 'IWM', name: 'Russell 2000' },
+  { sym: 'MDY', name: 'S&P MidCap 400' },
+  { sym: 'EFA', name: 'Developed Intl (EAFE)' },
+];
+const VIX_PROXY = { sym: 'VIXY', name: 'Short-term VIX futures ETF' };
+
+/* ── Helpers (standard) ── */
+function fmtPrice(n, dec=2){
+  if(n==null||isNaN(n)||n===0) return '—';
+  return '$'+Number(n).toLocaleString('en-US',{minimumFractionDigits:dec,maximumFractionDigits:dec});
+}
+function fmtPct(n){ return n==null||isNaN(n)?'—':(n>=0?'+':'')+n.toFixed(2)+'%'; }
+function pctClass(n){ return n>0.05?'up':n<-0.05?'down':'flat'; }
+
+/* ── Finnhub quote (serialized — see loadData) ── */
+async function fhQuote(sym){
+  const r = await fetch(`https://finnhub.io/api/v1/quote?symbol=${encodeURIComponent(sym)}&token=${FH_KEY}`);
+  const d = await r.json();
+  if(!d || !d.c || d.c === 0) throw new Error('no data');
+  return { price: d.c, pct: ((d.c - d.pc) / d.pc) * 100 };
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MARKET SESSION STATUS (US equities, America/New_York)
+═══════════════════════════════════════════════════════════ */
+function getSession(){
+  const now = new Date();
+  const ny  = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+  const day = ny.getDay();                 // 0 Sun … 6 Sat
+  const mins = ny.getHours()*60 + ny.getMinutes();
+  const weekend = (day === 0 || day === 6);
+
+  // Regular: 9:30–16:00; Pre: 4:00–9:30; After: 16:00–20:00 ET
+  let state='closed', label='CLOSED', sub='Markets are closed';
+  if(!weekend){
+    if(mins >= 570 && mins < 960){ state='open';  label='OPEN';        sub='Regular session · 9:30–16:00 ET'; }
+    else if(mins >= 240 && mins < 570){ state='pre';  label='PRE-MARKET';  sub='Pre-market · 4:00–9:30 ET'; }
+    else if(mins >= 960 && mins < 1200){ state='after'; label='AFTER HOURS'; sub='After-hours · 16:00–20:00 ET'; }
+    else { sub='Outside trading hours'; }
+  } else {
+    sub='Weekend · markets reopen Monday';
+  }
+  return { state, label, sub, ny };
+}
+
+function paintSession(){
+  const s = getSession();
+  document.getElementById('sessDot').className   = 'session-dot ' + s.state;
+  document.getElementById('sessState').textContent = s.label;
+  document.getElementById('sessSub').textContent   = s.sub;
+  document.getElementById('sessClock').textContent =
+    s.ny.toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit', timeZone:'America/New_York' }) + ' ET';
+  document.getElementById('sessDate').textContent =
+    s.ny.toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric', timeZone:'America/New_York' });
+}
+
+/* ═══════════════════════════════════════════════════════════
+   VIX BAND classification (on VIXY price level)
+═══════════════════════════════════════════════════════════ */
+function vixBand(px){
+  // VIXY is an ETF, not the VIX index — bands tuned to its rough range.
+  if(px < 12)  return { cls:'calm',     txt:'CALM' };
+  if(px < 18)  return { cls:'normal',   txt:'NORMAL' };
+  if(px < 26)  return { cls:'elevated', txt:'ELEVATED' };
+  return { cls:'high', txt:'HIGH' };
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MAIN LOAD — serialized Finnhub calls (free-tier friendly)
+═══════════════════════════════════════════════════════════ */
+let isLoading = false;
+
+async function loadData(){
+  if(document.hidden) return;     // tab-visibility pause
+  if(isLoading) return;
+  isLoading = true;
+
+  paintSession();
+
+  try{
+    // Build the full symbol list and fetch SEQUENTIALLY with a small gap
+    // so we never burst the shared Finnhub free-tier budget.
+    const results = {};
+    const allSyms = [...INDICES.map(i=>i.sym), VIX_PROXY.sym];
+    for(const sym of allSyms){
+      results[sym] = await fhQuote(sym).catch(()=>null);
+      await new Promise(r=>setTimeout(r, 130));
+    }
+
+    renderIndices(results);
+    renderVix(results[VIX_PROXY.sym]);
+    renderMovers(results);
+
+  }catch(e){
+    console.error('Today load error:', e);
+    document.getElementById('indexGrid').innerHTML =
+      '<div class="loading-text">Could not load market data. Check Finnhub key or refresh.</div>';
+  }finally{
+    isLoading = false;
+  }
+}
+
+function renderIndices(results){
+  const grid = document.getElementById('indexGrid');
+  grid.innerHTML = INDICES.map(idx=>{
+    const q = results[idx.sym];
+    if(!q) return `
+      <div class="index-card">
+        <div class="ic-sym">${idx.sym}</div>
+        <div class="ic-name">${idx.name}</div>
+        <div class="ic-price">—</div>
+        <div class="ic-pct flat">no data</div>
+      </div>`;
+    const cls = pctClass(q.pct);
+    return `
+      <div class="index-card">
+        <div class="ic-sym">${idx.sym}</div>
+        <div class="ic-name">${idx.name}</div>
+        <div class="ic-price">${fmtPrice(q.price)}</div>
+        <div class="ic-pct ${cls}">${fmtPct(q.pct)}</div>
+      </div>`;
+  }).join('');
+}
+
+function renderVix(q){
+  const wrap = document.getElementById('vixWrap');
+  if(!q){ wrap.innerHTML = '<div class="loading-text">VIXY unavailable.</div>'; return; }
+  const band = vixBand(q.price);
+  const pcls = pctClass(q.pct);
+  wrap.innerHTML = `
+    <div class="vix-val">${q.price.toFixed(2)}</div>
+    <div class="vix-label">VIXY · <span class="${pcls}" style="color:var(--${pcls==='up'?'up':pcls==='down'?'down':'text-secondary'})">${fmtPct(q.pct)}</span></div>
+    <div><span class="vix-band ${band.cls}">${band.txt}</span></div>
+    <div class="vix-note">VIXY tracks short-term VIX futures (free-tier proxy for ^VIX).</div>`;
+}
+
+function renderMovers(results){
+  const list = document.getElementById('moversList');
+  const rows = INDICES
+    .map(idx => ({ ...idx, q: results[idx.sym] }))
+    .filter(r => r.q)
+    .sort((a,b) => Math.abs(b.q.pct) - Math.abs(a.q.pct));
+
+  if(!rows.length){ list.innerHTML = '<div class="loading-text">No data.</div>'; return; }
+
+  list.innerHTML = rows.map(r=>{
+    const cls = r.q.pct >= 0 ? 'up' : 'down';
+    return `
+      <div class="mover-row">
+        <div>
+          <div class="mover-sym">${r.sym}</div>
+          <div class="mover-name">${r.name}</div>
+        </div>
+        <div class="mover-pct ${cls}">${fmtPct(r.q.pct)}</div>
+      </div>`;
+  }).join('');
+}
+
+/* ═══════════════════════════════════════════════════════════
+   AUTO-REFRESH (60s) — paused while tab hidden
+═══════════════════════════════════════════════════════════ */
+let secsLeft = 60;
+const cdEl = document.getElementById('countdown');
+
+setInterval(()=>{
+  if(document.hidden) return;     // don't tick or refresh in a hidden tab
+  secsLeft--;
+  if(cdEl) cdEl.textContent = `AUTO ⟳ ${secsLeft}s`;
+  if(secsLeft <= 0){ secsLeft = 60; loadData(); }
+}, 1000);
+
+document.addEventListener('visibilitychange', ()=>{
+  if(!document.hidden){ secsLeft = 60; loadData(); }   // refresh on return
+});
+
+/* live clock tick (cheap, no API) */
+setInterval(()=>{ if(!document.hidden) paintSession(); }, 1000);
+
+function manualRefresh(){
+  secsLeft = 60;
+  if(cdEl) cdEl.textContent = 'AUTO ⟳ 60s';
+  loadData();
+}
+
+/* ── BOOT ── */
+loadData();
+
+/* ═══════════════════════════════════════════════════════════
+   NAV INJECT (standard on all pages — do not modify)
+═══════════════════════════════════════════════════════════ */
+function injectNav(html){
+  const placeholder = document.getElementById('nav-placeholder');
+  if(!placeholder) return;
+  const tmp = document.createElement('div');
+  tmp.innerHTML = html;
+  Array.from(tmp.childNodes).forEach(node=>{
+    if(node.nodeName !== 'SCRIPT'){
+      placeholder.parentNode.insertBefore(node.cloneNode(true), placeholder);
+    }
+  });
+  tmp.querySelectorAll('script').forEach(oldScript=>{
+    const s = document.createElement('script');
+    if(oldScript.src) s.src = oldScript.src;
+    else s.textContent = oldScript.textContent;
+    document.head.appendChild(s);
+  });
+  placeholder.remove();
+}
+
+fetch('nav.html')
+  .then(r => r.text())
+  .then(injectNav)
+  .catch(() => console.warn('nav.html not found'));
+</script>
+</body>
+</html>
