@@ -1,7 +1,13 @@
 # POLISH-LIST — ChucksAI
 
-> **You are here (2026-06-20 session recap):**
-> Re-ran the structural audit (`audit.md`, fresh — all 18 checks, no findings reused) and added a new **performance + security audit** (`audit-perf-security.md`, static scan + live chucksai.com checks). Then did a round of safe cleanup edits in the repo (CSS dedupe, nav light-mode tokens, font preconnect). **Chuck pushes the changes himself.** The big-ticket items (API-key proxying, fetch throttling, security headers) are NOT done yet — they need Cloudflare Worker/Pages config and are queued below.
+> **You are here (2026-06-24 session recap):**
+> **Tier 1 + Tier 2 page work is DONE in the repo.** Migrated all market-data fetches off hardcoded keys onto the Cloudflare Worker proxies (`finnhub-proxy` / `polygon-proxy` / `news-proxy`, which Chuck created + set secrets on this session), and throttled the on-load fan-out. **14 files edited** (2 more than the original plan tracked — see note). Final grep confirms zero keys / old provider hosts / `token`/`apiKey`/`api_token` params remain in any HTML. Chuck eyeballed the live site (indices, crypto, forex, news tickers all rendering) and it looks good.
+>
+> **🚨 ONE CRITICAL THING LEFT (Chuck's part — do this next):** the keys have NOT been rotated yet. Until rotated, the old keys are still valid and still public in git history. Step 6: push the 14 files → test live with DevTools Network (confirm proxy hosts, 200s, no key params) → **rotate all 3 keys at the providers + update the Worker secrets** → re-test.
+>
+> **Plan gap caught this session:** the original `MIGRATION-api-key-proxy.md` checklist missed two exposed pages — **`commodities.html`** (Finnhub key) and **`currency.html`'s Polygon key** (`PG_KEY`; the plan only flagged currency's Finnhub call). Both used the same compromised keys, so they were migrated too. Net: the Polygon key was exposed on **two** pages (heat-map + currency), not one. Also corrected two wrong endpoint paths in the plan: insiders is `stock/insider-transactions` (not `stock/insider`), watchlist profile is `stock/profile2` (not `stock/profile`).
+>
+> _Earlier (2026-06-20): structural + perf/security audits (`audit.md`, `audit-perf-security.md`) and safe cleanup edits (CSS dedupe, nav light-mode tokens, font preconnect)._
 
 ---
 
@@ -17,16 +23,15 @@
 
 ---
 
-## 🔴 Tier 1 — Security (do next, needs Cloudflare Workers)
+## 🔴 Tier 1 — Security (page edits DONE; key rotation still pending)
 
-**Proxy the market-data API keys.** Finnhub, Polygon, and thenewsapi keys are hardcoded in client JS and visible in live network traffic (confirmed: 15 Finnhub requests on the homepage with the token in plain query string). Affected pages: `index.html`, `currency.html`, `earnings.html`, `fear-greed.html`, `treasuries.html`, `breadth.html`, `insiders.html`, `ipo.html`, `watchlist.html` (Finnhub); `heat-map.html` (Polygon); `news.html` (thenewsapi).
-- Stand up Worker proxies like the existing `anthropic.infiniti306.workers.dev` (e.g. `finnhub-proxy`, `polygon-proxy`, `news-proxy`), store keys as Worker secrets, change pages to fetch the proxy with no token.
-- **Rotate all three keys** after migrating — they're already public.
+**Proxy the market-data API keys.** ✅ **Repo edits done (2026-06-24).** All Finnhub/Polygon/thenewsapi fetches now hit the Worker proxies (`finnhub-proxy` / `polygon-proxy` / `news-proxy`) with no token in the query string. Key constants deleted. **14 files changed:** `index.html`, `currency.html`, `earnings.html`, `fear-greed.html`, `treasuries.html`, `breadth.html`, `insiders.html`, `ipo.html`, `watchlist.html`, `today.html`, `commodities.html` (Finnhub); `heat-map.html`, `currency.html` (Polygon); `news.html`, `index.html` (thenewsapi). Workers created + secrets set in the Cloudflare dashboard this session.
+- ⬜ **STILL TO DO (Chuck):** push the 14 files → test live (DevTools Network: proxy hosts, 200s, no key params) → **rotate all 3 keys at the providers + update the Worker secrets** → re-test. *Until rotation, the old keys remain valid and public in git history.*
 - (Anthropic key is fine — already proxied, never client-side.)
 
-## 🟠 Tier 2 — Performance (pairs with Tier 1)
+## 🟠 Tier 2 — Performance (done with Tier 1)
 
-- **Throttle on-load Finnhub fan-out.** `treasuries.html` line ~229 fires 6 parallel `Promise.all(BONDS.map(fhQuote))`; `index.html` fires a 4-wide `Promise.allSettled` of Finnhub quotes (part of ~30 API calls on dashboard load). Convert to the serialized/batched pattern `currency.html` and `watchlist.html` already use (sequential loop + small `setTimeout`, or batch with delay). Best done while rewriting those fetch URLs for the proxy.
+- ✅ **Throttled on-load Finnhub fan-out (2026-06-24).** `treasuries.html` 6-quote `Promise.all` → sequential loop with 120ms gap. `index.html` 4-wide `mbFhQuote` batch → Finnhub quotes now serialize (120ms gap) while crypto/fear-greed/earnings/news calls stay parallel.
 
 ## 🟡 Tier 3 — Verify / config
 
