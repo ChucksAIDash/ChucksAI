@@ -298,7 +298,6 @@
 
   <script>
   // ── CONFIG ──────────────────────────────────────────────────────────────────
-  const FINNHUB_KEY = 'd7kohmpr01qiqbcv6f8gd7kohmpr01qiqbcv6f90';
 
   let currentSym  = 'AAPL';
   let activeType  = 'all';
@@ -378,7 +377,7 @@
       c.classList.toggle('active', c.dataset.sym === sym);
     });
 
-    const url = `https://finnhub.io/api/v1/stock/insider-transactions?symbol=${sym}&token=${FINNHUB_KEY}`;
+    const url = `https://finnhub-proxy.infiniti306.workers.dev/stock/insider-transactions?symbol=${sym}`;
     try {
       const resp = await fetch(url);
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);

@@ -328,7 +328,6 @@
 
   <script>
   // ── CONFIG ──────────────────────────────────────────────────────────────────
-  const FINNHUB_KEY = 'd7kohmpr01qiqbcv6f8gd7kohmpr01qiqbcv6f90';
 
   const INDICES = [
     { sym: 'SPY',  name: 'S&P 500',       full: 'SPDR S&P 500 ETF' },
@@ -374,7 +373,7 @@
 
   // ── FETCH ───────────────────────────────────────────────────────────────────
   async function fetchQuote(sym) {
-    const r = await fetch(`https://finnhub.io/api/v1/quote?symbol=${sym}&token=${FINNHUB_KEY}`);
+    const r = await fetch(`https://finnhub-proxy.infiniti306.workers.dev/quote?symbol=${sym}`);
     if (!r.ok) throw new Error(r.status);
     return r.json();
   }

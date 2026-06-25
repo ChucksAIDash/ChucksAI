@@ -294,8 +294,6 @@
 /* ═══════════════════════════════════════
    API KEYS & HELPERS
 ═══════════════════════════════════════ */
-const FH_KEY = 'd7kohmpr01qiqbcv6f8gd7kohmpr01qiqbcv6f90';
-const PG_KEY = 'mcVUA4y1kkJ_0Vm2d29ckUpiDxNmpjKH';
 
 function fmtPrice(n, dec=2){
   if(n==null || isNaN(n) || n===0) return '—';
@@ -306,7 +304,7 @@ function fmtPct(n){ return n==null||isNaN(n) ? '' : (n>=0?'+':'')+n.toFixed(2)+'
 function pctClass(n){ return n>0.01?'up':n<-0.01?'down':'flat'; }
 
 async function fhQuote(sym){
-  const r = await fetch(`https://finnhub.io/api/v1/quote?symbol=${encodeURIComponent(sym)}&token=${FH_KEY}`);
+  const r = await fetch(`https://finnhub-proxy.infiniti306.workers.dev/quote?symbol=${encodeURIComponent(sym)}`);
   const d = await r.json();
   if(!d||!d.c||d.c===0) throw new Error('no data');
   return { price:d.c, pct:((d.c-d.pc)/d.pc)*100 };
@@ -537,8 +535,8 @@ const RANGES = {
 };
 
 async function pgCandles(sym, from, to, timespan, mult){
-  const url = `https://api.polygon.io/v2/aggs/ticker/${sym}/range/${mult}/${timespan}/${from}/${to}`
-            + `?adjusted=true&sort=asc&limit=300&apiKey=${PG_KEY}`;
+  const url = `https://polygon-proxy.infiniti306.workers.dev/v2/aggs/ticker/${sym}/range/${mult}/${timespan}/${from}/${to}`
+            + `?adjusted=true&sort=asc&limit=300`;
   const r = await fetch(url);
   const d = await r.json();
   if(!d.results?.length) throw new Error('no candles');

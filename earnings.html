@@ -238,7 +238,6 @@
    EARNINGS — Chuck's AI v7
 ═══════════════════════════════════════ */
 
-const FH_KEY = 'd7kohmpr01qiqbcv6f8gd7kohmpr01qiqbcv6f90';
 
 /* ── Stock groups ── */
 const GROUPS = {
@@ -398,7 +397,7 @@ async function loadEarnings() {
     const fmt  = d => d.toISOString().split('T')[0];
 
     const r = await fetch(
-      `https://finnhub.io/api/v1/calendar/earnings?from=${fmt(from)}&to=${fmt(to)}&token=${FH_KEY}`
+      `https://finnhub-proxy.infiniti306.workers.dev/calendar/earnings?from=${fmt(from)}&to=${fmt(to)}`
     );
     const d = await r.json();
     const all = d.earningsCalendar || [];

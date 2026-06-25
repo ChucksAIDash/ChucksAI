@@ -258,12 +258,9 @@
 /* ═══════════════════════════════════════════════════════════
    TODAY PANEL — Chuck's AI
    Major index ETFs + VIXY (VIX proxy) + session status + movers.
-   NOTE: FH_KEY is client-side here to match the other pages'
-   CURRENT pattern. When the Finnhub Worker proxy goes live
-   (see MIGRATION-api-key-proxy.md), swap fhQuote() to hit
-   finnhub-proxy.infiniti306.workers.dev and delete FH_KEY.
+   Quotes go through finnhub-proxy.infiniti306.workers.dev (key
+   server-side; see MIGRATION-api-key-proxy.md).
 ═══════════════════════════════════════════════════════════ */
-const FH_KEY = 'd7kohmpr01qiqbcv6f8gd7kohmpr01qiqbcv6f90';
 
 /* ETF proxies (Finnhub free tier — no ^VIX/SPX/futures) */
 const INDICES = [
@@ -286,7 +283,7 @@ function pctClass(n){ return n>0.05?'up':n<-0.05?'down':'flat'; }
 
 /* ── Finnhub quote (serialized — see loadData) ── */
 async function fhQuote(sym){
-  const r = await fetch(`https://finnhub.io/api/v1/quote?symbol=${encodeURIComponent(sym)}&token=${FH_KEY}`);
+  const r = await fetch(`https://finnhub-proxy.infiniti306.workers.dev/quote?symbol=${encodeURIComponent(sym)}`);
   const d = await r.json();
   if(!d || !d.c || d.c === 0) throw new Error('no data');
   return { price: d.c, pct: ((d.c - d.pc) / d.pc) * 100 };

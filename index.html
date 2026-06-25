@@ -546,8 +546,6 @@
 <footer>CHUCKSAI.COM &nbsp;·&nbsp; CLAUDE AI · FINNHUB · COINBASE · COINGECKO · THENEWSAPI · CNN · ALTERNATIVE.ME · OPEN-METEO · DEXCOM</footer>
 
 <script>
-const FH_KEY   = 'd7kohmpr01qiqbcv6f8gd7kohmpr01qiqbcv6f90';
-const NEWS_KEY = 'EaYs0yWgGLNEmYbHfDp47HwYeaCMaG8HxgOSHHsg';
 const AI_PROXY = 'https://anthropic.infiniti306.workers.dev';
 const DEXCOM   = 'https://dexcom-proxy.infiniti306.workers.dev';
 
@@ -562,7 +560,7 @@ function fgColor(v){ return v>=60?'var(--up)':v<=40?'var(--down)':'var(--accent3
 function paint(){ return new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))); }
 
 async function fhQuote(sym){
-  const r=await fetch(`https://finnhub.io/api/v1/quote?symbol=${encodeURIComponent(sym)}&token=${FH_KEY}`);
+  const r=await fetch(`https://finnhub-proxy.infiniti306.workers.dev/quote?symbol=${encodeURIComponent(sym)}`);
   const d=await r.json();
   if(!d||!d.c||d.c===0) throw new Error('no data');
   return {price:d.c, pct:((d.c-d.pc)/d.pc)*100};
@@ -736,7 +734,7 @@ async function loadNewsAndAI(){
 
   let articles=[];
   try{
-    const r=await fetch(`https://api.thenewsapi.com/v1/news/top?api_token=${NEWS_KEY}&locale=us&language=en&limit=8&categories=business,tech,general`);
+    const r=await fetch(`https://news-proxy.infiniti306.workers.dev/v1/news/top?locale=us&language=en&limit=8&categories=business,tech,general`);
     const d=await r.json();
     articles=d.data||[];
   }catch{
@@ -820,7 +818,7 @@ function mbPctCls(n){ return n>0.05?'up':n<-0.05?'down':'flat'; }
 function mbPctCardCls(n){ return n>0.05?'is-up':n<-0.05?'is-down':''; }
 
 async function mbFhQuote(sym){
-  const r=await fetch(`https://finnhub.io/api/v1/quote?symbol=${encodeURIComponent(sym)}&token=${FH_KEY}`);
+  const r=await fetch(`https://finnhub-proxy.infiniti306.workers.dev/quote?symbol=${encodeURIComponent(sym)}`);
   const d=await r.json();
   if(!d||!d.c||d.c===0) throw new Error('no data');
   return {price:d.c,pct:((d.c-d.pc)/d.pc)*100,prev:d.pc};
@@ -828,7 +826,7 @@ async function mbFhQuote(sym){
 
 async function fetchEarningsToday(dateStr){
   try{
-    const r=await fetch(`https://finnhub.io/api/v1/calendar/earnings?from=${dateStr}&to=${dateStr}&token=${FH_KEY}`);
+    const r=await fetch(`https://finnhub-proxy.infiniti306.workers.dev/calendar/earnings?from=${dateStr}&to=${dateStr}`);
     const d=await r.json();
     return (d.earningsCalendar||[]).slice(0,8).map(e=>({sym:e.symbol,eps:e.epsEstimate!=null?`est. $${e.epsEstimate}`:'',time:e.hour==='bmo'?'pre-market':e.hour==='amc'?'after-hours':''}));
   }catch{return[];}
@@ -836,7 +834,7 @@ async function fetchEarningsToday(dateStr){
 
 async function fetchMBNews(){
   try{
-    const r=await fetch(`https://api.thenewsapi.com/v1/news/top?api_token=${NEWS_KEY}&locale=us&language=en&limit=5&categories=business,tech`);
+    const r=await fetch(`https://news-proxy.infiniti306.workers.dev/v1/news/top?locale=us&language=en&limit=5&categories=business,tech`);
     const d=await r.json();
     return (d.data||[]).map(a=>a.title).filter(Boolean);
   }catch{return[];}
@@ -861,8 +859,16 @@ async function fetchMBFearGreed(){
 }
 
 async function fetchLiveData(dateStr){
-  const [spyRes,qqqRes,diaRes,iwmRes,cryptoRes,fgRes,earningsRes,newsRes]=await Promise.allSettled([
-    mbFhQuote('SPY'),mbFhQuote('QQQ'),mbFhQuote('DIA'),mbFhQuote('IWM'),
+  // Finnhub quotes serialized (small gap) to avoid rate-limit failures under load;
+  // non-Finnhub calls stay parallel.
+  const fhSyms=['SPY','QQQ','DIA','IWM'];
+  const fhResults=[];
+  for(const s of fhSyms){
+    fhResults.push(await mbFhQuote(s).then(v=>({status:'fulfilled',value:v})).catch(e=>({status:'rejected',reason:e})));
+    await new Promise(r=>setTimeout(r,120));
+  }
+  const [spyRes,qqqRes,diaRes,iwmRes]=fhResults;
+  const [cryptoRes,fgRes,earningsRes,newsRes]=await Promise.allSettled([
     fetchMBCrypto(),fetchMBFearGreed(),fetchEarningsToday(dateStr),fetchMBNews()
   ]);
   return {

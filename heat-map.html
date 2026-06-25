@@ -355,7 +355,6 @@
 
   <script>
   // ── CONSTANTS ──────────────────────────────────────────────────────────────
-  const POLY_KEY = 'mcVUA4y1kkJ_0Vm2d29ckUpiDxNmpjKH';
 
   // Sector ETF → GICS sector name + meta
   const SECTOR_ETFS = [
@@ -464,7 +463,7 @@
   // For 1D: prev day close vs open. For longer: first open to last close.
   async function fetchSectors(fromDate, toDate) {
     const results = await Promise.all(SECTOR_ETFS.map(async etf => {
-      const url = `https://api.polygon.io/v2/aggs/ticker/${etf.sym}/range/1/day/${fromDate}/${toDate}?adjusted=true&sort=asc&limit=50&apiKey=${POLY_KEY}`;
+      const url = `https://polygon-proxy.infiniti306.workers.dev/v2/aggs/ticker/${etf.sym}/range/1/day/${fromDate}/${toDate}?adjusted=true&sort=asc&limit=50`;
       try {
         const resp = await fetch(url);
         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);

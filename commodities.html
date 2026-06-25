@@ -307,7 +307,6 @@
 
   <script>
   // ── CONFIG ──────────────────────────────────────────────────────────────────
-  const FINNHUB_KEY = 'd7kohmpr01qiqbcv6f8gd7kohmpr01qiqbcv6f90';
 
   const COMMODITIES = [
     // ── Precious Metals ──
@@ -366,7 +365,7 @@
 
   // ── FETCH SINGLE QUOTE ──────────────────────────────────────────────────────
   async function fetchQuote(sym) {
-    const url = `https://finnhub.io/api/v1/quote?symbol=${sym}&token=${FINNHUB_KEY}`;
+    const url = `https://finnhub-proxy.infiniti306.workers.dev/quote?symbol=${sym}`;
     const resp = await fetch(url);
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     return resp.json();
