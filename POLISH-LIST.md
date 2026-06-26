@@ -3,7 +3,7 @@
 > **You are here (2026-06-24 session recap):**
 > **Tier 1 + Tier 2 page work is DONE in the repo.** Migrated all market-data fetches off hardcoded keys onto the Cloudflare Worker proxies (`finnhub-proxy` / `polygon-proxy` / `news-proxy`, which Chuck created + set secrets on this session), and throttled the on-load fan-out. **14 files edited** (2 more than the original plan tracked — see note). Final grep confirms zero keys / old provider hosts / `token`/`apiKey`/`api_token` params remain in any HTML. Chuck eyeballed the live site (indices, crypto, forex, news tickers all rendering) and it looks good.
 >
-> **🚨 ONE CRITICAL THING LEFT (Chuck's part — do this next):** the keys have NOT been rotated yet. Until rotated, the old keys are still valid and still public in git history. Step 6: push the 14 files → test live with DevTools Network (confirm proxy hosts, 200s, no key params) → **rotate all 3 keys at the providers + update the Worker secrets** → re-test.
+> **Status (2026-06-26): migration effectively complete.** Pushed, tested live (all tickers render through proxies). **Finnhub + Polygon keys rotated** and their secrets updated. **thenewsapi key could NOT be rotated** — the provider has no self-serve token regen; deferred as low-risk (free read-only key). The only remaining cleanup is "make a fresh thenewsapi account someday" — parked at the bottom of Tier 4.
 >
 > **Plan gap caught this session:** the original `MIGRATION-api-key-proxy.md` checklist missed two exposed pages — **`commodities.html`** (Finnhub key) and **`currency.html`'s Polygon key** (`PG_KEY`; the plan only flagged currency's Finnhub call). Both used the same compromised keys, so they were migrated too. Net: the Polygon key was exposed on **two** pages (heat-map + currency), not one. Also corrected two wrong endpoint paths in the plan: insiders is `stock/insider-transactions` (not `stock/insider`), watchlist profile is `stock/profile2` (not `stock/profile`).
 >
@@ -26,7 +26,10 @@
 ## 🔴 Tier 1 — Security (page edits DONE; key rotation still pending)
 
 **Proxy the market-data API keys.** ✅ **Repo edits done (2026-06-24).** All Finnhub/Polygon/thenewsapi fetches now hit the Worker proxies (`finnhub-proxy` / `polygon-proxy` / `news-proxy`) with no token in the query string. Key constants deleted. **14 files changed:** `index.html`, `currency.html`, `earnings.html`, `fear-greed.html`, `treasuries.html`, `breadth.html`, `insiders.html`, `ipo.html`, `watchlist.html`, `today.html`, `commodities.html` (Finnhub); `heat-map.html`, `currency.html` (Polygon); `news.html`, `index.html` (thenewsapi). Workers created + secrets set in the Cloudflare dashboard this session.
-- ⬜ **STILL TO DO (Chuck):** push the 14 files → test live (DevTools Network: proxy hosts, 200s, no key params) → **rotate all 3 keys at the providers + update the Worker secrets** → re-test. *Until rotation, the old keys remain valid and public in git history.*
+- ✅ **Pushed + tested live (2026-06-26):** pages render indices/crypto/forex/news through the proxies.
+- ✅ **Finnhub key rotated** + `FINNHUB_KEY` secret updated (2026-06-26).
+- ✅ **Polygon key rotated** + `POLYGON_KEY` secret updated (2026-06-26).
+- ⚠️ **thenewsapi key NOT rotated — deferred (low risk).** thenewsapi.com has no self-serve token rotation/regenerate in the dashboard (only displays the one token). Old key still valid + public in git history, but it's a free read-only headlines key (≈100 req/day quota is the only thing at risk — no money/account/data). See Tier 4 for the fix-it-later plan.
 - (Anthropic key is fine — already proxied, never client-side.)
 
 ## 🟠 Tier 2 — Performance (done with Tier 1)
@@ -47,6 +50,7 @@
 - **`nav.html` dark-mode backgrounds** — **approved deliberate leave** (decided 2026-06-20). The `rgba(5,8,12,.88)`/`.97` glass tints don't match `--panel-deep` (`rgba(6,13,24,.85)`); tokenizing would shift the dark nav's look. Left as bespoke; don't re-flag.
 - **Document the deliberate color leaves** in the master spec so check 3 stops re-flagging ~180 of them: Dexcom purple `138,99,255`, the nav dark glass tints above, and the bespoke heat/scale gradients in `heat-map.html`, `commodities.html`, `currency.html`, and the gold sweep scale in `options-flow.html`.
 - **`dexcom.html` weight** (278 KB, 207 inline styles, 47 color-bearing) — biggest single payload; trim/extract shared CSS if ever revisited. Not urgent (it's a reference copy).
+- **thenewsapi key — make a fresh account someday (low priority).** The old key (`EaYs…`) couldn't be rotated — thenewsapi.com has no self-serve token regen. To fully retire the leaked key: create a NEW free thenewsapi.com account (Chuck's only account is under infiniti306@gmail.com), grab the new token, paste it into the `NEWS_KEY` secret in the `news-proxy` Worker, reload the news page to confirm. Old account/key can then be abandoned. Low stakes (free read-only headlines, ~100 req/day) — do whenever convenient.
 
 ---
 
