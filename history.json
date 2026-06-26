@@ -273,6 +273,28 @@
       "daysWithData": 23,
       "timeActive": 100,
       "notes": "Mounjaro shots 7 (May 27), 8 (Jun 3), 9 (Jun 10) logged in CGM. Prednisone course started Jun 11 (gout flare) \u2014 data from Jun 11 onward will show steroid-elevated glucose."
+    },
+    {
+      "id": "jun11-jun25-2026",
+      "label": "Jun 11\u201325 \u2695",
+      "dateRange": "Jun 11 \u2013 Jun 25, 2026",
+      "days": 15,
+      "medication": "Mounjaro 5mg",
+      "avg": 151,
+      "gmi": 6.9,
+      "tir": 74,
+      "sd": 55,
+      "cv": 36.7,
+      "veryHigh": 6,
+      "high": 19,
+      "inRange": 74,
+      "low": 1,
+      "veryLow": 0,
+      "daysWithData": 15,
+      "timeActive": 99,
+      "excludeFromBenchmarks": true,
+      "notes": "Overlaps prednisone course (Jun 11-16, gout flare) \u2014 steroid-elevated glucose for roughly first third of this window. Mounjaro doses 10 (Jun 17) and 11 (Jun 24) given during this period. Best day: Jun 25 (avg 112, TIR 97%) \u2014 first clean day post-prednisone/post-dose-11, closest look yet at where things may be settling.",
+      "doctorVisitNote": "Physical scheduled day after this export (Jun 26)."
     }
   ],
   "hourly": [
@@ -1355,46 +1377,154 @@
         0,
         0
       ]
+    },
+    {
+      "periodId": "jun11-jun25-2026",
+      "label": "Jun 11\u201325 (15d) \u2695 includes prednisone window",
+      "means": [
+        126,
+        118,
+        113,
+        117,
+        123,
+        131,
+        151,
+        185,
+        180,
+        162,
+        147,
+        141,
+        151,
+        215,
+        229,
+        188,
+        151,
+        127,
+        129,
+        157,
+        152,
+        152,
+        151,
+        139
+      ],
+      "tirInRange": [
+        85,
+        95,
+        96,
+        98,
+        100,
+        100,
+        79,
+        44,
+        51,
+        73,
+        78,
+        74,
+        64,
+        39,
+        19,
+        49,
+        68,
+        88,
+        86,
+        76,
+        73,
+        76,
+        78,
+        84
+      ],
+      "tirHigh": [
+        9,
+        5,
+        4,
+        0,
+        0,
+        0,
+        21,
+        49,
+        49,
+        27,
+        22,
+        26,
+        33,
+        26,
+        43,
+        25,
+        22,
+        3,
+        5,
+        14,
+        27,
+        24,
+        20,
+        15
+      ],
+      "tirLow": [
+        6,
+        0,
+        0,
+        2,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        3,
+        2,
+        2,
+        0,
+        0,
+        0,
+        0,
+        1
+      ]
     }
   ],
   "dow": {
-    "source": "may20-jun11-2026",
-    "note": "Day-of-week mean glucose from May 20\u2013Jun 11, 2026 Clarity daily statistics table. 23-day window, 3\u20134 instances per day slot \u2014 best sample size to date.",
+    "source": "jun11-jun25-2026",
+    "note": "Day-of-week mean glucose from Jun 11\u201325, 2026 Clarity export. CAUTION: this window overlaps the Jun 11-16 prednisone course, so these DOW numbers run higher than the underlying Mounjaro-only trend. Treat as provisional until a clean (non-steroid) 2-3 week window is available.",
     "days": [
       {
         "day": "Mon",
-        "avg": 146,
-        "n": 4
+        "avg": 151,
+        "n": 2
       },
       {
         "day": "Tue",
-        "avg": 144,
-        "n": 4
+        "avg": 158,
+        "n": 2
       },
       {
         "day": "Wed",
-        "avg": 144,
-        "n": 4
+        "avg": 138,
+        "n": 2
       },
       {
         "day": "Thu",
-        "avg": 139,
-        "n": 4
-      },
-      {
-        "day": "Fri",
-        "avg": 127,
-        "n": 4
-      },
-      {
-        "day": "Sat",
-        "avg": 133,
+        "avg": 144,
         "n": 3
       },
       {
+        "day": "Fri",
+        "avg": 159,
+        "n": 2
+      },
+      {
+        "day": "Sat",
+        "avg": 165,
+        "n": 2
+      },
+      {
         "day": "Sun",
-        "avg": 142,
-        "n": 4
+        "avg": 146,
+        "n": 2
       }
     ]
   },
@@ -1405,8 +1535,8 @@
       "label": "Prednisone (gout flare)",
       "startDate": "2026-06-11",
       "endDate": "2026-06-16",
-      "details": "40mg/day Jun 11\u201313 (2x20mg), 40mg Jun 14 (2x20mg), 20mg Jun 15, 20mg Jun 16. Steroid-induced hyperglycemia expected \u2014 glucose data in this window not representative of Mounjaro trend.",
-      "expectedImpact": "Significant glucose elevation, especially post-meal afternoon/evening. Exclude from trend analysis."
+      "details": "Confirmed from CGM event notes: Jun 11 prednisone (dose unspecified in log), Jun 12 2x20mg (40mg), Jun 13 2x20mg (40mg), Jun 14 20mg, Jun 15 20mg, Jun 16 20mg. No further prednisone notes after Jun 16 \u2014 course completed. Taken proactively for gout flare instead of waiting it out.",
+      "expectedImpact": "Significant glucose elevation Jun 11-16, especially midday/afternoon. Jun 11-25 period stats and DOW table are skewed upward by this window. Jun 17 onward is the cleaner read on underlying Mounjaro trend."
     },
     {
       "id": "mounjaro-dose-log",
@@ -1448,6 +1578,14 @@
         {
           "dose": 9,
           "date": "2026-06-10"
+        },
+        {
+          "dose": 10,
+          "date": "2026-06-17"
+        },
+        {
+          "dose": 11,
+          "date": "2026-06-24"
         }
       ]
     }
