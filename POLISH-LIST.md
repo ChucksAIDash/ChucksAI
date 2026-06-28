@@ -1,12 +1,15 @@
 # POLISH-LIST — ChucksAI
 
-> **You are here (2026-06-27 session recap — Discord Feed build):**
-> **Page + Worker code are BUILT and committed-ready; feature is wired but NOT live yet — blocked on bot token + channel ID.**
-> Built this session: **`discord-feed.html`** (new page from `_template.html` — card list of #spx posts, Today/All-Recent scope toggle, inline image attachments + lightbox, optional Claude "Today's Take" summary via the Anthropic proxy), **`nav.html`** (added top-level `#SPX` desktop link + `💬 Discord #spx Feed` under Tools in mobile menu), and **`discord-proxy-worker.js`** (the Cloudflare Worker route code to paste in the dashboard).
-> **Architecture:** page → `discord-proxy.infiniti306.workers.dev/messages?limit=50` (new dedicated Worker, matches the `news-proxy` pattern) → Discord REST `GET /channels/{id}/messages` using the `DISCORD_BOT_TOKEN` + `DISCORD_CHANNEL_ID` secrets → returns slimmed JSON with CORS for chucksai.com. No token client-side.
-> **Chuck still needs to:** (1) finish Discord bot setup on discord.com/developers (he's on the applications page, nothing built yet), (2) create the `discord-proxy` Worker + paste `discord-proxy-worker.js`, (3) set the two secrets, (4) commit + push the 3 changed files. Until then the page loads but shows the "couldn't load the feed" state. Full steps in the Discord Feed section below.
+> **You are here (2026-06-27 session recap — Discord Feed build, round 2):**
+> **Page + Worker code BUILT, feature wired, feed CONFIRMED WORKING live by Chuck.** Round 2 added enhancements (below). Still pending: the new two-way react route + redeploying the updated Worker.
+> **`discord-feed.html`** (new page) — card list of #spx posts; **Today / All-Recent scope toggle** (All-Recent is **grouped by day** with Today/Yesterday/weekday headers); inline image attachments with a **lightbox that opens each image individually + prev/next arrows + arrow-key nav** (fixed the round-1 bug where all images in a post opened at once); **moderate size bump** (body 16px, images up to 680px single / 320px multi); shows **existing Discord reactions** on each post; **two-way 🔥 react button** (writes to Discord as the bot via the Worker /react route); **local "mark read"** toggle (dims read posts, stored in browser localStorage); optional Claude "Today's Take" summary via the Anthropic proxy. Feature flags at top of the script: `ENABLE_AI_TAKE`, `ENABLE_REACT`, `QUICK_EMOJI`.
+> **`nav.html`** — top-level `#SPX` desktop link + `💬 Discord #spx Feed` under Tools (mobile).
+> **`discord-proxy-worker.js`** — Worker code. Routes: `GET /messages?limit=50` (returns slimmed JSON incl. reactions) and `POST /react {messageId,emoji}` (bot adds reaction; origin-locked to chucksai.com; emoji allow-list 🔥👍👀✅🚀💯). Secrets: `DISCORD_BOT_TOKEN` + `DISCORD_CHANNEL_ID`.
+> **Architecture:** page → `discord-proxy.infiniti306.workers.dev` (new dedicated Worker, matches `news-proxy` pattern) → Discord REST. No token client-side.
+> **Reactions note:** clicking 🔥 on the site adds the reaction *as the bot account* (not Chuck's personal Discord identity) — Chuck OK'd this (small 9-person friends' server). Real "react as you" would need full Discord OAuth login (deferred).
+> **Chuck still needs to:** (1) finish bot setup on discord.com/developers — **Message Content Intent ON, Public Bot OFF**; invite via OAuth2 URL with **View Channels + Read Message History + Add Reactions**; (2) create `discord-proxy` Worker + paste `discord-proxy-worker.js`; (3) set the two secrets; (4) commit + push. If the Worker was already deployed from round 1, **re-paste the updated code** (adds reactions + /react route).
 >
-> **Files changed (Chuck to commit + push):** `discord-feed.html` (new), `nav.html`, `discord-proxy-worker.js` (new reference file).
+> **Files changed (Chuck to commit + push):** `discord-feed.html`, `nav.html`, `discord-proxy-worker.js`.
 >
 > ---
 >
