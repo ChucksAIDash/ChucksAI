@@ -86,11 +86,18 @@
 
   /* ── NAV LINKS ── */
   .nav-link {
+    position: relative;
     font-family: 'Space Mono', monospace; font-size: 10px; font-weight: 700;
     letter-spacing: .07em; text-decoration: none; color: var(--text-secondary);
     text-transform: uppercase; padding: 5px 9px; border-radius: 6px;
     border: 1px solid transparent; transition: all .18s; white-space: nowrap;
     background: none; cursor: pointer;
+  }
+  /* Unread dot — toggled by discord-feed.html via .has-unread */
+  .nav-link.has-unread::before {
+    content: ''; position: absolute; top: 2px; right: 2px;
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--accent); box-shadow: 0 0 6px var(--accent);
   }
   .nav-link:hover {
     color: var(--text-primary); border-color: var(--border-bright); background: var(--bg-card);
@@ -480,6 +487,55 @@
   }
   loadWeather();
   setInterval(loadWeather, 30 * 60 * 1000);
+
+  /* ── DISCORD #SPX UNREAD DOT (site-wide) ──
+     Lights the #SPX nav link when any watched channel has a post newer
+     than what was last viewed on the feed page. Shares the same
+     localStorage keys the feed writes (cai_discord_seen). On the feed
+     page itself, discord-feed.html drives the dot directly, so skip. */
+  (function navDiscordDot(){
+    if (document.body.getAttribute('data-page') === 'discord-feed') return;
+    const PROXY = 'https://discord-proxy.infiniti306.workers.dev';
+    // Keep keys + ids in sync with CHANNELS in discord-feed.html.
+    // ids: '' = Worker default (#spx). A key can watch multiple channels
+    // (the General tab = both #general channels merged).
+    const CHANS = [
+      { key: 'spx', ids: [''] },
+      { key: 'gen', ids: ['947004313685876737', '1130908169275711488'] },
+    ];
+    const link = document.querySelector('.nav-link[data-page="discord-feed"]');
+    if (!link) return;
+
+    function seenMap(){ try { return JSON.parse(localStorage.getItem('cai_discord_seen') || '{}'); } catch { return {}; } }
+    function latest(msgs){ let t = 0; for (const m of (msgs||[])) { const ts = new Date(m.timestamp).getTime(); if (ts > t) t = ts; } return t; }
+
+    async function newestFor(ids){
+      let newest = 0;
+      for (const id of ids){
+        try{
+          const qs = 'limit=20' + (id ? '&channel=' + encodeURIComponent(id) : '');
+          const r = await fetch(PROXY + '/messages?' + qs);
+          if (!r.ok) continue;
+          const data = await r.json();
+          const msgs = Array.isArray(data) ? data : (data.messages || []);
+          newest = Math.max(newest, latest(msgs));
+        }catch{}
+      }
+      return newest;
+    }
+
+    async function check(){
+      const seen = seenMap();
+      let unread = false;
+      for (const ch of CHANS){
+        const newest = await newestFor(ch.ids);
+        if (newest > (seen[ch.key] || 0)) unread = true;
+      }
+      link.classList.toggle('has-unread', unread);
+    }
+    check();
+    setInterval(check, 5 * 60 * 1000);   // re-check every 5 min while page is open
+  })();
 
   /* Weather tooltip toggle */
   const wxWidget = document.getElementById('navWeather');

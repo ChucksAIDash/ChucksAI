@@ -2,33 +2,60 @@
    discord-proxy  —  Cloudflare Worker
    ----------------------------------------------------------------
    Holds the Discord bot token as a secret (DISCORD_BOT_TOKEN) and
-   the target channel id as a secret (DISCORD_CHANNEL_ID). Reads
-   recent #spx messages and (optionally) writes a reaction as the bot.
+   the DEFAULT channel id as a secret (DISCORD_CHANNEL_ID = #spx).
+   Reads recent messages and (optionally) writes a reaction as the bot.
    No token client-side.
 
-   Deploy: paste into a NEW Worker named "discord-proxy" in the
-   Cloudflare dashboard. Default subdomain discord-proxy.infiniti306.workers.dev
-   (matches news-proxy etc.).
+   MULTI-CHANNEL: /messages and /react accept an optional ?channel=ID
+   param. The id is validated against the ALLOWED_CHANNELS allow-list
+   below so the route can never be pointed at an arbitrary channel.
+   If no (or an unknown) channel is given, falls back to the #spx
+   secret — so the old single-channel behaviour still works.
+
+   Deploy: paste into the EXISTING "discord-proxy" Worker in the
+   Cloudflare dashboard (replaces the current code). Subdomain stays
+   discord-proxy.infiniti306.workers.dev.
 
    Secrets (Worker → Settings → Variables and Secrets):
      DISCORD_BOT_TOKEN   = <bot token from discord.com/developers>
      DISCORD_CHANNEL_ID  = <right-click #spx → Copy Channel ID>
 
    Routes:
-     GET  /messages?limit=50      → JSON array of slimmed message objects
-                                     (incl. reactions)
-     POST /react  {messageId,emoji}→ bot adds that reaction to the message,
-                                     returns {ok:true}
+     GET  /messages?limit=50[&channel=ID] → JSON array of slimmed
+                                            message objects (incl. reactions)
+     POST /react {messageId,emoji[,channel]} → bot adds that reaction,
+                                            returns {ok:true}
 
-   Bot permissions needed (set in the OAuth2 invite URL):
-     View Channels, Read Message History, Add Reactions
-   And the "Message Content Intent" must be ON (Bot page).
+   Bot permissions needed (same for every channel — bot is already in
+   the server with these): View Channels, Read Message History,
+   Add Reactions. "Message Content Intent" must be ON (Bot page).
    ════════════════════════════════════════════════════════════════ */
 
 const ALLOWED_ORIGINS = [
   'https://chucksai.com',
   'https://www.chucksai.com',
 ];
+
+// ── CHANNEL ALLOW-LIST ───────────────────────────────────────────
+// Only these channel IDs may be requested via ?channel=ID. Anything
+// else (or no param) falls back to DISCORD_CHANNEL_ID (the #spx secret).
+// The site's "General" tab pulls both #general channels and merges them.
+const EXTRA_CHANNELS = [
+  '947004313685876737',    // server's default #general
+  '1130908169275711488',   // 3D-printing #general
+];
+
+// The #spx channel id lives in the DISCORD_CHANNEL_ID secret, so it is
+// added to the allow-list at request time (see allowedChannels()).
+function allowedChannels(env) {
+  return new Set([env.DISCORD_CHANNEL_ID, ...EXTRA_CHANNELS].filter(Boolean));
+}
+
+// Resolve the requested channel to a real id, or null if not allowed.
+function resolveChannel(env, requested) {
+  if (!requested) return env.DISCORD_CHANNEL_ID;        // default = #spx
+  return allowedChannels(env).has(requested) ? requested : null;
+}
 
 // Unicode emoji we permit the site to send (prevents the route being
 // abused to spam arbitrary reactions). Extend as you like.
@@ -69,13 +96,16 @@ export default {
 
     /* ───── GET /messages ───── */
     if (request.method === 'GET' && (url.pathname === '/messages' || url.pathname === '/')) {
+      const channelId = resolveChannel(env, url.searchParams.get('channel'));
+      if (!channelId) return json({ error: 'Channel not allowed' }, 400, cors);
+
       let limit = parseInt(url.searchParams.get('limit') || '50', 10);
       if (isNaN(limit) || limit < 1) limit = 50;
       if (limit > 100) limit = 100;
 
       try {
         const dRes = await fetch(
-          `https://discord.com/api/v10/channels/${env.DISCORD_CHANNEL_ID}/messages?limit=${limit}`,
+          `https://discord.com/api/v10/channels/${channelId}/messages?limit=${limit}`,
           { headers: auth }
         );
         if (!dRes.ok) {
@@ -119,15 +149,18 @@ export default {
       let payload;
       try { payload = await request.json(); } catch { return json({ error: 'Bad JSON' }, 400, cors); }
 
-      const { messageId, emoji } = payload || {};
+      const { messageId, emoji, channel } = payload || {};
       if (!messageId || !emoji) return json({ error: 'messageId and emoji required' }, 400, cors);
       if (!ALLOWED_EMOJI.includes(emoji)) return json({ error: 'Emoji not allowed' }, 400, cors);
+
+      const channelId = resolveChannel(env, channel);
+      if (!channelId) return json({ error: 'Channel not allowed' }, 400, cors);
 
       try {
         // PUT /channels/{id}/messages/{mid}/reactions/{emoji}/@me  (URL-encode emoji)
         const enc = encodeURIComponent(emoji);
         const rRes = await fetch(
-          `https://discord.com/api/v10/channels/${env.DISCORD_CHANNEL_ID}/messages/${messageId}/reactions/${enc}/@me`,
+          `https://discord.com/api/v10/channels/${channelId}/messages/${messageId}/reactions/${enc}/@me`,
           { method: 'PUT', headers: auth }
         );
         // Discord returns 204 No Content on success.

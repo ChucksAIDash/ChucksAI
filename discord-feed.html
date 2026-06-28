@@ -20,6 +20,31 @@
   <style>
     /* ── DISCORD FEED PAGE ── */
 
+    /* Channel tabs (#spx / 3D-printing) */
+    .chan-tabs {
+      display: flex; gap: 4px; margin-bottom: 18px; flex-wrap: wrap;
+      border-bottom: 1px solid var(--border);
+    }
+    .chan-tab {
+      position: relative;
+      font-family: 'Space Mono', monospace; font-size: 12px; font-weight: 700;
+      letter-spacing: .04em;
+      color: var(--text-secondary); background: none; border: none;
+      padding: 10px 16px 11px; cursor: pointer; transition: color .15s;
+      border-bottom: 2px solid transparent; margin-bottom: -1px;
+    }
+    .chan-tab:hover { color: var(--text-primary); }
+    .chan-tab.active {
+      color: var(--accent2); border-bottom-color: var(--accent2);
+    }
+    /* Unread dot on a tab (new posts since last viewed) */
+    .chan-tab .chan-dot {
+      display: none; position: absolute; top: 7px; right: 6px;
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--accent); box-shadow: 0 0 0 2px var(--bg-card);
+    }
+    .chan-tab.has-unread .chan-dot { display: block; }
+
     /* Scope toggle (Today / All) */
     .feed-controls {
       display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
@@ -238,12 +263,15 @@
   <div class="page-header">
     <div>
       <div class="page-title">Discord <span style="color:var(--accent2)">Feed</span></div>
-      <div class="page-sub">Morning #spx analysis · posts pulled on load + manual refresh</div>
+      <div class="page-sub">Channel feeds · posts pulled on load + manual refresh</div>
     </div>
     <div class="header-right">
       <button class="refresh-btn" onclick="manualRefresh()">⟳ REFRESH</button>
     </div>
   </div>
+
+  <!-- Channel tabs -->
+  <div class="chan-tabs" id="chanTabs"></div>
 
   <!-- Controls: scope toggle + count -->
   <div class="feed-controls">
@@ -284,13 +312,31 @@
 ═══════════════════════════════════════════════════════════ */
 const DISCORD_PROXY = 'https://discord-proxy.infiniti306.workers.dev';
 const AI_PROXY = 'https://anthropic.infiniti306.workers.dev';
-const ENABLE_AI_TAKE   = true;   // Claude "today's take" summary strip
+const ENABLE_AI_TAKE   = true;   // Claude "today's take" summary strip (#spx only)
 const ENABLE_REACT     = true;   // two-way 🔥 react button (needs Worker /react route)
 const QUICK_EMOJI      = '🔥';   // emoji the "react" button sends
 const READ_STORE_KEY   = 'cai_discord_read';   // localStorage key for mark-read
+const SEEN_STORE_KEY   = 'cai_discord_seen';   // localStorage: last-seen post time per channel
 
-let allMessages = [];   // newest-first as Discord returns them
-let scope = 'today';    // 'today' | 'all'
+/* ── CHANNELS ────────────────────────────────────────────────────
+   `ids` is an array of Discord channel ids the tab pulls from.
+   An empty string '' means "use the Worker default (#spx secret)" —
+   keeps spx working without exposing its id client-side.
+   A tab with multiple ids fetches each and merges them by time
+   (e.g. the General tab = server #general + 3D-printing #general).
+   These ids must all be in the Worker's ALLOWED_CHANNELS allow-list. */
+const CHANNELS = [
+  { key: 'spx', label: '#spx', ids: [''], aiTake: true },
+  { key: 'gen', label: 'General', ids: [
+      '947004313685876737',    // server's default #general
+      '1130908169275711488',   // 3D-printing #general
+    ], aiTake: false },
+];
+
+let activeChan = CHANNELS[0];          // default tab = #spx
+const chanCache = {};                  // { [key]: messages[] }  newest-first
+let allMessages = [];                  // active channel's messages
+let scope = 'today';                   // 'today' | 'all'
 let readSet = loadReadSet();
 
 /* ═══════════════════════════════════════════════════════════
@@ -307,6 +353,69 @@ function toggleRead(id){
   if (readSet.has(id)) readSet.delete(id); else readSet.add(id);
   saveReadSet();
   render();
+}
+
+/* ═══════════════════════════════════════════════════════════
+   CHANNELS + UNREAD DOTS  (newest-post vs. last-viewed, per channel)
+═══════════════════════════════════════════════════════════ */
+function loadSeen(){
+  try { return JSON.parse(localStorage.getItem(SEEN_STORE_KEY) || '{}'); }
+  catch { return {}; }
+}
+function saveSeen(map){
+  try { localStorage.setItem(SEEN_STORE_KEY, JSON.stringify(map)); } catch {}
+}
+// Newest post time we have for a channel (ms), or 0.
+function latestTime(msgs){
+  let t = 0;
+  for (const m of (msgs||[])) { const ts = new Date(m.timestamp).getTime(); if (ts > t) t = ts; }
+  return t;
+}
+// A channel is "unread" if its newest post is newer than what we last saw.
+function chanHasUnread(ch){
+  const msgs = chanCache[ch.key];
+  if (!msgs || !msgs.length) return false;
+  const seen = loadSeen()[ch.key] || 0;
+  return latestTime(msgs) > seen;
+}
+// Mark the active channel as seen (clears its dot).
+function markChanSeen(ch){
+  const msgs = chanCache[ch.key];
+  if (!msgs || !msgs.length) return;
+  const map = loadSeen();
+  map[ch.key] = Math.max(map[ch.key] || 0, latestTime(msgs));
+  saveSeen(map);
+}
+// Any channel unread? → drives the nav #SPX dot.
+function anyChanUnread(){ return CHANNELS.some(chanHasUnread); }
+
+function renderTabs(){
+  const wrap = document.getElementById('chanTabs');
+  wrap.innerHTML = CHANNELS.map(ch => {
+    const active = ch.key === activeChan.key ? ' active' : '';
+    const unread = (ch.key !== activeChan.key && chanHasUnread(ch)) ? ' has-unread' : '';
+    return `<button class="chan-tab${active}${unread}" onclick="switchChannel('${ch.key}')">`
+      + `${escapeHtml(ch.label)}<span class="chan-dot"></span></button>`;
+  }).join('');
+}
+
+function switchChannel(key){
+  const ch = CHANNELS.find(c => c.key === key);
+  if (!ch || ch.key === activeChan.key) return;
+  activeChan = ch;
+  document.getElementById('feedList').innerHTML =
+    `<div class="feed-state"><div class="spinner"></div>Loading ${escapeHtml(ch.label)}…</div>`;
+  // Show cached instantly if we have it, then refresh in background.
+  if (chanCache[ch.key]) { allMessages = chanCache[ch.key]; afterLoad(); }
+  loadFeed();
+}
+
+// Tell the nav (in nav.html) whether to show the #SPX dot.
+function updateNavDot(){
+  try {
+    const link = document.querySelector('.nav-link[data-page="discord-feed"]');
+    if (link) link.classList.toggle('has-unread', anyChanUnread());
+  } catch {}
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -379,14 +488,17 @@ document.addEventListener('keydown', e => {
 /* ═══════════════════════════════════════════════════════════
    TWO-WAY REACTION  (POST to Worker /react → Discord PUT)
 ═══════════════════════════════════════════════════════════ */
-async function reactToMessage(messageId, emoji, btn){
+async function reactToMessage(messageId, emoji, btn, srcChan){
   if (!ENABLE_REACT) return;
   if (btn) btn.classList.add('busy');
   try{
+    // srcChan = the message's own channel id (set per-message in merged
+    // tabs). Falls back to the active tab's first id for single-channel tabs.
+    const channel = srcChan || activeChan.ids[0] || undefined;
     const r = await fetch(`${DISCORD_PROXY}/react`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messageId, emoji })
+      body: JSON.stringify({ messageId, emoji, channel: channel || undefined })
     });
     if (!r.ok) throw new Error('react ' + r.status);
     // Optimistic: reflect it immediately, then refetch to get the true count.
@@ -434,16 +546,19 @@ function cardHtml(m){
   ).join('');
 
   // Reactions: existing ones from Discord + the quick-add button.
+  // sc = this message's source channel id (set on merged tabs); passed
+  // to /react so the reaction lands on the right channel.
+  const sc = m._chan || '';
   const rxs = m.reactions || [];
   const rxHtml = rxs.map(rx => {
     const e = rx.emoji?.name || '❓';
     const meClass = rx.me ? ' me' : '';
-    return `<span class="reaction-chip${meClass}" onclick="reactToMessage('${m.id}', '${e}', this)">`
+    return `<span class="reaction-chip${meClass}" onclick="reactToMessage('${m.id}', '${e}', this, '${sc}')">`
       + `<span class="emoji">${escapeHtml(e)}</span><span class="count">${rx.count}</span></span>`;
   }).join('');
   const reactRow = ENABLE_REACT || rxs.length
     ? `<div class="msg-reactions">${rxHtml}`
-      + (ENABLE_REACT ? `<button class="react-add" onclick="reactToMessage('${m.id}', '${QUICK_EMOJI}', this)">${QUICK_EMOJI} React</button>` : '')
+      + (ENABLE_REACT ? `<button class="react-add" onclick="reactToMessage('${m.id}', '${QUICK_EMOJI}', this, '${sc}')">${QUICK_EMOJI} React</button>` : '')
       + `</div>`
     : '';
 
@@ -512,7 +627,7 @@ function setScope(s){
 ═══════════════════════════════════════════════════════════ */
 async function loadAiTake(){
   const take = document.getElementById('aiTake');
-  if (!ENABLE_AI_TAKE){ take.classList.add('collapsed'); return; }
+  if (!ENABLE_AI_TAKE || !activeChan.aiTake){ take.classList.add('collapsed'); return; }
   const todays = allMessages.filter(m => isToday(m.timestamp) && m.content);
   if (!todays.length){ take.classList.add('collapsed'); return; }
 
@@ -550,28 +665,102 @@ async function loadAiTake(){
 /* ═══════════════════════════════════════════════════════════
    DATA FETCH
 ═══════════════════════════════════════════════════════════ */
+// Runs after messages for the active channel are in `allMessages`.
+function afterLoad(){
+  render();
+  loadAiTake();
+  renderTabs();          // refresh other tabs' unread dots
+  markChanSeen(activeChan);   // viewing this channel clears its own dot
+  renderTabs();          // re-render so the now-seen tab shows no dot
+  updateNavDot();        // nav #SPX dot reflects remaining unread channels
+}
+
+// Fetch one Discord channel id ('' = Worker default #spx). Returns msgs[].
+async function fetchOne(id){
+  const qs = `limit=50` + (id ? `&channel=${encodeURIComponent(id)}` : '');
+  const r = await fetch(`${DISCORD_PROXY}/messages?${qs}`);
+  if (!r.ok) throw new Error('Proxy returned ' + r.status);
+  const data = await r.json();
+  return Array.isArray(data) ? data : (data.messages || []);
+}
+
+// Fetch all ids for a channel-tab and merge newest-first. De-dupes by
+// message id and tags each msg with its source channel id (for /react).
+async function fetchChannel(ch){
+  const batches = await Promise.all(ch.ids.map(async id => {
+    const msgs = await fetchOne(id);
+    return msgs.map(m => ({ ...m, _chan: id }));   // remember source channel
+  }));
+  const seen = new Set();
+  const merged = [];
+  for (const m of batches.flat()){
+    if (seen.has(m.id)) continue;
+    seen.add(m.id);
+    merged.push(m);
+  }
+  merged.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));  // newest-first
+  return merged;
+}
+
 async function loadFeed(){
   const list = document.getElementById('feedList');
+  const ch = activeChan;
   try{
-    const r = await fetch(`${DISCORD_PROXY}/messages?limit=50`);
-    if (!r.ok) throw new Error('Proxy returned ' + r.status);
-    const data = await r.json();
-    allMessages = Array.isArray(data) ? data : (data.messages || []);
-    render();
-    loadAiTake();
+    const msgs = await fetchChannel(ch);
+    chanCache[ch.key] = msgs;
+    if (ch.key === activeChan.key){ allMessages = msgs; afterLoad(); }
   }catch(e){
     console.error('Discord feed load error:', e);
-    list.innerHTML = `<div class="feed-state error">⚠ Couldn't load the feed.`
-      + `<span class="hint">${escapeHtml(e.message)} — check the Worker route &amp; bot token.</span></div>`;
-    document.getElementById('feedCount').textContent = '';
+    if (ch.key === activeChan.key){
+      list.innerHTML = `<div class="feed-state error">⚠ Couldn't load the feed.`
+        + `<span class="hint">${escapeHtml(e.message)} — check the Worker route &amp; bot token.</span></div>`;
+      document.getElementById('feedCount').textContent = '';
+    }
   }
 }
+
+// Quietly refresh every channel's cache (for tab dots) without
+// disturbing the channel currently on screen.
+async function refreshAllChannels(){
+  for (const ch of CHANNELS){
+    try{ chanCache[ch.key] = await fetchChannel(ch); }
+    catch{ /* ignore — dots just won't update this round */ }
+  }
+  // Repaint the active channel + dots with fresh data.
+  if (chanCache[activeChan.key]) allMessages = chanCache[activeChan.key];
+  afterLoad();
+}
+
 function manualRefresh(){ loadFeed(); }
+
+/* ═══════════════════════════════════════════════════════════
+   PRE-MARKET AUTO-POLL
+   Light poll while the page is open, only during the window the
+   friend posts (weekdays ~5:30–8:30am CST). Outside it, stay manual.
+   Uses the browser's local time; Chuck is on CST.
+═══════════════════════════════════════════════════════════ */
+const POLL_MS = 60000;   // 60s
+function inPostingWindow(){
+  const now = new Date();
+  const day = now.getDay();                 // 0 Sun … 6 Sat
+  if (day === 0 || day === 6) return false;  // weekends: he says nothing posts
+  const mins = now.getHours() * 60 + now.getMinutes();
+  return mins >= (5*60 + 30) && mins <= (8*60 + 30);   // 5:30–8:30am
+}
+function startAutoPoll(){
+  setInterval(() => {
+    if (document.hidden) return;     // don't poll a backgrounded tab
+    if (inPostingWindow()) refreshAllChannels();
+  }, POLL_MS);
+}
 
 /* ═══════════════════════════════════════════════════════════
    BOOT
 ═══════════════════════════════════════════════════════════ */
-loadFeed();
+renderTabs();
+loadFeed();                 // active channel (#spx) first, for fast paint
+refreshAllChannels();       // prime other channels so tab dots are accurate
+startAutoPoll();
 
 /* ═══════════════════════════════════════════════════════════
    NAV INJECT  (standard on all pages — do not modify)
