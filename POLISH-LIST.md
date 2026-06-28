@@ -1,5 +1,15 @@
 # POLISH-LIST — ChucksAI
 
+> **You are here (2026-06-27 session recap — Discord Feed build):**
+> **Page + Worker code are BUILT and committed-ready; feature is wired but NOT live yet — blocked on bot token + channel ID.**
+> Built this session: **`discord-feed.html`** (new page from `_template.html` — card list of #spx posts, Today/All-Recent scope toggle, inline image attachments + lightbox, optional Claude "Today's Take" summary via the Anthropic proxy), **`nav.html`** (added top-level `#SPX` desktop link + `💬 Discord #spx Feed` under Tools in mobile menu), and **`discord-proxy-worker.js`** (the Cloudflare Worker route code to paste in the dashboard).
+> **Architecture:** page → `discord-proxy.infiniti306.workers.dev/messages?limit=50` (new dedicated Worker, matches the `news-proxy` pattern) → Discord REST `GET /channels/{id}/messages` using the `DISCORD_BOT_TOKEN` + `DISCORD_CHANNEL_ID` secrets → returns slimmed JSON with CORS for chucksai.com. No token client-side.
+> **Chuck still needs to:** (1) finish Discord bot setup on discord.com/developers (he's on the applications page, nothing built yet), (2) create the `discord-proxy` Worker + paste `discord-proxy-worker.js`, (3) set the two secrets, (4) commit + push the 3 changed files. Until then the page loads but shows the "couldn't load the feed" state. Full steps in the Discord Feed section below.
+>
+> **Files changed (Chuck to commit + push):** `discord-feed.html` (new), `nav.html`, `discord-proxy-worker.js` (new reference file).
+>
+> ---
+>
 > **You are here (2026-06-24 session recap):**
 > **Tier 1 + Tier 2 page work is DONE in the repo.** Migrated all market-data fetches off hardcoded keys onto the Cloudflare Worker proxies (`finnhub-proxy` / `polygon-proxy` / `news-proxy`, which Chuck created + set secrets on this session), and throttled the on-load fan-out. **14 files edited** (2 more than the original plan tracked — see note). Final grep confirms zero keys / old provider hosts / `token`/`apiKey`/`api_token` params remain in any HTML. Chuck eyeballed the live site (indices, crypto, forex, news tickers all rendering) and it looks good.
 >

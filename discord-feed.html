@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Chuck's AI — Discord Feed</title>
+
+  <!-- ① theme.js MUST be first — prevents flash -->
+  <script src="theme.js"></script>
+
+  <!-- ② Global design system -->
+  <link rel="stylesheet" href="styles.css"/>
+
+  <!-- ③ Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+
+  <!-- ④ Page-specific styles ONLY below — never edit styles.css -->
+  <style>
+    /* ── DISCORD FEED PAGE ── */
+
+    /* Scope toggle (Today / All) */
+    .feed-controls {
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+      margin-bottom: 18px;
+    }
+    .scope-toggle {
+      display: inline-flex; background: var(--bg-card);
+      border: 1px solid var(--border); border-radius: 8px; padding: 3px;
+    }
+    .scope-btn {
+      font-family: 'Space Mono', monospace; font-size: 10px; font-weight: 700;
+      letter-spacing: .06em; text-transform: uppercase;
+      color: var(--text-secondary); background: none; border: none;
+      padding: 6px 13px; border-radius: 6px; cursor: pointer; transition: all .15s;
+    }
+    .scope-btn:hover { color: var(--text-primary); }
+    .scope-btn.active {
+      color: var(--accent2); background: rgba(91,200,245,.08);
+      box-shadow: 0 0 0 1px rgba(91,200,245,.22) inset;
+    }
+    html.light .scope-btn.active { background: var(--tint-blue); box-shadow: 0 0 0 1px var(--tint-blue-bd) inset; }
+    .feed-count {
+      font-family: 'Space Mono', monospace; font-size: 10px;
+      color: var(--text-muted); letter-spacing: .05em;
+    }
+
+    /* AI "today's take" summary strip */
+    .ai-take {
+      position: relative; background: var(--bg-card);
+      border: 1px solid var(--border); border-left: 3px solid var(--accent2);
+      border-radius: 12px; padding: 16px 18px; margin-bottom: 22px;
+    }
+    .ai-take-head {
+      display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+      font-family: 'Space Mono', monospace; font-size: 10px; font-weight: 700;
+      letter-spacing: .1em; text-transform: uppercase; color: var(--accent2);
+    }
+    .ai-take-body {
+      font-family: 'DM Sans', sans-serif; font-size: 14px; line-height: 1.6;
+      color: var(--text-secondary); white-space: pre-wrap;
+    }
+    .ai-take.collapsed { display: none; }
+
+    /* Message cards */
+    .feed-list { display: flex; flex-direction: column; gap: 14px; }
+    .msg-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 15px 17px; transition: border-color .18s;
+    }
+    .msg-card:hover { border-color: var(--border-bright); }
+    .msg-head {
+      display: flex; align-items: center; gap: 10px; margin-bottom: 9px;
+    }
+    .msg-avatar {
+      width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
+      background: var(--accent2); display: grid; place-items: center;
+      font-family: 'Space Mono', monospace; font-size: 12px; font-weight: 700;
+      color: #07101a; overflow: hidden;
+    }
+    .msg-avatar img { width: 100%; height: 100%; object-fit: cover; }
+    .msg-author {
+      font-family: 'Space Mono', monospace; font-size: 12px; font-weight: 700;
+      color: var(--text-primary); letter-spacing: .02em;
+    }
+    .msg-time {
+      font-family: 'Space Mono', monospace; font-size: 10px;
+      color: var(--text-muted); letter-spacing: .04em;
+    }
+    .msg-body {
+      font-family: 'DM Sans', sans-serif; font-size: 14px; line-height: 1.62;
+      color: var(--text-secondary); white-space: pre-wrap; word-break: break-word;
+    }
+    .msg-body a { color: var(--accent2); text-decoration: none; }
+    .msg-body a:hover { text-decoration: underline; }
+
+    /* Image attachments */
+    .msg-imgs {
+      display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px;
+    }
+    .msg-img {
+      max-width: 100%; border-radius: 10px; border: 1px solid var(--border);
+      cursor: zoom-in; display: block;
+    }
+    .msg-img.single { max-width: 520px; }
+    .msg-img.multi  { max-width: 240px; }
+    .msg-file {
+      display: inline-flex; align-items: center; gap: 6px; margin-top: 10px;
+      font-family: 'Space Mono', monospace; font-size: 11px;
+      color: var(--accent2); text-decoration: none;
+      background: rgba(91,200,245,.07); border: 1px solid rgba(91,200,245,.2);
+      border-radius: 7px; padding: 6px 11px;
+    }
+    .msg-file:hover { border-color: var(--accent2); }
+
+    /* States */
+    .feed-state {
+      text-align: center; padding: 60px 20px;
+      font-family: 'Space Mono', monospace; font-size: 12px;
+      color: var(--text-muted); letter-spacing: .04em;
+    }
+    .feed-state .spinner {
+      width: 26px; height: 26px; margin: 0 auto 16px;
+      border: 2px solid var(--border); border-top-color: var(--accent2);
+      border-radius: 50%; animation: spin 0.8s linear infinite;
+    }
+    .feed-state.error { color: var(--down); }
+    .feed-state .hint { display: block; margin-top: 10px; color: var(--text-muted); font-size: 10px; }
+
+    /* Lightbox for full-size chart viewing */
+    .lightbox {
+      display: none; position: fixed; inset: 0; z-index: 1000;
+      background: rgba(0,0,0,.85); backdrop-filter: blur(6px);
+      place-items: center; padding: 30px; cursor: zoom-out;
+    }
+    .lightbox.open { display: grid; }
+    .lightbox img { max-width: 95vw; max-height: 92vh; border-radius: 10px; }
+  </style>
+</head>
+
+<body data-page="discord-feed" data-mob="discord-feed">
+
+<!-- Ambient background orbs (standard on all pages) -->
+<div class="bg-canvas">
+  <div class="orb orb1"></div>
+  <div class="orb orb2"></div>
+  <div class="orb orb3"></div>
+  <div class="orb orb4"></div>
+</div>
+
+<!-- Nav injected here -->
+<div id="nav-placeholder"></div>
+
+<div class="container">
+
+  <!-- ── PAGE HEADER ── -->
+  <div class="page-header">
+    <div>
+      <div class="page-title">Discord <span style="color:var(--accent2)">Feed</span></div>
+      <div class="page-sub">Morning #spx analysis · posts pulled on load + manual refresh</div>
+    </div>
+    <div class="header-right">
+      <button class="refresh-btn" onclick="manualRefresh()">⟳ REFRESH</button>
+    </div>
+  </div>
+
+  <!-- Controls: scope toggle + count -->
+  <div class="feed-controls">
+    <div class="scope-toggle">
+      <button class="scope-btn active" id="scopeToday" onclick="setScope('today')">Today</button>
+      <button class="scope-btn" id="scopeAll" onclick="setScope('all')">All Recent</button>
+    </div>
+    <span class="feed-count" id="feedCount"></span>
+  </div>
+
+  <!-- AI "today's take" summary strip -->
+  <div class="ai-take collapsed" id="aiTake">
+    <div class="ai-take-head">✨ Today's Take</div>
+    <div class="ai-take-body" id="aiTakeBody"></div>
+  </div>
+
+  <!-- Feed -->
+  <div class="feed-list" id="feedList">
+    <div class="feed-state"><div class="spinner"></div>Loading #spx feed…</div>
+  </div>
+
+</div><!-- /container -->
+
+<!-- Image lightbox -->
+<div class="lightbox" id="lightbox" onclick="this.classList.remove('open')">
+  <img id="lightboxImg" src="" alt="">
+</div>
+
+<footer>Discord Feed · #spx via Cloudflare Worker proxy · fetch on load</footer>
+
+<script>
+/* ═══════════════════════════════════════════════════════════
+   CONFIG
+═══════════════════════════════════════════════════════════ */
+// Worker proxy that holds the Discord bot token as a secret.
+// Returns the channel's recent messages as JSON. No token client-side.
+const DISCORD_PROXY = 'https://discord-proxy.infiniti306.workers.dev/messages';
+// Optional AI summary endpoint (existing Anthropic worker proxy).
+const AI_PROXY = 'https://anthropic.infiniti306.workers.dev';
+const ENABLE_AI_TAKE = true;   // flip to false to hide the summary strip
+
+let allMessages = [];   // newest-first as Discord returns them
+let scope = 'today';    // 'today' | 'all'
+
+/* ═══════════════════════════════════════════════════════════
+   HELPERS
+═══════════════════════════════════════════════════════════ */
+function escapeHtml(s){
+  return (s||'').replace(/[&<>"']/g, c => (
+    {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]
+  ));
+}
+
+// Render Discord text: escape, then linkify URLs and basic newlines.
+function renderText(raw){
+  let t = escapeHtml(raw);
+  t = t.replace(/(https?:\/\/[^\s<]+)/g,
+    '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>');
+  return t;
+}
+
+function fmtTime(iso){
+  const d = new Date(iso);
+  const now = new Date();
+  const sameDay = d.toDateString() === now.toDateString();
+  const time = d.toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit' });
+  if (sameDay) return `Today ${time}`;
+  const date = d.toLocaleDateString('en-US', { month:'short', day:'numeric' });
+  return `${date} ${time}`;
+}
+
+function isToday(iso){
+  return new Date(iso).toDateString() === new Date().toDateString();
+}
+
+function initials(name){
+  return (name||'?').trim().slice(0,2).toUpperCase();
+}
+
+function openLightbox(src){
+  document.getElementById('lightboxImg').src = src;
+  document.getElementById('lightbox').classList.add('open');
+}
+
+/* ═══════════════════════════════════════════════════════════
+   RENDER
+═══════════════════════════════════════════════════════════ */
+function visibleMessages(){
+  const msgs = scope === 'today' ? allMessages.filter(m => isToday(m.timestamp)) : allMessages;
+  // Show oldest→newest within the view so the morning thread reads top to bottom.
+  return [...msgs].reverse();
+}
+
+function render(){
+  const list = document.getElementById('feedList');
+  const countEl = document.getElementById('feedCount');
+  const msgs = visibleMessages();
+
+  if (!msgs.length){
+    list.innerHTML = `<div class="feed-state">No ${scope === 'today' ? 'posts yet today' : 'recent posts'}.`
+      + (scope === 'today' ? '<span class="hint">Try “All Recent” to see earlier posts.</span>' : '')
+      + `</div>`;
+    countEl.textContent = '';
+    return;
+  }
+
+  countEl.textContent = `${msgs.length} post${msgs.length===1?'':'s'}`
+    + (scope === 'today' ? ' today' : '');
+
+  list.innerHTML = msgs.map(m => {
+    const author = escapeHtml(m.author?.global_name || m.author?.username || 'Unknown');
+    const avatarUrl = m.author?.id && m.author?.avatar
+      ? `https://cdn.discordapp.com/avatars/${m.author.id}/${m.author.avatar}.png?size=64`
+      : null;
+    const avatar = avatarUrl
+      ? `<span class="msg-avatar"><img src="${avatarUrl}" alt=""></span>`
+      : `<span class="msg-avatar">${initials(author)}</span>`;
+
+    const body = m.content ? `<div class="msg-body">${renderText(m.content)}</div>` : '';
+
+    // Attachments: images inline, other files as a download chip.
+    const atts = m.attachments || [];
+    const imgs = atts.filter(a => (a.content_type||'').startsWith('image/')
+      || /\.(png|jpe?g|gif|webp)$/i.test(a.filename||a.url||''));
+    const files = atts.filter(a => !imgs.includes(a));
+
+    const sizeClass = imgs.length === 1 ? 'single' : 'multi';
+    const imgsHtml = imgs.length
+      ? `<div class="msg-imgs">` + imgs.map(a =>
+          `<img class="msg-img ${sizeClass}" src="${a.url}" alt="${escapeHtml(a.filename||'chart')}" loading="lazy" onclick="openLightbox('${a.url}')">`
+        ).join('') + `</div>`
+      : '';
+
+    const filesHtml = files.map(a =>
+      `<a class="msg-file" href="${a.url}" target="_blank" rel="noopener noreferrer">📎 ${escapeHtml(a.filename||'attachment')}</a>`
+    ).join('');
+
+    return `<div class="msg-card fade-in">
+      <div class="msg-head">
+        ${avatar}
+        <span class="msg-author">${author}</span>
+        <span class="msg-time">${fmtTime(m.timestamp)}</span>
+      </div>
+      ${body}
+      ${imgsHtml}
+      ${filesHtml}
+    </div>`;
+  }).join('');
+}
+
+function setScope(s){
+  scope = s;
+  document.getElementById('scopeToday').classList.toggle('active', s === 'today');
+  document.getElementById('scopeAll').classList.toggle('active', s === 'all');
+  render();
+}
+
+/* ═══════════════════════════════════════════════════════════
+   AI "TODAY'S TAKE" (optional)
+═══════════════════════════════════════════════════════════ */
+async function loadAiTake(){
+  const take = document.getElementById('aiTake');
+  if (!ENABLE_AI_TAKE){ take.classList.add('collapsed'); return; }
+
+  const todays = allMessages.filter(m => isToday(m.timestamp) && m.content);
+  if (!todays.length){ take.classList.add('collapsed'); return; }
+
+  const transcript = [...todays].reverse()
+    .map(m => `${m.author?.global_name || m.author?.username || '?'}: ${m.content}`)
+    .join('\n');
+
+  try{
+    const r = await fetch(AI_PROXY, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 350,
+        messages: [{
+          role: 'user',
+          content: `These are this morning's #spx market analysis posts from a Discord channel. `
+            + `Summarize the key takeaways in 3-4 tight sentences for a quick read before market open. `
+            + `Be concrete about levels, bias, and any setups mentioned.\n\n${transcript}`
+        }]
+      })
+    });
+    if (!r.ok) throw new Error('AI proxy ' + r.status);
+    const data = await r.json();
+    const text = data?.content?.[0]?.text || data?.text || '';
+    if (text.trim()){
+      document.getElementById('aiTakeBody').textContent = text.trim();
+      take.classList.remove('collapsed');
+    } else {
+      take.classList.add('collapsed');
+    }
+  }catch(e){
+    console.warn('AI take unavailable:', e);
+    take.classList.add('collapsed');   // fail silent — never block the feed
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   DATA FETCH
+═══════════════════════════════════════════════════════════ */
+async function loadFeed(){
+  const list = document.getElementById('feedList');
+  try{
+    const r = await fetch(`${DISCORD_PROXY}?limit=50`);
+    if (!r.ok) throw new Error('Proxy returned ' + r.status);
+    const data = await r.json();
+    // Discord returns an array of message objects (newest first).
+    allMessages = Array.isArray(data) ? data : (data.messages || []);
+    render();
+    loadAiTake();
+  }catch(e){
+    console.error('Discord feed load error:', e);
+    list.innerHTML = `<div class="feed-state error">⚠ Couldn't load the feed.`
+      + `<span class="hint">${escapeHtml(e.message)} — check the Worker route &amp; bot token.</span></div>`;
+    document.getElementById('feedCount').textContent = '';
+  }
+}
+
+function manualRefresh(){ loadFeed(); }
+
+/* ═══════════════════════════════════════════════════════════
+   BOOT
+═══════════════════════════════════════════════════════════ */
+loadFeed();
+
+/* ═══════════════════════════════════════════════════════════
+   NAV INJECT  (standard on all pages — do not modify)
+═══════════════════════════════════════════════════════════ */
+function injectNav(html){
+  const placeholder = document.getElementById('nav-placeholder');
+  if(!placeholder) return;
+  const tmp = document.createElement('div');
+  tmp.innerHTML = html;
+  Array.from(tmp.childNodes).forEach(node=>{
+    if(node.nodeName !== 'SCRIPT'){
+      placeholder.parentNode.insertBefore(node.cloneNode(true), placeholder);
+    }
+  });
+  tmp.querySelectorAll('script').forEach(oldScript=>{
+    const s = document.createElement('script');
+    if(oldScript.src) s.src = oldScript.src;
+    else s.textContent = oldScript.textContent;
+    document.head.appendChild(s);
+  });
+  placeholder.remove();
+}
+
+fetch('nav.html')
+  .then(r => r.text())
+  .then(injectNav)
+  .catch(() => console.warn('nav.html not found'));
+</script>
+</body>
+</html>
