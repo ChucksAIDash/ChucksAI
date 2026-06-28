@@ -1,5 +1,15 @@
 # POLISH-LIST — ChucksAI
 
+> **You are here (2026-06-28 session recap — outage fixes: Finnhub key + glucose widget):**
+> **Two bugs found + fixed.**
+> **(1) STOCK DATA OUTAGE (root cause: stale Worker secret, NOT the code).** All Finnhub-backed widgets (SPY/indices/Mag 7/meme tickers) went dark sometime after the 2026-06-26 key rotation. Live browser network check showed `finnhub-proxy` returning **401** on every `/quote` call while dexcom/discord/news proxies returned 200 — so the rotated Finnhub key never bound to the Worker secret. Chuck only stored the key in Cloudflare (write-only secrets, can't read back), so we re-minted the key from finnhub.io, confirmed it directly (`/quote?symbol=SPY&token=…` returned valid JSON), re-saved the `FINNHUB_KEY` secret + **redeployed** the Worker. Verified live: `/quote` now returns **200** for SPY/QQQ/DIA. **No HTML/code change — page code was always correct.** Lesson: after rotating a key, re-save the Worker secret AND redeploy, then load the live site to confirm 200s. (Secondary: occasional **429** on SPY = free-tier rate limit, harmless.)
+> **(2) GLUCOSE widget on index.html (FIXED IN CODE).** Top-bar glucose showed "— / Not connected" because the Dexcom `/latest` endpoint returns `{"reading":null}` while `/egvs` history returns full live records. The widget only read the current value from `/latest`, so a null reading killed it. **Fix:** `loadGlucose()` now parses egvs history first and falls back to `records[0]` (newest record) for current value/trend/time when `/latest.reading` is null. Verified against live data → renders **138 → flat → "Avg 24h: 126 mg/dL · 61m ago"**. **File changed: `index.html` (Chuck to commit + push).**
+> **(3) WEATHER on index.html — NOT broken.** Live check showed the top-bar weather widget rendering correctly (☁️ 84°F Overcast). It was collateral damage from the Finnhub 401 error storm on load (mass promise rejections stalled later widgets); resolves on its own now that Finnhub returns 200. No code change.
+>
+> **Files changed (Chuck to commit + push):** `index.html` (glucose fallback only).
+>
+> ---
+>
 > **You are here (2026-06-27 session recap — Discord Feed build, round 2):**
 > **Page + Worker code BUILT, feature wired, feed CONFIRMED WORKING live by Chuck.** Round 2 added enhancements (below). Still pending: the new two-way react route + redeploying the updated Worker.
 > **`discord-feed.html`** (new page) — card list of #spx posts; **Today / All-Recent scope toggle** (All-Recent is **grouped by day** with Today/Yesterday/weekday headers); inline image attachments with a **lightbox that opens each image individually + prev/next arrows + arrow-key nav** (fixed the round-1 bug where all images in a post opened at once); **moderate size bump** (body 16px, images up to 680px single / 320px multi); shows **existing Discord reactions** on each post; **two-way 🔥 react button** (writes to Discord as the bot via the Worker /react route); **local "mark read"** toggle (dims read posts, stored in browser localStorage); optional Claude "Today's Take" summary via the Anthropic proxy. Feature flags at top of the script: `ENABLE_AI_TAKE`, `ENABLE_REACT`, `QUICK_EMOJI`.
@@ -40,7 +50,7 @@
 
 **Proxy the market-data API keys.** ✅ **Repo edits done (2026-06-24).** All Finnhub/Polygon/thenewsapi fetches now hit the Worker proxies (`finnhub-proxy` / `polygon-proxy` / `news-proxy`) with no token in the query string. Key constants deleted. **14 files changed:** `index.html`, `currency.html`, `earnings.html`, `fear-greed.html`, `treasuries.html`, `breadth.html`, `insiders.html`, `ipo.html`, `watchlist.html`, `today.html`, `commodities.html` (Finnhub); `heat-map.html`, `currency.html` (Polygon); `news.html`, `index.html` (thenewsapi). Workers created + secrets set in the Cloudflare dashboard this session.
 - ✅ **Pushed + tested live (2026-06-26):** pages render indices/crypto/forex/news through the proxies.
-- ✅ **Finnhub key rotated** + `FINNHUB_KEY` secret updated (2026-06-26).
+- ✅ **Finnhub key rotated** + `FINNHUB_KEY` secret updated (2026-06-26). ⚠️ **The 2026-06-26 rotation left the Worker secret stale → multi-day Finnhub 401 outage; re-minted + re-saved + redeployed 2026-06-28 (now 200). After any key rotation: re-save the secret, REDEPLOY the Worker, then confirm 200 on the live site.**
 - ✅ **Polygon key rotated** + `POLYGON_KEY` secret updated (2026-06-26).
 - ⚠️ **thenewsapi key NOT rotated — deferred (low risk).** thenewsapi.com has no self-serve token rotation/regenerate in the dashboard (only displays the one token). Old key still valid + public in git history, but it's a free read-only headlines key (≈100 req/day quota is the only thing at risk — no money/account/data). See Tier 4 for the fix-it-later plan.
 - (Anthropic key is fine — already proxied, never client-side.)
