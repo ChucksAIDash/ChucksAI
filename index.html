@@ -60,6 +60,59 @@
     .section-pip.pip-yellow { background: var(--accent3);       box-shadow: 0 0 7px rgba(240,184,106,.5); }
     .section-pip.pip-purple { background: var(--accent-purple); box-shadow: 0 0 7px rgba(167,139,250,.5); }
     .section-pip.pip-red    { background: var(--down);          box-shadow: 0 0 7px rgba(240,82,82,.5); }
+    .section-pip.pip-blue   { background: var(--accent2);       box-shadow: 0 0 7px var(--glow-blue-strong); }
+
+    /* ── DISCORD #SPX CARD ── */
+    .dc-open {
+      font-family: 'Space Mono', monospace; font-size: 9px; font-weight: 700;
+      letter-spacing: .05em; color: var(--accent2); text-decoration: none;
+      white-space: nowrap; transition: color .15s;
+    }
+    .dc-open:hover { color: var(--text-primary); }
+    .dc-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--r-md); padding: 16px 18px;
+    }
+    .dc-row {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 14px; flex-wrap: wrap;
+    }
+    .dc-blurb {
+      font-family: 'DM Sans', sans-serif; font-size: 14px; color: var(--text-secondary);
+    }
+    .dc-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+    .dc-btn {
+      font-family: 'Space Mono', monospace; font-size: 11px; font-weight: 700;
+      letter-spacing: .04em; cursor: pointer; white-space: nowrap;
+      padding: 8px 14px; border-radius: var(--r-md); transition: all .18s;
+      color: var(--accent2); background: rgba(91,200,245,.08);
+      border: 1px solid rgba(91,200,245,.28);
+    }
+    .dc-btn:hover { background: rgba(91,200,245,.16); border-color: var(--accent2); transform: translateY(-1px); }
+    .dc-btn.vision { color: var(--accent); background: rgba(127,217,184,.08); border-color: rgba(127,217,184,.3); }
+    .dc-btn.vision:hover { background: rgba(127,217,184,.16); border-color: var(--accent); }
+    .dc-btn:disabled { opacity: .45; cursor: not-allowed; transform: none; }
+    html.light .dc-btn { background: var(--tint-blue); border-color: var(--tint-blue-bd); }
+    .dc-out { margin-top: 14px; }
+    .dc-empty {
+      font-family: 'DM Sans', sans-serif; font-size: 13px; color: var(--text-muted);
+      padding: 6px 0;
+    }
+    .dc-scope {
+      font-family: 'Space Mono', monospace; font-size: 9px; color: var(--text-muted);
+      letter-spacing: .04em; margin-bottom: 9px; display: block;
+    }
+    .dc-summary {
+      font-family: 'DM Sans', sans-serif; font-size: 14.5px; line-height: 1.66;
+      color: var(--text-secondary); white-space: pre-wrap;
+    }
+    .dc-summary strong { color: var(--text-primary); }
+    .dc-loading { color: var(--text-muted); font-style: italic; font-family: 'DM Sans', sans-serif; }
+    @media (max-width: 600px){
+      .dc-row { flex-direction: column; align-items: stretch; }
+      .dc-btns { width: 100%; }
+      .dc-btn { flex: 1; text-align: center; }
+    }
 
     /* ── NEWS ── */
     .news-feed { display: flex; flex-direction: column; }
@@ -426,6 +479,28 @@
       <div style="padding:12px 0">
         <div class="skel skel-sm" style="width:88%;margin-bottom:8px"></div>
         <div class="skel skel-line" style="width:72%"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ DISCORD #SPX ═══ -->
+  <div class="dash-section">
+    <div class="section-header">
+      <div class="section-pip pip-blue"></div>
+      <div class="section-title">Discord #spx</div>
+      <div class="section-line"></div>
+      <a href="discord-feed.html" class="dc-open">Open feed →</a>
+    </div>
+    <div class="dc-card">
+      <div class="dc-row">
+        <div class="dc-blurb">Summarize today's #spx market-analysis posts.</div>
+        <div class="dc-btns">
+          <button class="dc-btn" id="dcTextBtn" onclick="dcSummary('text')">✨ AI Summarize</button>
+          <button class="dc-btn vision" id="dcVisionBtn" onclick="dcSummary('vision')">👁 + Vision</button>
+        </div>
+      </div>
+      <div class="dc-out" id="dcOut">
+        <div class="dc-empty">Click a button to generate today's summary. <strong>+ Vision</strong> also reads the chart images.</div>
       </div>
     </div>
   </div>
@@ -950,6 +1025,111 @@ function markdownToHtml(raw){
     .replace(/\n\n/g,'</p><p>')
     .replace(/(\+[\d.]+%)/g,'<span class="up-text">$1</span>')
     .replace(/((?<!\d)-[\d.]+%)/g,'<span class="down-text">$1</span>');
+}
+
+/* ═══════════════════════════════════════════════════════════
+   DISCORD #SPX HOMEPAGE SUMMARY  (text  |  text + vision)
+   Self-contained. Pulls today's #spx posts via the discord-proxy
+   Worker, trims to the latest session (>6h gap splits morning/evening),
+   and summarizes via the Anthropic proxy. Vision sends the session's
+   chart image URLs alongside the text.
+═══════════════════════════════════════════════════════════ */
+const DC_PROXY = 'https://discord-proxy.infiniti306.workers.dev';
+const DC_GAP_MS = 6 * 60 * 60 * 1000;
+const DC_VISION_MODEL = 'claude-sonnet-4-5-20250929';
+const DC_TEXT_MODEL   = 'claude-haiku-4-5-20251001';
+
+function dcIsToday(iso){ return new Date(iso).toDateString() === new Date().toDateString(); }
+
+// Latest session of posts (prefers today; falls back to the most recent
+// day that has posts, e.g. Friday on a weekend). Returns {msgs, isToday}.
+function dcSession(msgs){
+  const all = [...msgs]
+    .filter(m => m.content || (m.attachments||[]).length)
+    .sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
+  if (!all.length) return { msgs: [], isToday: false };
+  let start = all.length - 1;
+  for (let i=all.length-1;i>0;i--){
+    if (new Date(all[i].timestamp) - new Date(all[i-1].timestamp) > DC_GAP_MS){ start = i; break; }
+    start = i - 1;
+  }
+  const out = all.slice(start);
+  return { msgs: out, isToday: dcIsToday(out[out.length-1].timestamp) };
+}
+
+function dcImages(msgs){
+  const urls = [];
+  for (const m of msgs) for (const a of (m.attachments||[])){
+    const img = (a.content_type||'').startsWith('image/') || /\.(png|jpe?g|gif|webp)$/i.test(a.filename||a.url||'');
+    if (img && a.url) urls.push(a.url);
+  }
+  return urls;
+}
+
+function dcBusy(b){
+  ['dcTextBtn','dcVisionBtn'].forEach(id => { const el=document.getElementById(id); if(el) el.disabled=b; });
+}
+
+async function dcSummary(mode){
+  const out = document.getElementById('dcOut');
+  dcBusy(true);
+  out.innerHTML = '<div class="dc-loading">Loading #spx posts…</div>';
+  try{
+    // #spx is the Worker default channel — no ?channel needed.
+    const r = await fetch(`${DC_PROXY}/messages?limit=50`);
+    if (!r.ok) throw new Error('feed ' + r.status);
+    const data = await r.json();
+    const all = Array.isArray(data) ? data : (data.messages || []);
+    const { msgs: sess, isToday: sessToday } = dcSession(all);
+    if (!sess.length){ out.innerHTML = '<div class="dc-empty">No recent #spx posts to summarize.</div>'; return; }
+
+    const sessDate = new Date(sess[sess.length-1].timestamp)
+      .toLocaleDateString('en-US', { weekday:'long', month:'short', day:'numeric' });
+
+    const transcript = sess
+      .map(m => `${m.author?.global_name || m.author?.username || '?'}: ${m.content || '(image)'}`).join('\n');
+    const imgs = mode === 'vision' ? dcImages(sess) : [];
+
+    const whenPhrase = sessToday ? `today’s` : `the most recent session’s (${sessDate})`;
+    const instr = `These are ${whenPhrase} #spx market-analysis posts from a Discord channel`
+      + (mode==='vision' ? ` (charts attached as images)` : ``) + `. `
+      + `Summarize the key takeaways in 4-6 tight sentences: levels, bias, and any setups. `
+      + (mode==='vision' ? `Read the charts and cite specific annotated levels you see. ` : ``)
+      + `Use **bold** for key levels.\n\nPosts:\n${transcript}`;
+
+    let content;
+    if (mode==='vision' && imgs.length){
+      content = [{ type:'text', text: instr }];
+      for (const url of imgs) content.push({ type:'image', source:{ type:'url', url } });
+    } else content = instr;
+
+    const first=new Date(sess[0].timestamp), last=new Date(sess[sess.length-1].timestamp);
+    const tf=d=>d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+    const scope = `${sessToday ? 'Today' : sessDate} · ${sess.length} posts · ${tf(first)}–${tf(last)}`
+      + (mode==='vision'?` · ${imgs.length} charts`:'');
+
+    out.innerHTML = `<div class="dc-loading">Summarizing ${mode==='vision' ? imgs.length+' charts + text' : (sessToday ? 'today’s posts' : sessDate+'’s posts')}…</div>`;
+
+    const ar = await fetch(`${AI_PROXY}/v1/messages`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model: mode==='vision' ? DC_VISION_MODEL : DC_TEXT_MODEL,
+        max_tokens: 600,
+        messages: [{ role:'user', content }]
+      })
+    });
+    if (!ar.ok) throw new Error('AI ' + ar.status);
+    const ad = await ar.json();
+    if (ad.error) throw new Error(ad.error.message || 'proxy error');
+    const text = ad?.content?.[0]?.text || ad?.text || '';
+    out.innerHTML = `<span class="dc-scope">${scope}</span>`
+      + `<div class="dc-summary"><p>${markdownToHtml(text.trim())}</p></div>`;
+  }catch(e){
+    console.warn('Discord summary failed:', e);
+    out.innerHTML = `<div class="dc-empty">⚠ Couldn’t generate — ${e.message}</div>`;
+  }finally{
+    dcBusy(false);
+  }
 }
 
 function mbDisplayBriefing(date,rawContent){

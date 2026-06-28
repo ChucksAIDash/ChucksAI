@@ -87,6 +87,35 @@
       color: var(--text-secondary); white-space: pre-wrap;
     }
     .ai-take.collapsed { display: none; }
+    .ai-take-close {
+      position: absolute; top: 12px; right: 13px; background: none; border: none;
+      color: var(--text-muted); font-size: 15px; cursor: pointer; line-height: 1;
+      padding: 2px 5px; border-radius: 6px; transition: all .15s;
+    }
+    .ai-take-close:hover { color: var(--text-primary); background: var(--bg-card); }
+    .ai-take-scope { color: var(--text-muted); font-weight: 400; letter-spacing: .04em; }
+    .ai-loading { color: var(--text-muted); font-style: italic; }
+
+    /* AI summarize buttons (in the controls row) */
+    .feed-controls-spacer { flex: 1; }
+    .ai-btns { display: flex; gap: 8px; }
+    .ai-btn {
+      font-family: 'Space Mono', monospace; font-size: 11px; font-weight: 700;
+      letter-spacing: .04em; color: var(--accent2); cursor: pointer;
+      background: rgba(91,200,245,.08); border: 1px solid rgba(91,200,245,.28);
+      border-radius: 8px; padding: 7px 13px; transition: all .15s; white-space: nowrap;
+    }
+    .ai-btn:hover { background: rgba(91,200,245,.16); border-color: var(--accent2); }
+    .ai-btn.vision { color: var(--accent); background: rgba(127,217,184,.08); border-color: rgba(127,217,184,.3); }
+    .ai-btn.vision:hover { background: rgba(127,217,184,.16); border-color: var(--accent); }
+    .ai-btn.busy { opacity: .5; pointer-events: none; }
+    html.light .ai-btn { background: var(--tint-blue); border-color: var(--tint-blue-bd); }
+    html.light .ai-btn.vision { background: var(--tint-green, rgba(127,217,184,.12)); }
+    @media (max-width: 600px){
+      .feed-controls-spacer { flex-basis: 100%; height: 0; }
+      .ai-btns { width: 100%; }
+      .ai-btn { flex: 1; text-align: center; }
+    }
 
     /* Day group headers */
     .day-group { margin-bottom: 8px; }
@@ -273,18 +302,24 @@
   <!-- Channel tabs -->
   <div class="chan-tabs" id="chanTabs"></div>
 
-  <!-- Controls: scope toggle + count -->
+  <!-- Controls: scope toggle + count + AI summarize buttons -->
   <div class="feed-controls">
     <div class="scope-toggle">
       <button class="scope-btn active" id="scopeToday" onclick="setScope('today')">Today</button>
       <button class="scope-btn" id="scopeAll" onclick="setScope('all')">All Recent</button>
     </div>
     <span class="feed-count" id="feedCount"></span>
+    <span class="feed-controls-spacer"></span>
+    <div class="ai-btns" id="aiBtns" style="display:none">
+      <button class="ai-btn" onclick="runSummary('text')">✨ AI Summarize</button>
+      <button class="ai-btn vision" onclick="runSummary('vision')">👁 + Vision</button>
+    </div>
   </div>
 
-  <!-- AI "today's take" summary strip -->
+  <!-- AI summary strip (on-demand) -->
   <div class="ai-take collapsed" id="aiTake">
-    <div class="ai-take-head">✨ Today's Take</div>
+    <button class="ai-take-close" onclick="document.getElementById('aiTake').classList.add('collapsed')" title="Dismiss">✕</button>
+    <div class="ai-take-head">✨ AI Summary <span class="ai-take-scope" id="aiTakeScope"></span></div>
     <div class="ai-take-body" id="aiTakeBody"></div>
   </div>
 
@@ -623,43 +658,137 @@ function setScope(s){
 }
 
 /* ═══════════════════════════════════════════════════════════
-   AI "TODAY'S TAKE" (optional)
+   AI SUMMARY  (on-demand: text  OR  text + vision)
+   Scope = today's "session". If today's posts span >6h with a gap,
+   only the latest cluster is used (so a morning summary = the morning;
+   regenerate at night and it = the evening batch).
 ═══════════════════════════════════════════════════════════ */
-async function loadAiTake(){
-  const take = document.getElementById('aiTake');
-  if (!ENABLE_AI_TAKE || !activeChan.aiTake){ take.classList.add('collapsed'); return; }
-  const todays = allMessages.filter(m => isToday(m.timestamp) && m.content);
-  if (!todays.length){ take.classList.add('collapsed'); return; }
+const SESSION_GAP_MS = 6 * 60 * 60 * 1000;   // 6h gap splits sessions
+const VISION_MODEL = 'claude-sonnet-4-5-20250929';   // vision-capable
+const TEXT_MODEL   = 'claude-haiku-4-5-20251001';    // text-only, cheap
 
-  const transcript = [...todays].reverse()
-    .map(m => `${m.author?.global_name || m.author?.username || '?'}: ${m.content}`).join('\n');
+// The most recent "session" of posts, oldest→newest. Prefers today; if
+// today is empty (weekend/quiet day), falls back to the latest session
+// that DOES have posts (e.g. Friday's). Returns {msgs, isToday}.
+function sessionMessages(){
+  const all = [...allMessages]
+    .filter(m => m.content || (m.attachments||[]).length)
+    .sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));   // oldest→newest
+  if (!all.length) return { msgs: [], isToday: false };
+
+  // Walk back from the newest post, grouping until a >6h gap. That cluster
+  // is the latest session — whatever day it lands on.
+  let startIdx = all.length - 1;
+  for (let i = all.length - 1; i > 0; i--){
+    const gap = new Date(all[i].timestamp) - new Date(all[i-1].timestamp);
+    if (gap > SESSION_GAP_MS) { startIdx = i; break; }
+    startIdx = i - 1;
+  }
+  const msgs = all.slice(startIdx);
+  return { msgs, isToday: isToday(msgs[msgs.length-1].timestamp) };
+}
+
+function imageUrlsFrom(msgs){
+  const urls = [];
+  for (const m of msgs){
+    for (const a of (m.attachments || [])){
+      const isImg = (a.content_type||'').startsWith('image/')
+        || /\.(png|jpe?g|gif|webp)$/i.test(a.filename || a.url || '');
+      if (isImg && a.url) urls.push(a.url);
+    }
+  }
+  return urls;
+}
+
+// Shared runner. mode = 'text' | 'vision'. Renders into the #aiTake strip.
+async function runSummary(mode){
+  const take = document.getElementById('aiTake');
+  const body = document.getElementById('aiTakeBody');
+  const { msgs, isToday: isTodaySess } = sessionMessages();
+  if (!msgs.length){
+    take.classList.remove('collapsed');
+    document.getElementById('aiTakeScope').textContent = '';
+    body.textContent = 'No recent #spx posts to summarize.';
+    return;
+  }
+
+  // When the latest session isn't today (weekend/quiet day), tell the model
+  // and label the output with the actual date so it's never mistaken for today.
+  const sessDate = new Date(msgs[msgs.length-1].timestamp)
+    .toLocaleDateString('en-US', { weekday:'long', month:'short', day:'numeric' });
+
+  const transcript = msgs
+    .map(m => `${m.author?.global_name || m.author?.username || '?'}: ${m.content || '(image)'}`)
+    .join('\n');
+  const imgUrls = mode === 'vision' ? imageUrlsFrom(msgs) : [];
+
+  // Build the message content. For vision, interleave text + image blocks.
+  let content;
+  const whenPhrase = isTodaySess ? `today’s` : `the most recent session’s (${sessDate})`;
+  const instruction = `These are ${whenPhrase} #spx market-analysis posts from a Discord channel`
+    + (mode === 'vision' ? ` (charts attached as images)` : ``) + `. `
+    + `Summarize the key takeaways in 4-6 tight sentences: levels, bias, and any setups mentioned. `
+    + (mode === 'vision' ? `Read the charts and reference specific annotated levels you see. ` : ``)
+    + `Be concrete.\n\nPosts:\n${transcript}`;
+
+  if (mode === 'vision' && imgUrls.length){
+    content = [{ type: 'text', text: instruction }];
+    for (const url of imgUrls){
+      content.push({ type: 'image', source: { type: 'url', url } });
+    }
+  } else {
+    content = instruction;
+  }
+
+  // Scope label: date (if not today) + time span + count.
+  const first = new Date(msgs[0].timestamp), last = new Date(msgs[msgs.length-1].timestamp);
+  const tf = d => d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+  document.getElementById('aiTakeScope').textContent =
+    `· ${isTodaySess ? 'Today' : sessDate} · ${msgs.length} posts, ${tf(first)}–${tf(last)}`
+    + (mode==='vision' ? ` · ${imgUrls.length} charts` : '');
+
+  take.classList.remove('collapsed');
+  body.innerHTML = `<span class="ai-loading">Summarizing ${mode === 'vision'
+    ? imgUrls.length + ' chart' + (imgUrls.length===1?'':'s') + ' + text' : (isTodaySess ? 'today’s posts' : sessDate + '’s posts')}…</span>`;
+  setSummaryBusy(true);
 
   try{
-    const r = await fetch(AI_PROXY, {
+    const r = await fetch(`${AI_PROXY}/v1/messages`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 350,
-        messages: [{
-          role: 'user',
-          content: `These are this morning's #spx market analysis posts from a Discord channel. `
-            + `Summarize the key takeaways in 3-4 tight sentences for a quick read before market open. `
-            + `Be concrete about levels, bias, and any setups mentioned.\n\n${transcript}`
-        }]
+        model: mode === 'vision' ? VISION_MODEL : TEXT_MODEL,
+        max_tokens: 600,
+        messages: [{ role: 'user', content }]
       })
     });
     if (!r.ok) throw new Error('AI proxy ' + r.status);
     const data = await r.json();
+    if (data.error) throw new Error(data.error.message || 'proxy error');
     const text = data?.content?.[0]?.text || data?.text || '';
-    if (text.trim()){
-      document.getElementById('aiTakeBody').textContent = text.trim();
-      take.classList.remove('collapsed');
-    } else take.classList.add('collapsed');
+    body.textContent = text.trim() || 'No summary returned.';
   }catch(e){
-    console.warn('AI take unavailable:', e);
-    take.classList.add('collapsed');
+    console.warn('Summary failed:', e);
+    body.textContent = '⚠ Summary unavailable — ' + e.message;
+  }finally{
+    setSummaryBusy(false);
   }
+}
+
+function setSummaryBusy(b){
+  document.querySelectorAll('.ai-btn').forEach(btn => {
+    btn.classList.toggle('busy', b);
+    btn.disabled = b;
+  });
+}
+
+// Show the summarize buttons only on channels flagged aiTake (e.g. #spx).
+function updateAiControls(){
+  const btns = document.getElementById('aiBtns');
+  if (!btns) return;
+  btns.style.display = (ENABLE_AI_TAKE && activeChan.aiTake) ? 'flex' : 'none';
+  // Hide a stale summary when switching channels.
+  if (!activeChan.aiTake) document.getElementById('aiTake').classList.add('collapsed');
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -668,7 +797,7 @@ async function loadAiTake(){
 // Runs after messages for the active channel are in `allMessages`.
 function afterLoad(){
   render();
-  loadAiTake();
+  updateAiControls();    // show/hide the summarize buttons for this channel
   renderTabs();          // refresh other tabs' unread dots
   markChanSeen(activeChan);   // viewing this channel clears its own dot
   renderTabs();          // re-render so the now-seen tab shows no dot

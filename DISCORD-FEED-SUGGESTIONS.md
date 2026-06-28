@@ -5,9 +5,12 @@
 ---
 
 ## ✅ Built & working (for context — not a to-do)
-- `discord-feed.html` — feed with **channel tabs** (#spx default + 3D Printing #general): Today / All-Recent toggle (All-Recent grouped by day), per-image lightbox with prev/next + arrow keys, moderate sizing, shows Discord reactions, two-way 🔥 react button (posts as the bot), local "mark read" toggle, optional Claude "Today's Take" (#spx only), **per-channel unread dots**, **pre-market auto-poll** (weekdays 5:30–8:30am CST).
-- `nav.html` — top-level `#SPX` link + mobile Tools entry, plus a **site-wide unread dot** on the #SPX link (re-checks every 5 min on any page).
-- `discord-proxy-worker.js` — Worker: `GET /messages?limit=50[&channel=ID]` (allow-listed channel param, incl. reactions) + `POST /react {messageId,emoji[,channel]}` (origin-locked, emoji allow-list).
+- `discord-feed.html` — feed with **channel tabs** (#spx default + General = merge of both #general channels): Today / All-Recent toggle, per-image lightbox, reactions, two-way 🔥 react, mark-read, **per-channel unread dots**, **pre-market auto-poll** (weekdays 5:30–8:30am CST), and **on-demand AI summary** — two buttons: **✨ AI Summarize** (text, Haiku) and **👁 + Vision** (text + today's chart images → Sonnet vision). Summary scope = today's *session*: if today's posts span a >6h gap, only the latest cluster is summarized (morning batch in the AM; regenerate at night → evening batch). Buttons show only on aiTake channels (#spx).
+- `index.html` — **Discord #spx homepage card** (between Top Stories and Market): "Open feed →" link + the same two summarize buttons (✨ AI Summarize / 👁 + Vision), output rendered inline via `markdownToHtml`. Self-contained JS (`dcSummary`/`dcSession`/`dcImages`, `DC_PROXY`/`DC_*_MODEL` consts). No raw post dump.
+- `nav.html` — top-level **Discord** link (renamed from #SPX 2026-06-28) + mobile "Discord Feed" entry, plus a **site-wide unread dot** (re-checks every 5 min on any page, watches spx + both generals).
+- `discord-proxy-worker.js` — Worker: `GET /messages?limit=50[&channel=ID]` (allow-list = #spx secret + both #general ids) + `POST /react {messageId,emoji[,channel]}`.
+
+**Vision note:** the Anthropic Worker proxy (`anthropic.infiniti306.workers.dev`) is a transparent passthrough to the Messages API (`/v1/messages`), so URL-based image blocks (`{type:'image',source:{type:'url',url}}`) work with NO worker change. Vision uses `claude-sonnet-4-5-20250929`; text uses `claude-haiku-4-5-20251001`.
 
 > **One step outstanding to fully activate multi-channel:** paste the real 3D `#general` channel ID (see item 4 below), re-deploy the worker, commit/push.
 
