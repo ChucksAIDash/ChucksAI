@@ -447,11 +447,11 @@
       </div>
     </div>
     <div class="top-widget">
-      <div class="tw-icon" id="wxIcon">⛅</div>
+      <div class="tw-icon" id="topWxIcon">⛅</div>
       <div class="tw-body">
         <div class="tw-label">Lombard, IL</div>
-        <div class="tw-value" id="wxTemp">--°F</div>
-        <div class="tw-sub" id="wxDesc">Loading…</div>
+        <div class="tw-value" id="topWxTemp">--°F</div>
+        <div class="tw-sub" id="topWxDesc">Loading…</div>
       </div>
     </div>
     <div class="top-widget gluc-widget" id="glucWidget">
@@ -661,10 +661,10 @@ async function loadWeather(){
     const r=await fetch('https://api.open-meteo.com/v1/forecast?latitude=41.88&longitude=-88.01&current_weather=true&temperature_unit=fahrenheit');
     const d=await r.json();
     const cw=d.current_weather, temp=Math.round(cw.temperature), code=cw.weathercode;
-    document.getElementById('wxTemp').textContent=`${temp}°F`;
-    document.getElementById('wxDesc').textContent=WX_DESC[code]||'Clear';
-    document.getElementById('wxIcon').textContent=WX_ICONS[code]||'🌡️';
-  }catch{ document.getElementById('wxDesc').textContent='Unavailable'; }
+    document.getElementById('topWxTemp').textContent=`${temp}°F`;
+    document.getElementById('topWxDesc').textContent=WX_DESC[code]||'Clear';
+    document.getElementById('topWxIcon').textContent=WX_ICONS[code]||'🌡️';
+  }catch{ document.getElementById('topWxDesc').textContent='Unavailable'; }
 }
 
 /* ── GLUCOSE ── */
