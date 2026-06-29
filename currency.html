@@ -325,6 +325,7 @@ updateClock();
 let secsLeft = 60;
 const cdEl = document.getElementById('countdown');
 setInterval(()=>{
+  if(document.hidden) return;   // pause auto-refresh while tab hidden (saves Finnhub quota)
   secsLeft--;
   if(cdEl) cdEl.textContent = `AUTO ⟳ ${secsLeft}s`;
   if(secsLeft <= 0){ secsLeft = 60; loadMarketData(); }

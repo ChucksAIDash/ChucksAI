@@ -1,213 +1,194 @@
 # ChucksAI Codebase Audit
 
-_Generated: 2026-06-20 · Fresh re-scan of every `.html` in repo root (`C:\Users\Infin\Desktop\ChucksAI`). Supersedes the May 23 / June 9 run. Re-checked against live files post-tokenization — no findings reused from the prior audit._
+_Generated: 2026-06-28 · Fresh re-scan of every `.html` in repo root (`C:\Users\Infin\Desktop\ChucksAI`). Supersedes the 2026-06-20 run. Re-checked against live bytes after the big June work: API-key proxy migration, CSS dedupe into `styles.css`, nav light-mode tokenization, font preconnect, Finnhub fan-out throttling, the new `today.html` panel, and the new `discord-feed.html` page. Now a 20-check audit (added Check 19: futures/disallowed-symbol guardrail; Check 20: web-verified API tier limits). See "When to re-audit" at the end for future-run triggers._
 
 **Legend:** ✅ Pass · ❌ Fail · — Not applicable · ⚠️N residual count (see detail) · ℹ️ informational/expected
 
-Files scanned: 21 `.html` in repo root. No backup/duplicate files found (no `dexcomB4Change.html` / `dexcomog.html`). `_wtest.tmp` is **gone** (cleanup confirmed). All counts below are pulled from the live bytes, not estimates.
+Files scanned: **23** `.html` in repo root (was 21 on 2026-06-20). New since last audit: **`today.html`**, **`discord-feed.html`**. No backup/duplicate files, no `*.bak`/`*-old`/`*-copy`. NUL-byte check is clean (verified via python, not bash — the sandbox-bash NUL display artifact is a known false positive and was ignored).
+
+## What changed since 2026-06-20 (resolved items)
+
+These were **FAIL/⚠️** last time and are now **PASS** — verified this scan:
+
+- **Client-side market-data keys → PROXIED.** Zero Finnhub/Polygon/thenewsapi keys or direct hosts in any HTML. All route through `finnhub-proxy` / `polygon-proxy` / `news-proxy` Workers. (Check 9 / see perf-security audit 1.1.)
+- **Duplicated global animations → DEDUPED.** `@keyframes fadeUp` / `.fade-in` lifted into `styles.css`; per-page copies deleted everywhere except `dexcom.html` (reference copy, intentionally untouched). Only `dexcom.html` still defines `@keyframes fadeUp` locally. (Check 7.)
+- **nav.html light-mode hardcodes → TOKENIZED.** All 14 stale `html.light` rules rewritten to design tokens. (Check 3.)
+- **Font preconnect → ADDED to all 21 live pages + `_template.html`.** (perf 2.3.)
+- **Finnhub on-load fan-out → SERIALIZED.** `index.html` (sequential loop, 120ms gap) and `treasuries.html` (sequential loop, 120ms gap) no longer fire parallel `Promise.all`. New `today.html` is serialized from the start (130ms gap). (Check 18.)
 
 ## Check matrix
 
-| File | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| `index.html` | ✅ | ✅ | ⚠️16 | ✅ | ✅ | ✅ | ⚠️2 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ⚠️26 | ✅ | ✅ | — | ❌ |
-| `_template.html` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ℹ️ | ⚠️1 | ✅ | ✅ | — | — |
-| `nav.html` | — | — | ⚠️57 | — | — | — | ✅ | ✅ | ✅ | ❌ | — | ❌ | ❌ | ⚠️4 | ✅ | ✅ | — | — |
-| `fear-greed-crypto.html` | — | — | ✅ | — | — | — | — | — | — | ✅ | — | — | ✅ | — | ✅ | — | — | — |
-| `breadth.html` | ✅ | ✅ | ⚠️10 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ⚠️27 | ✅ | ✅ | ✅ | ✅ |
-| `chat.html` | ✅ | ✅ | ⚠️6 | ✅ | ✅ | ✅ | ⚠️1 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ⚠️3 | ✅ | ✅ | — | — |
-| `commodities.html` | ✅ | ✅ | ⚠️48 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ⚠️4 | ✅ | ✅ | ✅ | ✅ |
-| `crypto.html` | ✅ | ✅ | ⚠️1 | ✅ | ✅ | ✅ | ⚠️4 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ⚠️4 | ✅ | ✅ | — | — |
-| `currency.html` | ✅ | ✅ | ⚠️38 | ✅ | ✅ | ✅ | ⚠️5 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ⚠️4 | ✅ | ✅ | — | ✅ |
-| `dexcom-callback.html` | ✅ | ✅ | ⚠️10 | ✅ | ✅ | ✅ | ⚠️1 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — | — |
-| `dexcom.html` | ✅ | ✅ | ⚠️132 | ✅ | ✅ | ✅ | ⚠️5 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ⚠️207/47c | ✅ | ✅ | — | — |
-| `earnings.html` | ✅ | ✅ | ⚠️6 | ✅ | ✅ | ✅ | ⚠️4 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ⚠️11 | ✅ | ✅ | — | ✅ |
-| `economic-calendar.html` | ✅ | ✅ | ⚠️12 | ✅ | ✅ | ✅ | ⚠️2 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ⚠️13/5c | ✅ | ✅ | — | — |
-| `fear-greed.html` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ⚠️4 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ⚠️21 | ✅ | ✅ | — | ✅ |
-| `heat-map.html` | ✅ | ✅ | ⚠️49 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ⚠️11/9c | ✅ | ✅ | — | — |
-| `insiders.html` | ✅ | ✅ | ⚠️11 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ⚠️6 | ✅ | ✅ | — | ✅ |
-| `ipo.html` | ✅ | ✅ | ⚠️11 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ⚠️4 | ✅ | ✅ | — | ✅ |
-| `news.html` | ✅ | ✅ | ⚠️3 | ✅ | ✅ | ✅ | ⚠️4 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ⚠️18/6c | ✅ | ✅ | — | — |
-| `options-flow.html` | ✅ | ✅ | ⚠️13 | ✅ | ✅ | ✅ | ⚠️4 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ⚠️21 | ✅ | ✅ | ✅ | — |
-| `treasuries.html` | ✅ | ✅ | ⚠️6 | ✅ | ✅ | ✅ | ⚠️4 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ⚠️7/1c | ✅ | ✅ | ✅ | ❌ |
-| `watchlist.html` | ✅ | ✅ | ⚠️17 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ⚠️17 | ✅ | ✅ | ✅ | ✅ |
+| File | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| `index.html` | ✅ | ✅ | ⚠️16 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ⚠️25/0c | ✅ | ✅ | — | ✅ | ✅ |
+| `today.html` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ⚠️2/0c | ✅ | ✅ | ✅ | ✅ | ✅ |
+| `discord-feed.html` | ✅ | ✅ | ⚠️23 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ⚠️2/0c | ✅ | ✅ | ✅ | ℹ️ | — |
+| `_template.html` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ℹ️ | ✅ | ✅ | ✅ | — | — | — |
+| `nav.html` | — | — | ⚠️ | — | — | — | ✅ | ✅ | ✅ | ❌ | — | ❌ | ❌ | ✅ | ✅ | ✅ | — | — | — |
+| `fear-greed-crypto.html` | — | — | ✅ | — | — | — | — | — | — | ✅ | — | — | ✅ | — | ✅ | ✅ | — | — | — |
+| `breadth.html` | ✅ | ✅ | ⚠️10 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ⚠️27 | ✅ | ✅ | ✅ | ✅ | ✅ |
+| `chat.html` | ✅ | ✅ | ⚠️6 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ⚠️3 | ✅ | ✅ | — | — | — |
+| `commodities.html` | ✅ | ✅ | ⚠️47 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ⚠️4 | ✅ | ✅ | ✅ | ✅ | ✅ |
+| `crypto.html` | ✅ | ✅ | ⚠️1 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ⚠️4 | ✅ | ✅ | — | — | ℹ️ |
+| `currency.html` | ✅ | ✅ | ⚠️38 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ⚠️4 | ✅ | ✅ | ✅ | ✅ | ✅ |
+| `dexcom-callback.html` | ✅ | ✅ | ⚠️10 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — | — | — |
+| `dexcom.html` | ✅ | ✅ | ⚠️132 | ✅ | ✅ | ✅ | ⚠️5 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ⚠️205/52c | ✅ | ✅ | — | — | — |
+| `earnings.html` | ✅ | ✅ | ⚠️6 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ⚠️11 | ✅ | ✅ | — | ✅ | ✅ |
+| `economic-calendar.html` | ✅ | ✅ | ⚠️12 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ⚠️13/6c | ✅ | ✅ | — | — | — |
+| `fear-greed.html` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ⚠️21 | ✅ | ✅ | — | ✅ | ✅ |
+| `heat-map.html` | ✅ | ✅ | ⚠️49 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ⚠️11/9c | ✅ | ✅ | — | ✅ | ℹ️ |
+| `insiders.html` | ✅ | ✅ | ⚠️11 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ⚠️6 | ✅ | ✅ | — | ✅ | ✅ |
+| `ipo.html` | ✅ | ✅ | ⚠️11 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ⚠️4 | ✅ | ✅ | — | ✅ | ✅ |
+| `news.html` | ✅ | ✅ | ⚠️3 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ⚠️18/6c | ✅ | ✅ | — | — | — |
+| `options-flow.html` | ✅ | ✅ | ⚠️13 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ⚠️21 | ✅ | ✅ | ✅ | — | — |
+| `treasuries.html` | ✅ | ✅ | ⚠️6 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ⚠️7/1c | ✅ | ✅ | ✅ | ✅ | ✅ |
+| `watchlist.html` | ✅ | ✅ | ⚠️17 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ⚠️17 | ✅ | ✅ | ✅ | ✅ | ✅ |
 
-> Note on the `⚠️` cells: a warning is **not** automatically a defect. Check 3 and check 7 in particular contain a large share of deliberate leaves (documented heat-scale gradients, Dexcom brand purple, status-dot colors). The Detailed Findings below separate genuine misses from deliberate leaves. Inline-style cells show `total / Nc` where `Nc` = how many of those inline styles contain a hardcoded color.
+> `⚠️` is not automatically a defect. Checks 3 and 14 contain a large share of deliberate leaves (documented heat-scale gradients, Dexcom brand purple, status-dot colors). Inline-style cells show `total / Nc` where `Nc` = how many contain a hardcoded color. The Detailed Findings below separate genuine misses from deliberate leaves.
 
 ---
 
 ## Detailed Findings Per Check
 
 ### Check 1 — `theme.js` first script in `<head>` (before `styles.css`)
-**Pass on all live pages.** Every page that should carry it has `theme.js` as the first `<script>` in `<head>`, positioned before the `styles.css` link. N/A for `nav.html` (fragment) and `fear-greed-crypto.html` (redirect shim, no `<head>` scripts).
+**Pass on all 21 live pages**, including the two new ones. `today.html` and `discord-feed.html` both have `theme.js` at the top of `<head>` (line 8/9) before the `styles.css` link. N/A for `nav.html` (fragment) and `fear-greed-crypto.html` (shim).
 
 ### Check 2 — `theme.js` loaded via root-relative path
-**Pass on all live pages.** Every page uses `src="theme.js"` exactly — no subfolder prefixes, no leading slash variants. N/A for the fragment and the shim.
+**Pass everywhere.** All pages use `src="theme.js"` — no subfolder/leading-slash variants.
 
-### Check 3 — No hardcoded colors in `<style>` blocks (post-tokenization)
-Tokenization is broadly in place — every page routes structural colors through `var(--…)`. The residual `rgba()`/hex counts below are what remains. Most are **deliberate leaves**; the genuine misses are called out.
+### Check 3 — No hardcoded colors in `<style>` blocks
+Tokenization broadly in place. Residual counts are mostly **deliberate leaves** (heat-scale gradients, Dexcom purple, status dots). New-page status:
 
-Counts are `hex literals + rgba()` inside `<style>` blocks (live numbers):
+- **`today.html` — ✅ clean.** Zero hex, zero rgba in its `<style>` block. Fully tokenized — a model new page.
+- **`discord-feed.html` — ⚠️23 (3 hex + 20 rgba).** New page; not yet fully tokenized. The rgba values are mostly lightbox-overlay scrims (`rgba(0,0,0,.x)`, `rgba(255,255,255,.x)` on `.lb-nav` hover) and reaction-pill tints. Candidate for a tokenization pass (introduce `--scrim`/`--overlay` tokens), but low visual risk. Not urgent.
 
-| File | rgba | hex | Assessment |
-|---|---|---|---|
-| `dexcom.html` | 122 | 10 | Mostly deliberate — 52 are Dexcom brand purple `138,99,255` (documented leave) + glucose-range heat tints. A few generic `rgba(255,255,255,.0x)` overlays could be tokenized but low priority. |
-| `nav.html` | 26 | 31 | **Has genuine misses** — see callout below. The biggest single tokenization gap in the repo. |
-| `heat-map.html` | 49 | 0 | Deliberate — bespoke green/red heat-scale gradient (`61,220,132` / `240,82,82` at graduated alphas). Documented leave. |
-| `commodities.html` | 47 | 1 | Deliberate — same heat-scale gradient pattern as heat-map. Documented leave. The lone hex `#dde2ea` is a light-mode border that could be tokenized. |
-| `currency.html` | 0 | 38 | **Mostly deliberate** — a bespoke green→red performance heat gradient (`#004400`→`#7fff7f`, `#150000`→`#f07070`). Functions like the heat-map leave; recommend documenting it explicitly so it isn't re-flagged. |
-| `index.html` | 15 | 1 | Mix — most are status/sparkline accents at alpha; reasonable as leaves. `#80d9ff` glow could be tokenized. |
-| `watchlist.html` | 12 | 5 | Mix — light-mode hex (`#f4f6fa`, `#dde2ea`, `#1c2333`) are candidate misses; rest are status tints. |
-| `insiders.html` | 8 | 3 | Light-mode hex (`#c8dff7`, `#1c2333`) are candidate misses; Dexcom-blue `26,111,181` tint deliberate. |
-| `options-flow.html` | 11 | 2 | Deliberate — gold sweep-flow scale (`255,200,0` graduated). `#ffc800` is the same gold. |
-| `economic-calendar.html` | 8 | 4 | Minor — red impact dots (`#f07070`/`#f05252`) could become a `--negative` token; rest are accent tints. |
-| `breadth.html` | 8 | 2 | Deliberate — advance/decline green/red tints. `#f97316` orange is an off-palette accent (document it). |
-| `dexcom-callback.html` | 9 | 1 | Deliberate — Dexcom teal status tints. |
-| `ipo.html` | 9 | 2 | Status tints; light-mode hex `#f4f6fa`/`#dde2ea` candidate misses. |
-| `earnings.html` | 6 | 0 | Accent tints (blue at alpha). Reasonable leaves. |
-| `treasuries.html` | 6 | 0 | Status tints. Reasonable leaves. |
-| `chat.html` | 5 | 1 | Accent tints + `#80d9ff` glow. Minor. |
-| `news.html` | 2 | 1 | Status tints. Minor. |
-| `crypto.html` | 1 | 0 | Single `rgba(0,0,0,.5)` overlay. Negligible. |
-| `fear-greed.html` | 0 | 0 | **Fully tokenized.** Clean. |
-| `_template.html` | 0 | 0 | **Fully tokenized.** Clean (as the boilerplate should be). |
-| `fear-greed-crypto.html` | 0 | 0 | N/A (shim, no styles). |
+Otherwise unchanged from 2026-06-20: `dexcom.html` (132, mostly Dexcom purple), `heat-map.html`/`commodities.html`/`currency.html` (bespoke heat gradients), `options-flow.html` (gold sweep scale). `fear-greed.html`, `today.html`, `_template.html` are the fully-tokenized pages.
 
-**Genuine miss — `nav.html` light-mode hardcodes (highest-value fix):** nav.html is otherwise well tokenized (`var(--border)`, `var(--bg-card)`, `var(--accent)`, `var(--text-*)` used throughout), but its `html.light` overrides hardcode a cluster of hex values instead of flowing through light-mode tokens:
-`#f4f6fa`, `#dde2ea`, `#7a8494`, `#1c2333`, `#1a6fb5`, `#c8dff7`, `#eef6ff` (appearing across `.market-clock`, `.nav-weather`, `.nav-link:hover`, `.nav-link.active`, dropdown panels). Status-dot colors `#3ddc84`, `#f0b86a`, `#a78bfa`, `#555` are also raw. Because nav is the one component on **every** page, this is the single most impactful tokenization gap remaining. Recommend introducing light-mode token overrides for these.
-
-**Recommendation:** document the three bespoke heat/scale gradients (heat-map, commodities, currency, options-flow gold) in the master spec as approved leaves so future audits don't re-flag ~180 of these as suspect, and fix the nav.html light-mode hardcodes.
+**Still recommended:** document the bespoke heat/scale gradients + Dexcom purple in the master spec as approved leaves so they stop inflating this count (~180 across 4 pages). Carried over from last audit — still open.
 
 ### Check 4 — `<div id="nav-placeholder"></div>` present
-**Pass on all live pages.** N/A for `nav.html` (it *is* the nav) and the shim.
+**Pass on all live pages.** Present on both new pages.
 
 ### Check 5 — `injectNav()` defined and called via `fetch('nav.html')`
-**Pass on all live pages.** Every page defines/calls `injectNav()` and fetches `nav.html` (not `.innerHTML` injection). N/A for nav fragment and shim.
+**Pass on all live pages, including `index.html` and `discord-feed.html`.**
+
+> ⚠️ **Correction (verified with the Read tool):** an earlier draft of this audit FAILed `index.html` + `discord-feed.html` here. That was a **false positive caused by the known sandbox-bash truncation artifact** — `grep` only saw the first ~1101 lines of `index.html` and ~574 of `discord-feed.html`, cutting off the nav code that lives at the very bottom of each file. Reading the actual file tails shows the standard helper is present and correct:
+> - `index.html` lines 1293–1310: `injectNav()` + `fetch('nav.html').then(...).then(injectNav)`.
+> - `discord-feed.html` lines 896–915: same standard helper ("NAV INJECT — standard on all pages — do not modify"), plus `updateNavDot()` which correctly assumes the injected nav.
+>
+> **Lesson reinforced:** never run Check 5 (or any "is X missing?" check) off bash `grep` on just-edited repo files — verify absence with the Read tool. This is the exact failure mode the project memory warns about.
+
+Every live page defines `injectNav()` and calls it via `fetch('nav.html')` (no `.innerHTML` injection). N/A for `nav.html` (it *is* the nav) and the shim.
 
 ### Check 6 — No hardcoded copy-pasted `<nav>` block
-**Pass everywhere.** Zero `<nav>` elements found in any content page; the only `<nav>` markup lives in `nav.html` itself, as intended.
+**Pass everywhere.** The only `<nav>` markup lives in `nav.html`.
 
 ### Check 7 — No reusable/global CSS classes redefined per-page
-Several pages still define their own copies of shared classes in their local `<style>` blocks instead of inheriting from `styles.css`. The `@keyframes fadeUp` + `.fade-in` pair is the most widely duplicated.
-
-Duplications found (class → pages redefining it):
-
-- **`@keyframes fadeUp`** — `chat`, `crypto`, `currency`, `dexcom`, `earnings`, `economic-calendar`, `fear-greed`, `index`, `news`, `options-flow`, `treasuries` (11 pages). The most duplicated definition in the repo.
-- **`.fade-in`** — `crypto`, `currency`, `dexcom`, `earnings`, `economic-calendar`, `fear-greed`, `index`, `news`, `options-flow`, `treasuries` (10 pages).
-- **`.spinner`** — `crypto`, `currency`, `dexcom`, `dexcom-callback`, `earnings`, `fear-greed`, `news`, `options-flow`, `treasuries` (9 pages).
-- **`.loading-text`** — `crypto`, `currency`, `dexcom`, `earnings`, `fear-greed`, `news`, `options-flow`, `treasuries` (8 pages).
-- **`.modal-*`** — `currency` (10 modal-class definitions). Localized to one page; promote to global if reused elsewhere later.
-- **`.countdown-badge`** — `dexcom` only (1). Not duplicated; fine as-is.
-
-**Recommendation:** lift `@keyframes fadeUp`, `.fade-in`, `.spinner`, `.loading-text` into `styles.css` once and delete the per-page copies. That removes the duplication on up to 11 pages with no behavior change.
+**Largely resolved since 2026-06-20.** `@keyframes fadeUp` / `.fade-in` were consolidated into `styles.css` and deleted from the per-page `<style>` blocks. Only `dexcom.html` still defines `@keyframes fadeUp` locally — intentional (it's a reference copy from another project, left untouched). `.spinner`/`.loading-text` remain per-page by design (they legitimately differ). New pages `today.html`/`discord-feed.html` do not redefine the shared animations. **No action.**
 
 ### Check 8 — No `console.log` statements
-**Pass everywhere.** Zero `console.log` calls in any file. (Any `console.error`/`warn` for error handling, if present, is acceptable per spec.)
+**Pass everywhere.** Zero `console.log` across all 23 files.
 
-### Check 9 — No `localhost` / unexpected endpoints
-**No `localhost` or `127.0.0.1` anywhere.** All external endpoints are expected. Per-file external hosts:
+### Check 9 — No `localhost` / leaked keys / unexpected endpoints
+**Pass.** No `localhost`/`127.0.0.1`. **No Finnhub/Polygon/thenewsapi keys or direct hosts in any HTML** (migration confirmed). Worker proxies in use: `anthropic`, `dexcom-proxy`, `discord-proxy`, `finnhub-proxy`, `news-proxy`, `polygon-proxy` (all `*.infiniti306.workers.dev`).
 
-- `index.html` — `anthropic.infiniti306.workers.dev`, `dexcom-proxy.infiniti306.workers.dev`, `finnhub.io`, `api.open-meteo.com`, `api.alternative.me`, `api.coingecko.com`, `api.thenewsapi.com`, `fonts.googleapis.com`
-- `dexcom.html` — `dexcom-proxy.infiniti306.workers.dev`, `api.dexcom.com`, `anthropic.infiniti306.workers.dev`, `chucksai.com`, `cdnjs.cloudflare.com`, `fonts.googleapis.com`
-- `dexcom-callback.html` — `dexcom-proxy.infiniti306.workers.dev`, `fonts.googleapis.com`
-- `chat.html` / `options-flow.html` — `anthropic.infiniti306.workers.dev`, `fonts.googleapis.com`
-- `watchlist.html` — `anthropic.infiniti306.workers.dev`, `finnhub.io`, `fonts.googleapis.com`
-- `fear-greed.html` — `finnhub.io`, `api.alternative.me`, `anthropic.infiniti306.workers.dev`, `www.w3.org`, `fonts.googleapis.com`
-- `breadth.html`, `commodities.html`, `earnings.html`, `insiders.html`, `ipo.html`, `treasuries.html` — `finnhub.io`, `fonts.googleapis.com` (breadth/commodities also reference `www.w3.org` for an inline-SVG namespace)
-- `heat-map.html` — `api.polygon.io`, `fonts.googleapis.com`
-- `currency.html` — `finnhub.io`, `api.coinbase.com`, `api.polygon.io`, `fonts.googleapis.com`
-- `crypto.html` — `api.coinbase.com`, `fonts.googleapis.com`
-- `news.html` — `api.thenewsapi.com`, `www.thenewsapi.com`, `fonts.googleapis.com`
-- `nav.html` — `api.open-meteo.com` (weather widget)
-- `economic-calendar.html`, `_template.html` — `fonts.googleapis.com` only
-- `fear-greed-crypto.html` — none (local redirect to `fear-greed.html`)
-
-All worker proxies are the expected `*.infiniti306.workers.dev` Cloudflare Workers. No Anthropic API key appears client-side (AI routes through the worker proxy). `www.w3.org` references are SVG xmlns attributes, not network calls.
+ℹ️ **One client-side key remains by design:** `index.html` line 932 sends CoinGecko's `x_cg_demo_api_key=${CG_KEY}` in the clear. This is CoinGecko's **free demo key**, which is *intended* to be used client-side (public, no-secret, rate-limited-only API). Low risk — not the same class as the Finnhub/Polygon leaks that were proxied. Flagged informational; proxy it too if you ever want zero client-side keys, but not required.
 
 ### Check 10 — `<meta charset>` present
-**Pass on all live pages and the shim.** Missing on `nav.html` — **expected**, it's a fragment, not a standalone document.
+**Pass on all live pages + shim.** N/A for `nav.html` (fragment). (`dexcom.html` shows 2 charset hits — one real meta + one inside an inline string; not a defect.)
 
 ### Check 11 — `<meta name="viewport">` present
-**Pass on all live pages.** N/A for `nav.html` (fragment) and the shim (redirect only).
+**Pass on all live pages.** N/A for fragment + shim.
 
 ### Check 12 — `styles.css` linked
-**Pass on all live pages.** Not linked in `nav.html` (fragment, inherits host page styles — expected) or the shim (expected).
+**Pass on all live pages** including both new ones. Not linked in `nav.html` (fragment) or the shim — expected.
 
 ### Check 13 — Meaningful `<title>`
-**Pass on all live pages** — every page has a real "Chuck's AI — …" title. `_template.html` carries `Chuck's AI — TODO: PAGE TITLE` — **expected/informational** (it's the boilerplate, not a defect). `nav.html` has no title — expected for a fragment.
+**Pass on all live pages** — every page has a real "Chuck's AI — …" title, including `today.html` and `discord-feed.html`. `_template.html` carries the TODO placeholder (expected). `nav.html` has none (fragment).
 
 ### Check 14 — Inline `style=""` attributes
-Inline-style counts (and how many contain a hardcoded color). Dynamic JS-set values (`display:none`, computed widths/heights) are lower priority; color-bearing inline styles are the ones worth migrating to tokens/classes.
+New pages are clean: `today.html` (2 inline, 0 color) and `discord-feed.html` (2 inline, 0 color). `index.html` now **25 inline / 0 color-bearing** (improved — the color-bearing ones from last audit are gone; all remaining are dynamic display/width). The only meaningful concentration remains **`dexcom.html` (205 inline / 52 color-bearing)** — unchanged, still the lone real cleanup candidate (glucose-range tints → classes). `news.html` (6 color) and `economic-calendar.html` (6 color) are minor candidates. Everything else is zero-color dynamic styling or deliberate heat fills.
 
-| File | inline styles | with color | Notes |
+### Check 15 — Repo cleanliness
+**Clean.** No backup/duplicate files, no `*.bak`/`*-old`/`*-copy`, no `_wtest.tmp`. The two new files are legitimate pages, not strays.
+
+### Check 16 — NUL bytes
+**Clean — verified via python** (`b.count(b'\x00')` == 0 on every file). The sandbox-bash `grep` that flags fake NULs on recently-edited files fired again here (flagged all 23); that's the known artifact and was overridden by the authoritative python read.
+
+### Check 17 — Tab-visibility auto-refresh pause  ✅ FIXED THIS SESSION (currency.html)
+Auto-refreshing pages must guard their refresh with `if (document.hidden) return;` so background tabs don't burn rate-limited quota.
+
+- `treasuries.html`, `watchlist.html`, `breadth.html`, `commodities.html`, `options-flow.html`, `today.html` — ✅ all guarded.
+- **`currency.html` — ✅ now fixed.** Its 60s auto-refresh countdown (`setInterval` at line 327) called `loadMarketData()` with no `document.hidden` guard — firing Finnhub forex quotes every 60s even in a background tab. **Fixed 2026-06-28:** added `if(document.hidden) return;` at the top of the interval callback (mirrors `options-flow.html`). File changed: `currency.html` (Chuck to commit + push).
+- **`discord-feed.html` — ✅ guarded (verified via Read, not bash).** It *does* auto-poll: `startAutoPoll()` at line 879 runs a 60s `setInterval` (`POLL_MS`) that calls `refreshAllChannels()` only during the weekday pre-market posting window — and it already opens with `if (document.hidden) return;` (line 881). The earlier "N/A — no setInterval" note was another bash-truncation artifact; the poll code lives past the truncation point. Correctly guarded, no action.
+- `index.html`, `heat-map.html` — load-once / manual; exempt.
+
+### Check 18 — Finnhub call serialization
+**Both prior FAILs resolved.**
+
+- `index.html` — ✅ now serialized: `for (const s of fhSyms) { …await mbFhQuote(s)…; await setTimeout(120); }` (lines 949–951). The non-Finnhub calls (crypto/fg/earnings/news) stay parallel via `allSettled` — correct.
+- `treasuries.html` — ✅ now serialized: `for (const b of BONDS) { await fhQuote…; await setTimeout(120); }` (lines 228–230).
+- `today.html` — ✅ serialized from the start: `for (const sym of allSyms) { await fhQuote…; await setTimeout(130); }` (lines 354–356).
+- `currency.html`, `watchlist.html` — ✅ batched/sequential (unchanged).
+- `crypto.html`, `heat-map.html`, `news.html` — ℹ️ parallel fetches target Coinbase/Polygon/thenewsapi, **not Finnhub** — out of scope (noted ℹ️). `heat-map.html` still fans out ~11 Polygon calls via `Promise.all` (line 465) — fine unless Polygon rate-limits bite; see Check 19.
+- `discord-feed.html` — ℹ️ its auto-poll fans out one `Promise.all` per channel-tab against the **`discord-proxy` Worker** (line 819), not Finnhub. Small (a handful of channel ids), origin-locked, polls only in the pre-market window with a `document.hidden` guard. Out of scope for Finnhub; noted for completeness.
+
+### Check 19 — Futures / disallowed-symbol guardrail (NEW)
+Rule: Finnhub free tier rejects index/futures symbols (`^VIX`, `^SPX`, `^GSPC`, `=F`, `/ES`, `/NQ`, etc.). All index/vol exposure must use **ETF proxies** (SPY, QQQ, DIA, IWM, VIXY, UVXY).
+
+**Pass — no disallowed symbols are sent to any API.**
+
+- Repo-wide grep for `^VIX/^SPX/^GSPC/=F//ES//NQ` as live symbols: the only hits are in **`today.html`**, and both are in **comments / UI copy** ("ETF proxies … no ^VIX/SPX/futures"; "VIXY tracks short-term VIX futures (free-tier proxy for ^VIX)") — *not* symbols passed to `fhQuote()`. The actual symbol used for vol is `VIXY`. Correct.
+- ETF proxies confirmed in use: SPY (13×), QQQ (12×), DIA (9×), IWM (8×), VIXY (3×). `today.html` index list also uses MDY/EFA — all ETFs, all Finnhub-free-tier-safe.
+- No raw index or futures ticker reaches Finnhub, Polygon, or Coinbase.
+
+**Recommendation (forward-looking):** keep this check in every future audit. If a futures/index page is ever built, it must (a) use ETF proxies for Finnhub free tier, (b) route through a Worker proxy (no client-side keys), (c) serialize multi-symbol Finnhub calls, and (d) add the tab-visibility guard if it auto-refreshes. Those four are the standing acceptance criteria for any new market-data page.
+
+### Check 20 — API free-tier limits still current (web-verified)
+This audit's throttling logic hardcodes assumptions about free-tier rate limits (e.g. "Finnhub 60/min", "Polygon 5/min"). Those can change over time, so each re-audit should re-verify them on the web. **Verified 2026-06-28:**
+
+| Provider | Audit assumes | Verified current (2026-06-28) | Status |
 |---|---|---|---|
-| `dexcom.html` | 207 | **47** | By far the heaviest. The 47 color-bearing ones are the priority — many are glucose-range tints that could become classes. The rest are dynamic chart/layout values. |
-| `breadth.html` | 27 | 0 | All dynamic (bar widths / display toggles). Low priority. |
-| `index.html` | 26 | 0 | All dynamic. Low priority. |
-| `fear-greed.html` | 21 | 0 | All dynamic (gauge rotation/positions). Low priority. |
-| `options-flow.html` | 21 | 0 | All dynamic. Low priority. |
-| `news.html` | 18 | **6** | 6 color-bearing — candidates for class extraction. |
-| `watchlist.html` | 17 | 0 | All dynamic. Low priority. |
-| `economic-calendar.html` | 13 | **5** | 5 color-bearing — candidates. |
-| `earnings.html` | 11 | 0 | Dynamic. |
-| `heat-map.html` | 11 | **9** | 9 color-bearing — but these are the heat-scale fills (deliberate, JS-computed gradient). Acceptable. |
-| `treasuries.html` | 7 | **1** | 1 color-bearing. Minor. |
-| `insiders.html` | 6 | 0 | Dynamic. |
-| `commodities.html` | 4 | 0 | Dynamic. |
-| `crypto.html` | 4 | 0 | Dynamic. |
-| `currency.html` | 4 | 0 | Dynamic. |
-| `ipo.html` | 4 | 0 | Dynamic. |
-| `chat.html` | 3 | 0 | Dynamic. |
-| `nav.html` | 4 | 0 | Dynamic. |
-| `_template.html` | 1 | 0 | Dynamic. |
-| `dexcom-callback.html` | 0 | 0 | Clean. |
+| Finnhub (free) | 60 calls/min | **60 calls/min** | ✅ unchanged |
+| Polygon.io (free) | 5 calls/min | **5 calls/min** | ✅ unchanged |
+| CoinGecko (demo key) | — (not previously stated) | **100 calls/min, 10,000/month** | ✅ noted — comfortably above the homepage's handful of calls |
+| thenewsapi (free) | ~100 req/day, read-only | low daily quota, free read-only (exact number not surfaced this scan) | ✅ consistent, no change found |
 
-**Recommendation:** the only inline-style cleanup with real value is `dexcom.html` (47 color-bearing). Everything else is either zero-color dynamic styling or the deliberate heat-scale fills.
+**No limit changed**, so all the serialization/throttle gaps (120–130ms loops) and the "shared 60/min" framing remain valid. The CoinGecko demo key (Check 9 ℹ️) is well within its 100/min — reinforces that it's low-risk.
 
-### Check 15 — Repo cleanliness (NEW)
-**Clean.** No deprecated/backup duplicates in the repo root — no `dexcomB4Change.html`, no `dexcomog.html`, no `*.bak`/`*-old.html`/`*-copy.html`. **`_wtest.tmp` no longer exists** — the pending cleanup step is done. Nothing to flag.
-
-### Check 16 — Trailing NUL bytes (NEW)
-**Clean — zero across all 21 files.** Byte-level scan after the last `</html>` found no `\x00` bytes in any file, and no NULs anywhere in the file bodies. The post-cleanup state is confirmed. (Note: the known sandbox-bash artifact that *displays* fake NULs on just-edited files did not appear here — this scan reads raw bytes, and they're clean.)
-
-### Check 17 — Tab-visibility auto-refresh pause (NEW)
-The 5 required auto-refreshing pages were checked for the Page Visibility pause pattern (`visibilitychange` listener and/or `if (document.hidden) return;` guard):
-
-- `treasuries.html` — ✅ has both `visibilitychange` and `document.hidden` guard
-- `watchlist.html` — ✅ has both
-- `breadth.html` — ✅ has both
-- `commodities.html` — ✅ has both
-- `options-flow.html` — ✅ has the `document.hidden` guard
-
-**All 5 pass.** `index.html` and `heat-map.html` are intentionally exempt (load-once / manual refresh) and correctly lack the pattern — not flagged. No other auto-refreshing page is missing the guard.
-
-### Check 18 — Finnhub call serialization (NEW)
-Checked every page that touches Finnhub for parallel `Promise.all`/`allSettled` fan-out across multiple symbols on initial load:
-
-- **`treasuries.html` — ❌ FAIL (the known outstanding issue, still present).** Line 229: `await Promise.all(BONDS.map(b => fhQuote(b.sym)))` fires all 6 bond-ETF quotes (SHV/SHY/IEI/IEF/TLT/ZROZ) in parallel against Finnhub on every load and every 60s refresh. Not throttled. This is the issue flagged last review — **unchanged.**
-- **`index.html` — ❌ FAIL (additional finding).** Line 865: `Promise.allSettled([mbFhQuote('SPY'), mbFhQuote('QQQ'), mbFhQuote('DIA'), mbFhQuote('IWM'), …])` fires 4 Finnhub quotes in parallel (alongside non-Finnhub calls) on dashboard load. Load-once, so less severe than treasuries, but it's still a 4-wide Finnhub burst that competes for the shared 60/min budget.
-- `currency.html` — ✅ **properly throttled.** Uses `list.slice(i, i+5)` batching with `await setTimeout(1100)` between batches (lines 370–371, 454–457). Not a naked fan-out.
-- `watchlist.html` — ✅ **properly serialized.** The `Promise.all` at line 570 is 3 endpoints for a *single* symbol; symbols iterate sequentially in a `for…of` loop with `setTimeout(80)` between each (lines 587–598).
-- `breadth.html`, `commodities.html`, `earnings.html`, `insiders.html`, `ipo.html` — ✅ no multi-symbol parallel Finnhub fan-out on load.
-- `crypto.html`, `currency.html` (crypto section), `news.html`, `heat-map.html`, `fear-greed.html` — parallel fetches exist but target **Coinbase / Polygon / thenewsapi / alternative.me**, not Finnhub. Out of scope for this check. (`heat-map.html` does fan out 11 Polygon calls via `Promise.all` — worth noting if Polygon rate limits ever bite, but not a Finnhub issue.)
-
-**Recommendation:** convert `treasuries.html` to the same serialized/throttled pattern `currency.html` and `watchlist.html` already use (sequential loop with a small `setTimeout`, or batch with a delay). Apply the same to the `index.html` Finnhub burst if dashboard quote-failures appear under load.
+**Recommendation:** re-run this web check each audit (or any time a page starts throwing 429s). If Finnhub ever drops below 60/min or Polygon below 5/min, revisit the loop gaps on `index.html` / `treasuries.html` / `today.html` / `currency.html` and the `heat-map.html` 11-wide Polygon `Promise.all`.
 
 ---
 
-## Summary — Top Issues by Pages Affected
+## Summary — Top Issues (genuine, ranked by impact)
 
-Ranked by number of pages affected (genuine issues only; deliberate leaves excluded):
+> **One genuine fix this session, now done.** The two "❌" nav-injection findings in an earlier draft were **false positives** from bash-truncated reads — both pages actually have the standard nav injection (verified with the Read tool). The only real defect was `currency.html`'s missing visibility guard, fixed below.
 
-1. **Duplicated global animation/loader classes (up to 11 pages)** — `@keyframes fadeUp` (11), `.fade-in` (10), `.spinner` (9), `.loading-text` (8) are redefined in individual page `<style>` blocks. *Fix:* move to `styles.css` once, delete per-page copies. Highest-leverage cleanup; zero behavior change.
+1. **✅ FIXED — `currency.html` auto-refresh tab-visibility guard (Check 17).** Was firing Finnhub forex quotes every 60s in background tabs. Added `if(document.hidden) return;`. **File changed: `currency.html` — Chuck to commit + push.**
 
-2. **`dexcom.html` inline color styles (1 page, but 47 instances)** — 47 color-bearing inline `style=""` attributes (out of 207 total inline). *Fix:* extract glucose-range tints into classes. Concentrated but sizable.
+2. **⚠️ `discord-feed.html` not fully tokenized (Check 3, 23 residual).** New page with hardcoded scrim/overlay rgba in the lightbox + reaction pills. Low visual risk; tokenize when convenient.
 
-3. **`nav.html` light-mode color hardcodes (1 file, affects all pages visually)** — nav is otherwise tokenized but hardcodes ~7 light-mode hex values + 4 status-dot colors in `html.light` overrides. Because nav renders on every page, fixing this is high-value despite being one file. *Fix:* add light-mode token overrides.
+3. **⚠️ Carryover — `dexcom.html` inline color styles (52 color-bearing).** Unchanged; reference copy, low priority.
 
-4. **Finnhub parallel fan-out — `treasuries.html` + `index.html` (2 pages)** — `treasuries.html` fires 6 parallel Finnhub quotes (known, unchanged); `index.html` fires 4. Both compete for the shared free-tier 60/min budget. *Fix:* serialize/throttle like currency/watchlist already do. `treasuries` is the priority (refreshes every 60s).
+4. **⚠️ Carryover — document the deliberate color gradients in the master spec** so Check 3 stops re-flagging ~180 of them (heat-map / commodities / currency / options-flow gold / Dexcom purple). Still open from 2026-06-20.
 
-5. **Undocumented bespoke color gradients re-flagged by Check 3 (4 pages)** — `heat-map`, `commodities`, `currency`, `options-flow` carry large bespoke heat/scale gradients (~180 rgba/hex combined) that are *deliberate* but not documented as approved leaves, so they inflate the Check 3 warning count. *Fix:* document them in the master spec so future audits don't re-flag them.
+5. **⚠️ Carryover — verify served security headers** via `curl -sI` and confirm the `_headers` file covers HSTS/nosniff/X-Frame-Options/Referrer-Policy.
+
+6. **ℹ️ Optional — CoinGecko demo key still client-side on `index.html`.** By-design public key, low risk; proxy it only if you want literally zero client-side keys.
 
 ### What's fully clean (no action)
-Checks **1, 2, 4, 5, 6, 8, 9, 10, 11, 12, 13, 15, 16, 17** pass across all applicable files. Specifically: theme.js ordering/path, nav injection plumbing, no hardcoded nav blocks, no `console.log`, no stray endpoints / no leaked API key, all required meta tags, meaningful titles, **no backup files, `_wtest.tmp` deleted, zero trailing NUL bytes, and all 5 required pages have the tab-visibility pause.** `fear-greed.html` and `_template.html` are the only fully-tokenized pages (Check 3 clean). `fear-greed-crypto.html` redirect shim confirmed working (`<meta refresh>` + `window.location.replace('fear-greed.html')`).
+Checks **1, 2, 4, 6, 7, 8, 9, 10, 11, 12, 13, 15, 16, 18, 19, 20** pass across all applicable files. The June-20 FAILs on Check 18 (Finnhub fan-out) are **resolved**, the key-proxy migration is **complete**, CSS dedupe **done**, nav light-mode **tokenized**, preconnect **added everywhere**, the futures-symbol guardrail **passes**, and the API tier limits are **web-verified unchanged**. `today.html` is a model new page (clean on every check). After Read-tool re-verification, **nav injection passes on every page** (the earlier index/discord-feed FAILs were bash-truncation false positives), and the **only genuine defect — `currency.html`'s missing visibility guard — was fixed this session.** The repo is in good shape.
+
+---
+
+## When to re-audit (standing checklist for future runs)
+
+Re-run this audit when any of these happen:
+
+- **A new page is added** — run Checks 1–18 on it; new pages must pass the four market-data acceptance criteria in Check 19 if they touch market data.
+- **A key is rotated** — re-verify Check 9 (no client-side keys) and confirm the Worker secret was re-saved AND the Worker redeployed (the 2026-06-28 Finnhub outage was a stale-secret-after-rotation issue).
+- **A page starts throwing 429s** — re-run Check 20 (web-verify tier limits) and re-check the relevant throttle loop (Check 18) + visibility guard (Check 17).
+- **Heavy edits to an existing page** — re-run Checks 5 (nav injection — the index/discord-feed regression came from exactly this) and 7/14 (CSS/inline drift).
+- **Roughly quarterly regardless** — re-verify Check 20 limits and re-scan for accumulated inline-style / hardcoded-color drift.
+
+Open carryover tasks tracked in `POLISH-LIST.md`: document the deliberate color gradients in the master spec (stops Check 3 re-flagging ~180 leaves); verify served security headers via `curl -sI`.
