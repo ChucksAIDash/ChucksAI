@@ -534,6 +534,23 @@
       .briefing-card { padding: 1.25rem; }
       .briefing-content p, .briefing-content li { font-size: 13px; }
     }
+
+    /* ════ v10.1 TWEAKS ════════════════════════════════════════
+       Page-level overrides (styles.css untouched).
+       1a ticker text ~+20% · 1b scroll ~10% slower
+       2  status-bar readouts flush right (over the rail) ═══════ */
+    #tickerStrip { height: 36px; }
+    #tickerStrip .ticker-item { font-size: 12px; }
+    #tickerStrip .ti-sym { font-size: 11px; }
+    #tickerStrip .ti-chg { font-size: 11px; }
+    #tickerStrip .ticker-track { animation-duration: 66s; }
+    /* clock · pulse · readouts spread across the full masthead so the
+       WX/BG/jump stack ends flush right, aligned over the sticky rail */
+    .statusbar { justify-content: space-between; }
+    /* rail sticky offset follows the taller ticker (nav 53 + tape 36 + gap) */
+    .rail { top: 101px; }
+    /* Discord card now lives in a full-width section — keep it compact */
+    #sec-discord .dc-card { max-width: 620px; }
   </style>
 </head>
 
@@ -603,6 +620,25 @@
     <!-- ── MAIN COLUMN ── -->
     <div class="deck-main">
 
+      <!-- INTEL — top stories (moved above briefing) -->
+      <div class="dash-section" id="sec-intel">
+        <div class="section-header">
+          <div class="section-pip pip-purple"></div>
+          <div class="section-title">Intel</div>
+          <div class="section-line"></div>
+          <a href="news.html" class="dc-open">All news →</a>
+          <button class="sec-toggle" onclick="toggleSection('sec-intel')" title="Collapse">▾</button>
+        </div>
+        <div class="sec-body">
+          <div class="news-feed" id="newsFeed">
+            <div style="padding:12px 0">
+              <div class="skel skel-sm" style="width:88%;margin-bottom:8px"></div>
+              <div class="skel skel-line" style="width:72%"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- AI MORNING BRIEFING (hero) -->
       <div class="dash-section" id="sec-briefing">
         <div class="section-header">
@@ -646,35 +682,23 @@
         </div>
       </div>
 
-      <!-- INTEL — top stories + discord #spx -->
-      <div class="dash-section" id="sec-intel">
+      <!-- DISCORD SPX SUMMARY — split out from Intel, sits under Market -->
+      <div class="dash-section" id="sec-discord">
         <div class="section-header">
-          <div class="section-pip pip-purple"></div>
-          <div class="section-title">Intel</div>
+          <div class="section-pip pip-blue"></div>
+          <div class="section-title">Discord SPX Summary</div>
           <div class="section-line"></div>
           <a href="discord-feed.html" class="dc-open">Open feed →</a>
-          <button class="sec-toggle" onclick="toggleSection('sec-intel')" title="Collapse">▾</button>
+          <button class="sec-toggle" onclick="toggleSection('sec-discord')" title="Collapse">▾</button>
         </div>
         <div class="sec-body">
-          <div class="intel-grid">
-            <div>
-              <div class="news-feed" id="newsFeed">
-                <div style="padding:12px 0">
-                  <div class="skel skel-sm" style="width:88%;margin-bottom:8px"></div>
-                  <div class="skel skel-line" style="width:72%"></div>
-                </div>
-              </div>
+          <div class="dc-card">
+            <div class="dc-blurb">Summarize today's <strong>#spx</strong> market-analysis posts. <strong>+ Vision</strong> also reads the chart images.</div>
+            <div class="dc-btns">
+              <button class="dc-btn" id="dcTextBtn" onclick="dcSummary('text')">✨ AI Summarize</button>
+              <button class="dc-btn vision" id="dcVisionBtn" onclick="dcSummary('vision')">👁 + Vision</button>
             </div>
-            <div>
-              <div class="dc-card">
-                <div class="dc-blurb">Summarize today's <strong>#spx</strong> market-analysis posts. <strong>+ Vision</strong> also reads the chart images.</div>
-                <div class="dc-btns">
-                  <button class="dc-btn" id="dcTextBtn" onclick="dcSummary('text')">✨ AI Summarize</button>
-                  <button class="dc-btn vision" id="dcVisionBtn" onclick="dcSummary('vision')">👁 + Vision</button>
-                </div>
-                <div class="dc-out" id="dcOut"></div>
-              </div>
-            </div>
+            <div class="dc-out" id="dcOut"></div>
           </div>
         </div>
       </div>
@@ -1523,8 +1547,8 @@ const CMDK_PAGES=[
 ];
 const CMDK_ACTIONS=[
   {icon:'⚡', name:'Generate Morning Briefing', run:()=>{ generateBriefing(); document.getElementById('sec-briefing')?.scrollIntoView({behavior:'smooth'}); }, tag:'action'},
-  {icon:'✨', name:'Summarize Discord #spx',    run:()=>{ dcSummary('text'); document.getElementById('sec-intel')?.scrollIntoView({behavior:'smooth'}); },  tag:'action'},
-  {icon:'👁', name:'Discord Summary + Vision',  run:()=>{ dcSummary('vision'); document.getElementById('sec-intel')?.scrollIntoView({behavior:'smooth'}); },tag:'action'}
+  {icon:'✨', name:'Summarize Discord #spx',    run:()=>{ dcSummary('text'); document.getElementById('sec-discord')?.scrollIntoView({behavior:'smooth'}); },  tag:'action'},
+  {icon:'👁', name:'Discord Summary + Vision',  run:()=>{ dcSummary('vision'); document.getElementById('sec-discord')?.scrollIntoView({behavior:'smooth'}); },tag:'action'}
 ];
 let cmdkIdx=0, cmdkItems=[];
 
