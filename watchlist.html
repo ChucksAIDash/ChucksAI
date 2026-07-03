@@ -260,6 +260,7 @@
     .updated-row a { color: var(--accent2); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
     .updated-row a:hover { opacity: .8; }
   </style>
+<script src="quotes.js"></script>
 </head>
 <body data-page="watchlist" data-mob="watchlist">
 
@@ -394,11 +395,8 @@
   }
 
   // ── FETCH ───────────────────────────────────────────────────────────────────
-  async function fetchQuote(sym) {
-    const r = await fetch(`https://finnhub-proxy.infiniti306.workers.dev/quote?symbol=${sym}`);
-    if (!r.ok) throw new Error(r.status);
-    return r.json();
-  }
+  /* quotes.js shared cache — see quotes.js header */
+  async function fetchQuote(sym) { return fhRawQuote(sym); }
 
   async function fetchProfile(sym) {
     if (profiles[sym]) return profiles[sym];

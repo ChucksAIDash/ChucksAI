@@ -88,6 +88,7 @@
     .spinner { display: inline-block; width: 12px; height: 12px; flex-shrink: 0; border: 1.5px solid var(--hairline); border-top-color: var(--accent); border-radius: 50%; animation: spin .7s linear infinite; }
     html.light .spinner { border-top-color: var(--accent2); }
   </style>
+<script src="quotes.js"></script>
 </head>
 <body>
 
@@ -148,12 +149,8 @@
    HELPERS
 ═══════════════════════════════════════ */
 
-async function fhQuote(sym){
-  const r = await fetch(`https://finnhub-proxy.infiniti306.workers.dev/quote?symbol=${encodeURIComponent(sym)}`);
-  const d = await r.json();
-  if(!d||!d.c||d.c===0) throw new Error('no data');
-  return { price:d.c, pct:((d.c-d.pc)/d.pc)*100 };
-}
+/* quotes.js shared cache — see quotes.js header */
+async function fhQuote(sym){ return fhQuoteShared(sym); }
 
 // Sentiment label
 function sl(v){

@@ -205,6 +205,7 @@
     .skel { background: var(--surface-1); border-radius: 4px; animation: shimmer 1.4s ease-in-out infinite; }
     @keyframes shimmer { 0%,100%{opacity:.4} 50%{opacity:.85} }
   </style>
+<script src="quotes.js"></script>
 </head>
 <body data-page="breadth" data-mob="breadth">
 
@@ -372,11 +373,8 @@
   fetch('nav.html').then(r => r.text()).then(injectNav).catch(() => {});
 
   // ── FETCH ───────────────────────────────────────────────────────────────────
-  async function fetchQuote(sym) {
-    const r = await fetch(`https://finnhub-proxy.infiniti306.workers.dev/quote?symbol=${sym}`);
-    if (!r.ok) throw new Error(r.status);
-    return r.json();
-  }
+  /* quotes.js shared cache — see quotes.js header */
+  async function fetchQuote(sym) { return fhRawQuote(sym); }
 
   async function fetchBatch(syms) {
     const results = {};

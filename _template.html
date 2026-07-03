@@ -21,12 +21,23 @@
     /* ── TODO: PAGE NAME PAGE SPECIFIC STYLES ── */
 
   </style>
+
+  <!-- ⑤ Shared Finnhub quote cache (sessionStorage, 60s TTL).
+       Use fhQuoteShared(sym) → {price,pct} or fhRawQuote(sym) → raw JSON.
+       NEVER fetch finnhub-proxy /quote directly from page code. -->
+  <script src="quotes.js"></script>
 </head>
 
 <!--
   data-page  = matches desktop nav link
   data-mob   = matches mobile nav link
   TODO: set both to this page's nav key (e.g. "crypto", "news", "earnings")
+
+  ⚠ ID NAMESPACE RULE: nav.html is injected into every page and its element
+  ids share the global namespace (it uses wxTemp, wxCond, wxFeels, etc.).
+  PREFIX every id on this page with a short page key (e.g. cryptoPrice,
+  todayWx…) — a duplicate id makes getElementById silently write into the
+  wrong element (this exact bug broke the index weather widget once).
 -->
 <body data-page="TODO" data-mob="TODO">
 
@@ -80,6 +91,7 @@ let secsLeft = 60;
 const cdEl = document.getElementById('countdown');
 
 setInterval(()=>{
+  if(document.hidden) return;   // ⚠ REQUIRED — background tabs must not burn API quota
   secsLeft--;
   if(cdEl) cdEl.textContent = `AUTO ⟳ ${secsLeft}s`;
   if(secsLeft <= 0){ secsLeft = 60; loadData(); }   // TODO: replace loadData with your fn name

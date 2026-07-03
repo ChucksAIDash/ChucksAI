@@ -166,6 +166,7 @@
       color: var(--text-secondary); display: flex; align-items: center;
     }
   </style>
+<script src="quotes.js"></script>
 </head>
 <body>
 
@@ -303,12 +304,8 @@ function fmtPrice(n, dec=2){
 function fmtPct(n){ return n==null||isNaN(n) ? '' : (n>=0?'+':'')+n.toFixed(2)+'%'; }
 function pctClass(n){ return n>0.01?'up':n<-0.01?'down':'flat'; }
 
-async function fhQuote(sym){
-  const r = await fetch(`https://finnhub-proxy.infiniti306.workers.dev/quote?symbol=${encodeURIComponent(sym)}`);
-  const d = await r.json();
-  if(!d||!d.c||d.c===0) throw new Error('no data');
-  return { price:d.c, pct:((d.c-d.pc)/d.pc)*100 };
-}
+/* quotes.js shared cache — see quotes.js header */
+async function fhQuote(sym){ return fhQuoteShared(sym); }
 
 /* ═══════════════════════════════════════
    CLOCK & AUTO-REFRESH

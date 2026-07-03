@@ -552,6 +552,7 @@
     /* Discord card now lives in a full-width section — keep it compact */
     #sec-discord .dc-card { max-width: 620px; }
   </style>
+<script src="quotes.js"></script>
 </head>
 
 <body data-page="home" data-mob="home">
@@ -783,12 +784,8 @@ function pctClass(n){ return n>0.05?'up':n<-0.05?'down':'flat'; }
 function fgColor(v){ return v>=60?'var(--up)':v<=40?'var(--down)':'var(--accent3)'; }
 function paint(){ return new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))); }
 
-async function fhQuote(sym){
-  const r=await fetch(`https://finnhub-proxy.infiniti306.workers.dev/quote?symbol=${encodeURIComponent(sym)}`);
-  const d=await r.json();
-  if(!d||!d.c||d.c===0) throw new Error('no data');
-  return {price:d.c, pct:((d.c-d.pc)/d.pc)*100};
-}
+/* quotes.js shared cache — see quotes.js header */
+async function fhQuote(sym){ return fhQuoteShared(sym); }
 
 /* ── QUOTE CACHE + TICKER TAPE ──
    Every loader deposits quotes here; the tape re-renders from cache.
@@ -1208,9 +1205,7 @@ function mbFmtPrice(n){ return n>=1000?n.toLocaleString('en-US',{minimumFraction
 function mbFmtPct(n){ return (n>=0?'+':'')+n.toFixed(2)+'%'; }
 
 async function mbFhQuote(sym){
-  const r=await fetch(`https://finnhub-proxy.infiniti306.workers.dev/quote?symbol=${encodeURIComponent(sym)}`);
-  const d=await r.json();
-  if(!d||!d.c||d.c===0) throw new Error('no data');
+  const d=await fhRawQuote(sym);   // quotes.js shared cache
   return {price:d.c,pct:((d.c-d.pc)/d.pc)*100,prev:d.pc};
 }
 

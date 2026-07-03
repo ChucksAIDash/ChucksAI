@@ -221,6 +221,7 @@
       line-height: 1.6;
     }
   </style>
+<script src="quotes.js"></script>
 </head>
 <body data-page="commodities" data-mob="commodities">
 
@@ -364,12 +365,8 @@
   }
 
   // ── FETCH SINGLE QUOTE ──────────────────────────────────────────────────────
-  async function fetchQuote(sym) {
-    const url = `https://finnhub-proxy.infiniti306.workers.dev/quote?symbol=${sym}`;
-    const resp = await fetch(url);
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    return resp.json();
-  }
+  /* quotes.js shared cache — see quotes.js header */
+  async function fetchQuote(sym) { return fhRawQuote(sym); }
 
   // ── COLOR TIER ──────────────────────────────────────────────────────────────
   function cardClass(dp) {
