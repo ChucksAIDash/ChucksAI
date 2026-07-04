@@ -10,6 +10,7 @@ Specs for the next wave of upgrades, one file each, in rough priority order.
 | 03 | **SITREP Alert Center** — severe weather / quakes / breaking-news "is something major happening" strip + Discord push | 1–2 sessions | New idea (Chuck asked for this range) |
 | 04 | **History snapshots → KV** — daily closes, fear/greed, glucose stats → sparklines + trends | 1 session (rides alerts Worker) | Queued |
 | 05 | **Quick wins** — site-wide Ctrl+K, PWA install, stale-data dot, alerts log | Each < 1 hr | Grab-bag |
+| 06 | **Discord leftovers** — browser notify, react-as-you, Cowork morning digest | varies | Salvaged from old suggestions file |
 
 Prereqs already in repo: `worker-origin-lock.js`, `discord-alerts-worker.js` (paste into Cloudflare dashboard), `quotes.js`, `RUNBOOK.md`.
 

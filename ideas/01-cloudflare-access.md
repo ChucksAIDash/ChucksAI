@@ -30,6 +30,11 @@ Access on chucksai.com does NOT protect `*.workers.dev` URLs. `dexcom-proxy` is 
 
 **Option 2 (weaker, quick): origin-lock dexcom-proxy** with `worker-origin-lock.js` (same as finnhub/anthropic). Stops casual/direct hits but Origin headers are forgeable server-side — fine as an interim step, not the end state for health data.
 
+## Confirmed findings (from WORKERS.md source snapshot, June 14)
+
+- dexcom-proxy CORS is `*` and `/egvs`, `/latest`, `/status` have **no caller auth** — the Worker URL alone serves glucose data. This is not hypothetical.
+- Dexcom `CLIENT_SECRET` is **hardcoded in the Worker source**, not a Cloudflare secret. Move to `env.DEXCOM_CLIENT_SECRET` and **rotate it** in the Dexcom developer portal (follow RUNBOOK's 5-step rotation checklist — secret + REDEPLOY).
+
 ## Order of operations
 
 1. Origin-lock `anthropic` + `finnhub-proxy` today (money + quota) — `worker-origin-lock.js`.
