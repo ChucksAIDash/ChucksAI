@@ -301,7 +301,7 @@
       "label": "Jun 25–Jul 22",
       "dateRange": "Jun 25 – Jul 22, 2026",
       "days": 28,
-      "medication": "Mounjaro 5mg",
+      "medication": "Mounjaro 5mg + glimepiride 2mg",
       "avg": 133,
       "gmi": 6.5,
       "tir": 88,
@@ -314,7 +314,7 @@
       "veryLow": 0,
       "daysWithData": 28,
       "timeActive": 99,
-      "notes": "Best full-length tracked period on record. First clean post-prednisone window — no steroid confound. Mounjaro doses 12 (Jul 1), 13 (Jul 8), 14 (Jul 15), 15 (Jul 22) all logged in CGM. Zero very-high time and TIR 88% — crosses the 85% threshold flagged for the glimepiride reduction conversation. Dawn phenomenon still present but materially blunted: 7–8am mean 182 (was 185 in the prednisone window), 8–9am 175, and morning peak no longer regularly reaching 200–220+. New secondary pattern: 1–3pm mean 157/156 with only 67–68% in range — now the worst window of the day, ahead of the morning. Best day: Jun 26 (avg 110, 100% TIR)."
+      "notes": "Best full-length tracked period on record. First clean post-prednisone window — no steroid confound. Mounjaro doses 12 (Jul 1), 13 (Jul 8), 14 (Jul 15), 15 (Jul 22) all logged in CGM. Zero very-high time and TIR 88% — crosses the 85% threshold flagged for the glimepiride reduction conversation. Dawn phenomenon still present but materially blunted: 7–8am mean 182 (was 185 in the prednisone window), 8–9am 175, and morning peak no longer regularly reaching 200–220+. New secondary pattern: 1–3pm mean 157/156 with only 67–68% in range — now the worst window of the day, ahead of the morning. Best day: Jun 26 (avg 110, 100% TIR). REGIMEN CHANGE: glimepiride cut 4mg->2mg on Jun 29 and lisinopril-HCTZ switched to plain lisinopril 10mg ~Jul 1 (both from the Jun 26 physical). These stats therefore reflect HALF the prior sulfonylurea dose - control improved despite the reduction, not because of a stable regimen."
     }
   ],
   "hourly": [
@@ -1732,6 +1732,39 @@
           "date": "2026-07-22"
         }
       ]
+    },
+    {
+      "id": "doctor-visit-jun26-2026",
+      "type": "clinical_visit",
+      "label": "Annual physical",
+      "date": "2026-06-26",
+      "details": "Physical with primary doctor. Two medication changes came out of this visit: glimepiride reduced 4mg -> 2mg (started Mon Jun 29), and lisinopril-HCTZ 10/12.5 switched to plain lisinopril 10mg (started ~Jul 1). Doctor is comfortable with Chuck experimenting on glimepiride timing/dosing.",
+      "expectedImpact": "Both changes land at the very start of the Jun 25 - Jul 22 window, so essentially that entire period reflects the NEW regimen, not the old one."
+    },
+    {
+      "id": "glimepiride-reduction-jun2026",
+      "type": "medication_change",
+      "label": "Glimepiride 4mg -> 2mg",
+      "startDate": "2026-06-29",
+      "details": "Reduced from 4mg to 2mg, morning only. Evening dose still routinely skipped. Occasional as-needed evening 2mg if glucose is running above ~180-200, but infrequent. Confirmed in CGM med log (Jul 22: 'Glimepiride 2 mg Oral' at 6:15 AM alongside Metformin 1000mg).",
+      "expectedImpact": "Halved sulfonylurea dose with NO deterioration in control - Jun 25-Jul 22 posted the best full-length stats on record (avg 133, TIR 88%, CV 27.5%). Strong evidence Mounjaro is carrying the load. Also reduces hypo risk, though 1% low time persisted.",
+      "goal": "Discontinue glimepiride entirely if possible; escalate Mounjaro to 7.5mg if needed to get there."
+    },
+    {
+      "id": "lisinopril-change-jul2026",
+      "type": "medication_change",
+      "label": "Lisinopril-HCTZ 10/12.5 -> Lisinopril 10mg",
+      "startDate": "2026-07-01",
+      "details": "Dropped the hydrochlorothiazide component; now plain lisinopril 10mg once daily.",
+      "expectedImpact": "Removing a thiazide diuretic is mildly favorable for glucose (thiazides can raise blood sugar) and removes a known gout-flare risk factor - relevant given the Jun 11 gout flare that required prednisone."
+    },
+    {
+      "id": "labs-pending-jul2026",
+      "type": "pending",
+      "label": "Bloodwork - late July 2026",
+      "targetDate": "2026-07-25",
+      "details": "Labs drawn the weekend after the Jul 22 export, to assess response to the reduced glimepiride and the lisinopril change.",
+      "decisionPoint": "Two paths under consideration: (1) drop glimepiride entirely, or (2) escalate Mounjaro 5mg -> 7.5mg to enable dropping it. Decision expected within a couple of weeks, otherwise deferred ~4 months to the next lab cycle."
     }
   ]
 }
